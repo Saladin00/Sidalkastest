@@ -12,7 +12,7 @@ class AuthController extends Controller
 {
     // 🔹 Register user baru
     public function register(Request $request)
-    
+
 {
     try {
         $validated = $request->validate([
@@ -76,6 +76,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Login success',
+            'user' => $user,
             'access_token' => $token,
             'token_type' => 'Bearer',
             'role' => $user->getRoleNames()->first(),
