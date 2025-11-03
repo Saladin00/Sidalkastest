@@ -1,0 +1,46 @@
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+
+/* 🌟 1. Admin */
+User::create([
+    'username' => 'admin',
+    'name' => 'Administrator',
+    'no_hp' => '08123456789',
+    'status_aktif' => '1',
+    'email' => 'admin@gmail.com',
+    'password' => Hash::make('password'),
+    'status' => 'admin',
+]);
+
+/* 👷‍♀️ 2. Operator */
+User::create([
+    'username' => 'operator',
+    'name' => 'Operator Dinas',
+    'no_hp' => '08123456790',
+    'status_aktif' => '1',
+    'email' => 'operator@gmail.com',
+    'password' => Hash::make('password'),
+    'status' => 'operator',
+]);
+
+/* 🧑‍💼 3. Petugas */
+User::create([
+    'username' => 'petugas',
+    'name' => 'Petugas Lapangan',
+    'no_hp' => '08123456791',
+    'status_aktif' => '1',
+    'email' => 'petugas@gmail.com',
+    'password' => Hash::make('password'),
+    'status' => 'petugas',
+]);
+
+/* 🏠 4. LKS */
+User::create([
+    'username' => 'lks',
+    'name' => 'LKS ',
+    'no_hp' => '08123456792',
+    'status_aktif' => '1',
+    'email' => 'lks@gmail.com',
+    'password' => Hash::make('password'),
+    'status' => 'lks',
+]);

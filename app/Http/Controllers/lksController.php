@@ -2,44 +2,128 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use App\Models\LKS;
 use Illuminate\Http\Request;
-use App\Models\Lks;
+use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
 
-
-
-class LksController extends Controller
+class LKSController extends Controller
 {
-    public function index()
+    // 🔍 GET /api/lks
+    public function index(Request $request)
     {
-        return response()->json(Lks::paginate(10));
+        $query = LKS::query();
+
+        if ($request->status) $query->where('status', $request->status);
+        if ($request->kecamatan) $query->where('kecamatan', $request->kecamatan);
+        if ($request->jenis) $query->where('jenis_layanan', $request->jenis);
+
+        return response()->json($query->latest()->get());
     }
 
+    // ➕ POST /api/lks
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'name' => 'required|string',
-            'type' => 'required|string',
-            'address' => 'required|string'
+        $validated = $request->validate([
+            'nama' => 'required|string|max:255',
+            'jenis_layanan' => 'required|string|max:255',
+            'kecamatan' => 'required|string|max:255',
+            'status' => 'required|in:Aktif,Nonaktif',
+            'koordinat' => 'nullable|string|max:255',
         ]);
-        $lks = Lks::create($data);
-        return response()->json($lks, 201);
+
+        $lks = LKS::create($validated);
+
+        return response()->json([
+            'message' => 'LKS berhasil ditambahkan',
+            'data' => $lks
+        ]);
     }
 
-    public function show(Lks $lk)
+    // 👁️ GET /api/lks/{id}
+    public function show($id)
     {
-        return response()->json($lk);
+        $lks = LKS::with(['dokumen', 'kunjungan'])->findOrFail($id);
+        return response()->json($lks);
     }
 
-    public function update(Request $request, Lks $lk)
+    // ✏️ PUT /api/lks/{id}
+    public function update(Request $request, $id)
     {
-        $lk->update($request->all());
-        return response()->json($lk);
+        $validated = $request->validate([
+            'nama' => 'required|string|max:255',
+            'jenis_layanan' => 'required|string|max:255',
+            'kecamatan' => 'required|string|max:255',
+            'status' => 'required|in:Aktif,Nonaktif',
+            'koordinat' => 'nullable|string|max:255',
+        ]);
+
+        $lks = LKS::findOrFail($id);
+        $lks->update($validated);
+
+        return response()->json([
+            'message' => 'Data LKS berhasil diperbarui',
+            'data' => $lks
+        ]);
     }
 
-    public function destroy(Lks $lk)
+    // 🗑️ DELETE /api/lks/{id}
+    public function destroy($id)
     {
-        $lk->delete();
+        $lks = LKS::findOrFail($id);
+        $lks->delete();
+
         return response()->json(['message' => 'LKS dihapus']);
+    }
+
+    // 📎 POST /api/lks/{id}/upload-dokumen
+    public function uploadDokumen(Request $request, $id)
+    {
+        $lks = LKS::findOrFail($id);
+        $dokumen = [];
+
+        // Upload Akta
+        if ($request->hasFile('akta')) {
+            $aktaPath = $request->file('akta')->store('dokumen_lks', 'public');
+            $dokumen['akta'] = $aktaPath;
+        }
+
+        // Upload Surat Izin
+        if ($request->hasFile('izin')) {
+            $izinPath = $request->file('izin')->store('dokumen_lks', 'public');
+            $dokumen['izin'] = $izinPath;
+        }
+
+        // Upload Sertifikat
+        if ($request->hasFile('sertifikat')) {
+            $sertifikatPath = $request->file('sertifikat')->store('dokumen_lks', 'public');
+            $dokumen['sertifikat'] = $sertifikatPath;
+        }
+
+        // Simpan ke kolom dokumen (json)
+        $lks->dokumen = json_encode($dokumen);
+        $lks->save();
+
+        return response()->json([
+            'message' => 'Dokumen berhasil diunggah',
+            'dokumen' => $dokumen,
+        ]);
+    }
+
+    // 🖨️ CETAK PROFIL PDF
+    public function cetakProfil($id)
+    {
+        $lks = LKS::findOrFail($id);
+
+        // pastikan data ada
+        if (!$lks) {
+            abort(404, 'Data LKS tidak ditemukan.');
+        }
+
+        // load view PDF
+        $pdf = Pdf::loadView('pdf.lks_profil', compact('lks'))
+            ->setPaper('A4', 'portrait');
+
+        return $pdf->stream('Profil_LKS_' . $lks->nama . '.pdf');
     }
 }

@@ -1,20 +1,34 @@
+
+# Laravel
 /vendor
-/node_modules
 /public/storage
 /storage/*.key
 /storage/pail
 /storage/debugbar
 /public/hot
 /public/build
+/storage/logs
+/storage/framework/cache
+/storage/framework/sessions
+/storage/framework/views
 
+# React
+/node_modules
+
+# Env & Secrets
 .env
 .env.*
-Homestead.yaml
-Homestead.json
+.env.backup
+.env.production
 auth.json
 .phpunit.result.cache
 .phpactor.json
 
+# Homestead
+Homestead.yaml
+Homestead.json
+
+# IDEs & System files
 .idea/
 .vscode/
 .fleet/
@@ -23,11 +37,5 @@ auth.json
 Thumbs.db
 .DS_Store
 
+# Logs
 *.log
-/storage/logs
-/storage/framework/cache
-/storage/framework/sessions
-/storage/framework/views
-
-.env.backup
-.env.production
