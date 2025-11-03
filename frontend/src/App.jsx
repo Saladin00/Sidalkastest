@@ -1,3 +1,5 @@
+// src/App.jsx
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import DashboardAdmin from "./pages/DashboardAdmin";
@@ -6,13 +8,23 @@ import DashboardPetugas from "./pages/DashboardPetugas";
 import DashboardLKS from "./pages/DashboardLKS";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+// 📄 Import halaman modul LKS
+import LKSList from "./pages/admin/lks/LKSList";
+import LKSForm from "./pages/admin/lks/LKSForm";
+import LKSDetail from "./pages/admin/lks/LKSDetail";
+import LKSEditForm from "./pages/admin/lks/LKSEditForm";
+import LKSProfil from "./pages/admin/lks/LKSProfil";
+import LKSUploadDokumen from "./pages/admin/lks/LKSUploadDokumen";
+import LKSKunjungan from "./pages/admin/lks/LKSKunjungan"; // ✅ Halaman baru untuk laporan kunjungan
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* ================= LOGIN ================= */}
         <Route path="/" element={<Login />} />
 
-        {/* Proteksi masing-masing dashboard berdasarkan role */}
+        {/* ================= ADMIN ================= */}
         <Route
           path="/admin"
           element={
@@ -21,6 +33,66 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* ================= MODUL LKS ================= */}
+        <Route
+          path="/admin/lks"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "operator"]}>
+              <LKSList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/lks/tambah"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "operator"]}>
+              <LKSForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/lks/detail/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
+              <LKSDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/lks/profil/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
+              <LKSProfil />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/lks/edit/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
+              <LKSEditForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/lks/upload/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
+              <LKSUploadDokumen />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/lks/kunjungan/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "operator", "petugas"]}>
+              <LKSKunjungan />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= OPERATOR ================= */}
         <Route
           path="/operator"
           element={
@@ -29,6 +101,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* ================= PETUGAS ================= */}
         <Route
           path="/petugas"
           element={
@@ -37,6 +111,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* ================= LKS (User LKS) ================= */}
         <Route
           path="/lks"
           element={

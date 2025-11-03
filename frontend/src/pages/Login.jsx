@@ -1,98 +1,172 @@
 // src/pages/Login.jsx
-
-import React, { useState } from "react";
-import api from "../api/axios";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogIn } from "lucide-react";
+import API from "../utils/api";
+import { LogIn, RefreshCcw } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [captcha, setCaptcha] = useState("");
+  const [generatedCaptcha, setGeneratedCaptcha] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setErrorMsg("");
-
-    try {
-      await api.get("/sanctum/csrf-cookie");
-      const response = await api.post("/api/login", { email, password });
-      const { access_token, role } = response.data;
-      localStorage.setItem("token", access_token);
-      localStorage.setItem("role", role);
-
-      switch (role) {
-        case "admin":
-          navigate("/admin");
-          break;
-        case "operator":
-          navigate("/operator");
-          break;
-        case "petugas":
-          navigate("/petugas");
-          break;
-        case "lks":
-          navigate("/lks");
-          break;
-        default:
-          navigate("/");
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      setErrorMsg("Login gagal. Cek email/password kamu!");
-    }
+  // Generate captcha
+  const generateCaptcha = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let text = "";
+    for (let i = 0; i < 5; i++) text += chars.charAt(Math.floor(Math.random() * chars.length));
+    setGeneratedCaptcha(text);
   };
 
+  useEffect(() => {
+    generateCaptcha();
+  }, []);
+
+  const handleLogin = async (e) => {
+  e.preventDefault();
+  setErrorMsg("");
+
+  if (captcha.toUpperCase() !== generatedCaptcha) {
+    setErrorMsg("Captcha tidak sesuai, silakan coba lagi!");
+    generateCaptcha();
+    return;
+  }
+
+  try {
+    console.log("Mengirim request ke backend...");
+    const response = await API.post("/login", { email, password });
+
+    console.log("Response dari backend:", response.data);
+
+    const { access_token, role, user } = response.data;
+
+    if (!access_token) {
+      setErrorMsg("Login gagal. Token tidak diterima dari server.");
+      return;
+    }
+
+    // Simpan ke localStorage
+    localStorage.setItem("token", access_token);
+    localStorage.setItem("role", role);
+    localStorage.setItem("user", JSON.stringify(user));
+
+    // Debug redirect
+    console.log("Role user:", role);
+
+    // Redirect sesuai role
+    if (role === "admin") navigate("/admin");
+    else if (role === "operator") navigate("/operator");
+    else if (role === "petugas") navigate("/petugas");
+    else if (role === "lks") navigate("/lks");
+    else {
+      setErrorMsg("Role tidak dikenali, login gagal.");
+      console.error("Role tidak dikenali:", role);
+    }
+  } catch (error) {
+    console.error("Login Error:", error.response?.data || error.message);
+    setErrorMsg("Login gagal. Periksa email dan password Anda!");
+  }
+};
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-100 via-white to-blue-100">
-      <div className="bg-white p-10 rounded-xl shadow-xl w-full max-w-md border border-gray-200">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-blue-200 to-blue-100 relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute w-72 h-72 bg-blue-400 rounded-full blur-3xl opacity-20 top-10 left-10 animate-pulse"></div>
+      <div className="absolute w-80 h-80 bg-indigo-400 rounded-full blur-3xl opacity-20 bottom-10 right-10 animate-pulse"></div>
+
+      <div className="relative z-10 backdrop-blur-xl bg-white/70 border border-white/40 shadow-2xl rounded-2xl p-8 w-full max-w-md">
         <div className="flex justify-center mb-6">
-          <img src="/logo.png" alt="SIDALEKAS" className="h-14" />
+          <img
+            src="/logo.png"
+            alt="Logo"
+             className="h-28 w-auto drop-shadow-md object-contain"
+         />
         </div>
-        <h2 className="text-3xl font-bold text-center text-blue-700 mb-6">Login ke SIDALEKAS</h2>
+
+        <h1 className="text-3xl font-bold text-center text-blue-700 tracking-wider">SIDALEKAS</h1>
+        <p className="text-center text-gray-600 text-sm mb-6">
+          Sistem Informasi Data Lembaga Kesejahteraan Sosial
+        </p>
 
         {errorMsg && (
-          <p className="text-red-500 text-sm mb-4 text-center font-medium bg-red-50 py-2 rounded">
+          <p className="text-red-600 text-sm mb-4 text-center font-medium bg-red-50 py-2 rounded">
             {errorMsg}
           </p>
         )}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-gray-600 text-sm font-medium mb-1">Email</label>
+            <label className="block text-gray-700 text-sm font-medium mb-1">E-mail</label>
             <input
               type="email"
-              placeholder="admin@sidalekas.com"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/60"
               required
             />
           </div>
 
           <div>
-            <label className="block text-gray-600 text-sm font-medium mb-1">Password</label>
+            <label className="block text-gray-700 text-sm font-medium mb-1">Password</label>
             <input
-              type="password"
-              placeholder="******"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/60"
               required
             />
+            <div className="mt-1 flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="showPassword"
+                checked={showPassword}
+                onChange={() => setShowPassword(!showPassword)}
+                className="w-4 h-4"
+              />
+              <label htmlFor="showPassword" className="text-sm text-gray-600">
+                Lihat password
+              </label>
+            </div>
+          </div>
+
+          {/* Captcha */}
+          <div>
+            <label className="block text-gray-700 text-sm font-medium mb-1">Captcha</label>
+            <div className="flex items-center gap-2">
+              <div className="px-4 py-2 font-mono text-lg tracking-widest bg-gradient-to-r from-blue-200 to-blue-100 border border-blue-300 rounded-md shadow-inner select-none">
+                {generatedCaptcha}
+              </div>
+              <input
+                type="text"
+                placeholder="Masukkan captcha"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/60"
+                value={captcha}
+                onChange={(e) => setCaptcha(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                onClick={generateCaptcha}
+                className="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 border border-blue-300 transition"
+              >
+                <RefreshCcw size={18} className="text-blue-500" />
+              </button>
+            </div>
           </div>
 
           <button
             type="submit"
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-all text-sm font-semibold"
+            className="w-full flex items-center justify-center gap-2 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-md hover:opacity-90 transition font-semibold"
           >
-            <LogIn size={16} /> Masuk
+            <LogIn size={18} /> Login
           </button>
         </form>
 
-        <div className="text-xs text-center text-gray-400 mt-6">
-          &copy; {new Date().getFullYear()} Sistem Informasi Data Lembaga Kesejahteraan Sosial
+        <div className="text-xs text-center text-gray-500 mt-6">
+          © Jokowi {new Date().getFullYear()}
         </div>
       </div>
     </div>
