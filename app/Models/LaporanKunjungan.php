@@ -17,4 +17,3 @@ class LaporanKunjungan extends Model
         return $this->belongsTo(LKS::class);
     }
 }
-
