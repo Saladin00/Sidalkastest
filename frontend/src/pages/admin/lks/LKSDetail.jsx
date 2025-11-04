@@ -2,151 +2,127 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AdminLayout from "../../../components/AdminLayout";
 import API from "../../../utils/api";
-import DokumenUpload from "../../../components/lks/DokumenUpload"; // 📎 upload dokumen
-import LaporanKunjungan from "../../../components/lks/Laporankunjungan"; // 🧾 laporan kunjungan
+import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { ArrowLeftIcon, PrinterIcon } from "@heroicons/react/24/outline";
+
+const markerIcon = new L.Icon({
+  iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
 
 const LKSDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // 🔄 Ambil detail LKS (termasuk dokumen)
-  const fetchDetail = async () => {
-    try {
-      const res = await API.get(`/lks/${id}`);
-      setData(res.data);
-    } catch (error) {
-      console.error("Gagal memuat detail LKS:", error);
-      alert("Gagal memuat detail LKS!");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [lks, setLks] = useState(null);
 
   useEffect(() => {
-    fetchDetail();
-  }, [id]);
+    const fetchData = async () => {
+      try {
+        const res = await API.get(`/lks/${id}`);
+        setLks(res.data);
+      } catch (err) {
+        alert("Gagal mengambil data");
+        navigate("/admin/lks");
+      }
+    };
+    fetchData();
+  }, [id, navigate]);
 
-  if (loading)
-    return (
-      <AdminLayout>
-        <div className="p-6 text-gray-600">Memuat data LKS...</div>
-      </AdminLayout>
-    );
+  const printPDF = () => {
+    window.open(`${import.meta.env.VITE_API_BASE_URL}/lks/${id}/cetak-profil`, "_blank");
+  };
 
-  if (!data)
-    return (
-      <AdminLayout>
-        <div className="p-6 text-red-500">Data LKS tidak ditemukan.</div>
-      </AdminLayout>
-    );
+  const display = (value) => value || "Belum diisi";
+
+  if (!lks) return null;
+
+  const {
+    nama,
+    jenis_layanan,
+    kecamatan,
+    kelurahan,
+    status,
+    alamat,
+    koordinat,
+    npwp,
+    kontak_pengurus,
+    jumlah_pengurus,
+    akta_pendirian,
+    izin_operasional,
+    legalitas,
+    no_akta,
+    status_akreditasi,
+    no_sertifikat,
+    tanggal_akreditasi,
+    sarana,
+    hasil_observasi,
+    tindak_lanjut,
+  } = lks;
+
+  let position = null;
+  if (koordinat && koordinat.includes(",")) {
+    const [lat, lng] = koordinat.split(",").map(Number);
+    position = [lat, lng];
+  }
 
   return (
     <AdminLayout>
-      <div className="bg-white shadow p-6 rounded-lg border border-gray-200">
-        {/* 🔹 HEADER */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">📄 Detail Profil LKS</h2>
-          <div className="flex gap-2">
-            <button
-              onClick={() => navigate(`/admin/lks/edit/${id}`)}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-            >
-              ✏️ Edit
-            </button>
-            <button
-              onClick={() => navigate("/admin/lks")}
-              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition"
-            >
-              ⬅️ Kembali
-            </button>
-          </div>
+      <div className="max-w-5xl mx-auto bg-white shadow-md rounded-xl p-10">
+        <h1 className="text-2xl font-bold text-blue-800 flex items-center gap-2 mb-1">
+          <span>📄</span> Profil Lembaga Kesejahteraan Sosial
+        </h1>
+        <p className="text-gray-500 mb-8">Data lengkap hasil inputan SIDALEKAS</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-3 text-sm">
+          <p><strong>Nama LKS:</strong> {display(nama)}</p>
+          <p><strong>Akta Pendirian:</strong> {display(akta_pendirian)}</p>
+          <p><strong>Jenis Layanan:</strong> {display(jenis_layanan)}</p>
+          <p><strong>No Akta:</strong> {display(no_akta)}</p>
+          <p><strong>Kecamatan:</strong> {display(kecamatan)}</p>
+          <p><strong>Izin Operasional:</strong> {display(izin_operasional)}</p>
+          <p><strong>Kelurahan / Desa:</strong> {display(kelurahan)}</p>
+          <p><strong>Legalitas:</strong> {display(legalitas)}</p>
+          <p><strong>Status:</strong> {display(status)}</p>
+          <p><strong>Akreditasi:</strong> {display(status_akreditasi)}</p>
+          <p><strong>Alamat:</strong> {display(alamat)}</p>
+          <p><strong>No Sertifikat:</strong> {display(no_sertifikat)}</p>
+          <p><strong>Koordinat:</strong> {display(koordinat)}</p>
+          <p><strong>Tanggal Akreditasi:</strong> {display(tanggal_akreditasi)}</p>
+          <p><strong>NPWP:</strong> {display(npwp)}</p>
+          <p><strong>Sarana & Fasilitas:</strong> {display(sarana)}</p>
+          <p><strong>Kontak Pengurus:</strong> {display(kontak_pengurus)}</p>
+          <p><strong>Hasil Observasi:</strong> {display(hasil_observasi)}</p>
+          <p><strong>Jumlah Pengurus:</strong> {display(jumlah_pengurus)}</p>
+          <p><strong>Tindak Lanjut:</strong> {display(tindak_lanjut)}</p>
         </div>
 
-        {/* 🔹 DETAIL GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-700">
-          <div>
-            <p><strong>Nama:</strong> {data.nama}</p>
-            <p><strong>Jenis Layanan:</strong> {data.jenis_layanan}</p>
-            <p><strong>Kecamatan:</strong> {data.kecamatan}</p>
-            <p><strong>Status:</strong> {data.status}</p>
-            <p><strong>Legalitas:</strong> {data.legalitas || "-"}</p>
-            <p><strong>Akreditasi:</strong> {data.akreditasi || "-"}</p>
-          </div>
-
-          <div>
-            <p><strong>Pengurus:</strong> {data.pengurus || "-"}</p>
-            <p><strong>Sarana:</strong> {data.sarana || "-"}</p>
-            <p><strong>Alamat:</strong> {data.alamat || "-"}</p>
-            <p><strong>Koordinat:</strong> {data.koordinat || "-"}</p>
-          </div>
-        </div>
-
-        {/* 🔹 DESKRIPSI */}
-        {data.deskripsi && (
-          <div className="mt-8">
-            <h3 className="font-semibold text-gray-800 mb-2">📝 Deskripsi / Keterangan</h3>
-            <p className="text-gray-700 leading-relaxed">{data.deskripsi}</p>
+        {position && (
+          <div className="mt-10">
+            <h2 className="text-lg font-semibold mb-2">Lokasi Peta</h2>
+            <MapContainer center={position} zoom={13} className="h-72 rounded-lg z-0">
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <Marker position={position} icon={markerIcon} />
+            </MapContainer>
           </div>
         )}
 
-        {/* 🔹 TOMBOL CETAK PDF */}
-        <div className="mt-6 flex justify-end gap-2">
-          <a
-            href={`http://localhost:8000/api/lks/${id}/cetak-pdf`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow"
+        <div className="flex justify-between items-center mt-10">
+          <button
+            onClick={() => navigate("/admin/lks")}
+            className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md"
           >
-            🖨️ Cetak Profil PDF
-          </a>
-        </div>
-
-        {/* 🔹 DOKUMEN UPLOAD SECTION */}
-        <div className="mt-10 border-t pt-6">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            📎 Dokumen Pendukung
-          </h3>
-
-          <DokumenUpload
-            lksId={data.id}
-            onSuccess={() => {
-              console.log("Dokumen berhasil diunggah — refresh data");
-              fetchDetail();
-            }}
-          />
-
-          {/* 📄 Daftar dokumen */}
-          {data.dokumen && data.dokumen.length > 0 ? (
-            <ul className="mt-4 space-y-2 text-sm text-gray-700">
-              {data.dokumen.map((doc) => (
-                <li key={doc.id} className="flex items-center justify-between border-b pb-2">
-                  <div>
-                    📄 <strong>{doc.nama}</strong>{" "}
-                    <a
-                      href={`${import.meta.env.VITE_API_BASE_URL}/storage/${doc.path}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      (Lihat File)
-                    </a>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500 mt-2">Belum ada dokumen yang diunggah.</p>
-          )}
-        </div>
-
-        {/* 🔹 LAPORAN KUNJUNGAN SECTION */}
-        <div className="mt-10 border-t pt-6">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            🧾 Laporan Kunjungan
-          </h3>
-          <LaporanKunjungan lksId={data.id} />
+            <ArrowLeftIcon className="h-4 w-4" />
+            Kembali ke Daftar LKS
+          </button>
+          <button
+            onClick={printPDF}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 rounded-md"
+          >
+            <PrinterIcon className="h-4 w-4" /> Cetak Profil (PDF)
+          </button>
         </div>
       </div>
     </AdminLayout>

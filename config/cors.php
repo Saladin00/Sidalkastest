@@ -7,41 +7,40 @@ return [
     | Cross-Origin Resource Sharing (CORS) Configuration
     |--------------------------------------------------------------------------
     |
-    | Konfigurasi ini menentukan request lintas-origin (CORS) yang diizinkan.
-    | Ini sangat penting agar frontend React (Vite) bisa berkomunikasi dengan
-    | backend Laravel Sanctum tanpa diblok oleh browser.
+    | Konfigurasi ini memastikan frontend React (Vite) dapat terhubung ke
+    | backend Laravel (API & Sanctum) tanpa diblok oleh kebijakan CORS browser.
     |
     */
 
-    // Semua path API, login/logout, dan Sanctum cookie
+    // Semua endpoint API dan autentikasi yang diizinkan lintas origin
     'paths' => [
         'api/*',
         'sanctum/csrf-cookie',
         'login',
         'logout',
-        'lks/*', // ✅ tambahkan endpoint LKS kamu juga
+        'lks/*', // endpoint LKS (GET/POST/PUT/DELETE)
     ],
 
-    // Izinkan semua metode HTTP
+    // Izinkan semua metode HTTP (GET, POST, PUT, DELETE, OPTIONS, dsb)
     'allowed_methods' => ['*'],
 
-    // URL frontend React
-    'allowed_origins' => [
-        'http://localhost:5173',
-    ],
+    // Domain asal (frontend) yang diizinkan
+ 'allowed_origins' => env('APP_ENV') === 'local'
+    ? ['http://localhost:5173']
+    : ['https://sidaleka.id'],
 
-    // Jika butuh pattern wildcard tambahan
+    // Tambahan pola wildcard jika butuh (kosongkan untuk dev)
     'allowed_origins_patterns' => [],
 
-    // Izinkan semua header
+    // Izinkan semua header dikirim dari frontend
     'allowed_headers' => ['*'],
 
-    // Header tambahan yang boleh diakses oleh browser
+    // Header yang diekspos ke browser (biarkan kosong)
     'exposed_headers' => [],
 
-    // Cache preflight (OPTIONS) — biarkan 0 untuk dev
+    // Lama waktu cache preflight (OPTIONS)
     'max_age' => 0,
 
-    // Sanctum butuh credentials agar bisa autentikasi
+    // Diperlukan untuk Sanctum agar cookie dan sesi dapat digunakan
     'supports_credentials' => true,
 ];

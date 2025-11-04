@@ -29,13 +29,44 @@ class LKSController extends Controller
             'jenis_layanan' => 'required|string|max:255',
             'kecamatan' => 'required|string|max:255',
             'status' => 'required|in:Aktif,Nonaktif',
-            'koordinat' => 'nullable|string|max:255',
+
+            'alamat' => 'nullable|string',
+            'kelurahan' => 'nullable|string',
+            'npwp' => 'nullable|string',
+            'kontak_pengurus' => 'nullable|string',
+            'akta_pendirian' => 'nullable|string',
+            'izin_operasional' => 'nullable|string',
+            'legalitas' => 'nullable|string',
+            'no_akta' => 'nullable|string',
+            'status_akreditasi' => 'nullable|string',
+            'no_sertifikat' => 'nullable|string',
+            'tanggal_akreditasi' => 'nullable|date',
+            'koordinat' => 'nullable|string',
+            'jumlah_pengurus' => 'nullable|integer',
+            'sarana' => 'nullable|string',
+            'hasil_observasi' => 'nullable|string',
+            'tindak_lanjut' => 'nullable|string',
         ]);
 
+        // 🔹 Simpan data utama
         $lks = LKS::create($validated);
 
+        // 🔹 Tangani upload file dokumen
+        $dokumenPaths = [];
+        if ($request->hasFile('dokumen')) {
+            foreach ($request->file('dokumen') as $file) {
+                $path = $file->store('dokumen_lks', 'public');
+                $dokumenPaths[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'url'  => asset('storage/' . $path),
+                ];
+            }
+            $lks->dokumen = json_encode($dokumenPaths);
+            $lks->save();
+        }
+
         return response()->json([
-            'message' => 'LKS berhasil ditambahkan',
+            'message' => '✅ LKS berhasil ditambahkan',
             'data' => $lks
         ]);
     }
@@ -43,7 +74,7 @@ class LKSController extends Controller
     // 👁️ GET /api/lks/{id}
     public function show($id)
     {
-        $lks = LKS::with(['dokumen', 'kunjungan'])->findOrFail($id);
+        $lks = LKS::with(['kunjungan'])->findOrFail($id);
         return response()->json($lks);
     }
 
@@ -55,14 +86,44 @@ class LKSController extends Controller
             'jenis_layanan' => 'required|string|max:255',
             'kecamatan' => 'required|string|max:255',
             'status' => 'required|in:Aktif,Nonaktif',
-            'koordinat' => 'nullable|string|max:255',
+
+            'alamat' => 'nullable|string',
+            'kelurahan' => 'nullable|string',
+            'npwp' => 'nullable|string',
+            'kontak_pengurus' => 'nullable|string',
+            'akta_pendirian' => 'nullable|string',
+            'izin_operasional' => 'nullable|string',
+            'legalitas' => 'nullable|string',
+            'no_akta' => 'nullable|string',
+            'status_akreditasi' => 'nullable|string',
+            'no_sertifikat' => 'nullable|string',
+            'tanggal_akreditasi' => 'nullable|date',
+            'koordinat' => 'nullable|string',
+            'jumlah_pengurus' => 'nullable|integer',
+            'sarana' => 'nullable|string',
+            'hasil_observasi' => 'nullable|string',
+            'tindak_lanjut' => 'nullable|string',
         ]);
 
         $lks = LKS::findOrFail($id);
         $lks->update($validated);
 
+        // 🔹 Tambahkan dokumen baru tanpa menghapus yang lama
+        $existingDocs = $lks->dokumen ? json_decode($lks->dokumen, true) : [];
+        if ($request->hasFile('dokumen')) {
+            foreach ($request->file('dokumen') as $file) {
+                $path = $file->store('dokumen_lks', 'public');
+                $existingDocs[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'url'  => asset('storage/' . $path),
+                ];
+            }
+            $lks->dokumen = json_encode($existingDocs);
+            $lks->save();
+        }
+
         return response()->json([
-            'message' => 'Data LKS berhasil diperbarui',
+            'message' => '✅ Data LKS berhasil diperbarui',
             'data' => $lks
         ]);
     }
@@ -71,9 +132,19 @@ class LKSController extends Controller
     public function destroy($id)
     {
         $lks = LKS::findOrFail($id);
+
+        // Hapus file dokumen dari storage jika ada
+        if ($lks->dokumen) {
+            $docs = json_decode($lks->dokumen, true);
+            foreach ($docs as $doc) {
+                $relative = str_replace(asset('storage/'), '', $doc['url']);
+                Storage::disk('public')->delete($relative);
+            }
+        }
+
         $lks->delete();
 
-        return response()->json(['message' => 'LKS dihapus']);
+        return response()->json(['message' => '🗑️ LKS dihapus']);
     }
 
     // 📎 POST /api/lks/{id}/upload-dokumen
@@ -82,31 +153,23 @@ class LKSController extends Controller
         $lks = LKS::findOrFail($id);
         $dokumen = [];
 
-        // Upload Akta
-        if ($request->hasFile('akta')) {
-            $aktaPath = $request->file('akta')->store('dokumen_lks', 'public');
-            $dokumen['akta'] = $aktaPath;
-        }
+        if ($request->hasFile('dokumen')) {
+            foreach ($request->file('dokumen') as $file) {
+                $path = $file->store('dokumen_lks', 'public');
+                $dokumen[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'url'  => asset('storage/' . $path),
+                ];
+            }
 
-        // Upload Surat Izin
-        if ($request->hasFile('izin')) {
-            $izinPath = $request->file('izin')->store('dokumen_lks', 'public');
-            $dokumen['izin'] = $izinPath;
+            $existing = $lks->dokumen ? json_decode($lks->dokumen, true) : [];
+            $lks->dokumen = json_encode(array_merge($existing, $dokumen));
+            $lks->save();
         }
-
-        // Upload Sertifikat
-        if ($request->hasFile('sertifikat')) {
-            $sertifikatPath = $request->file('sertifikat')->store('dokumen_lks', 'public');
-            $dokumen['sertifikat'] = $sertifikatPath;
-        }
-
-        // Simpan ke kolom dokumen (json)
-        $lks->dokumen = json_encode($dokumen);
-        $lks->save();
 
         return response()->json([
-            'message' => 'Dokumen berhasil diunggah',
-            'dokumen' => $dokumen,
+            'message' => '📎 Dokumen berhasil diunggah',
+            'dokumen' => json_decode($lks->dokumen, true),
         ]);
     }
 
@@ -115,12 +178,10 @@ class LKSController extends Controller
     {
         $lks = LKS::findOrFail($id);
 
-        // pastikan data ada
         if (!$lks) {
             abort(404, 'Data LKS tidak ditemukan.');
         }
 
-        // load view PDF
         $pdf = Pdf::loadView('pdf.lks_profil', compact('lks'))
             ->setPaper('A4', 'portrait');
 

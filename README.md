@@ -171,3 +171,4 @@ Hubungi kami jika ingin kolaborasi ✨
 ## 🪪 Lisensi
 
 MIT © 2025 – Tim SIDALEKAS
+composer require barryvdh/laravel-dompdf

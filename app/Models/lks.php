@@ -14,32 +14,29 @@ class LKS extends Model
     protected $fillable = [
         'nama',
         'jenis_layanan',
-        'legalitas',
-        'akreditasi',
-        'pengurus',
-        'sarana',
-        'kecamatan',
-        'alamat',
-        'koordinat',
         'status',
-        'dokumen', // opsional, jika masih digunakan untuk path lama
+        'alamat',
+        'kelurahan',
+        'kecamatan',
+        'npwp',
+        'kontak_pengurus',
+        'akta_pendirian',
+        'izin_operasional',
+        'legalitas',
+        'no_akta',
+        'status_akreditasi',
+        'no_sertifikat',
+        'tanggal_akreditasi',
+        'koordinat',
+        'jumlah_pengurus',
+        'sarana',
+        'hasil_observasi',
+        'tindak_lanjut',
+        'dokumen',
     ];
 
-    /**
-     * Relasi ke tabel laporan_kunjungan
-     * Setiap LKS bisa punya banyak laporan kunjungan.
-     */
     public function kunjungan()
     {
         return $this->hasMany(LaporanKunjungan::class, 'lks_id');
-    }
-
-    /**
-     * Relasi ke tabel dokumen_lks
-     * Setiap LKS bisa memiliki banyak dokumen pendukung.
-     */
-    public function dokumen()
-    {
-        return $this->hasMany(DokumenLKS::class, 'lks_id');
     }
 }
