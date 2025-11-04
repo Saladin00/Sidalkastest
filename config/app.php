@@ -78,8 +78,8 @@ return [
     'providers' => [
 
         /*
-         * Laravel Framework Service Providers...
-         */
+        * Laravel Framework Service Providers...
+        */
         Illuminate\Auth\AuthServiceProvider::class,
         Illuminate\Broadcasting\BroadcastServiceProvider::class,
         Illuminate\Bus\BusServiceProvider::class,
@@ -104,16 +104,16 @@ return [
         Illuminate\View\ViewServiceProvider::class,
 
         /*
-         * Application Service Providers...
-         */
+        * Application Service Providers...
+        */
         App\Providers\AppServiceProvider::class,
         App\Providers\AuthServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
 
         /*
-         * 📄 PDF Generator (DomPDF)
-         */
-        Barryvdh\DomPDF\ServiceProvider::class, // ✅ Tambahan penting
+        * 📄 PDF Generator (DomPDF)
+        */
+        // Barryvdh\DomPDF\ServiceProvider::class,
     ],
 
     /*
@@ -158,10 +158,9 @@ return [
         'View' => Illuminate\Support\Facades\View::class,
 
         /*
-         * 📄 Alias untuk DomPDF
-         */
-        'PDF' => Barryvdh\DomPDF\Facade\Pdf::class, // ✅ benar, bukan Barryvdh\DomPDF\Facade::class
-
+        * 📄 Alias untuk DomPDF
+        */
+        // 'PDF' => Barryvdh\DomPDF\Facade\Pdf::class,
     ],
 
 ];

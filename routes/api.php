@@ -21,7 +21,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/profile', [AuthController::class, 'profile']);
 
     // 👤 Daftar user (khusus admin)
-    Route::get('/users', [UserController::class, 'index'])->middleware('role:admin');
+    Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users', [UserController::class, 'index']);      // Lihat semua user
+    Route::post('/users', [UserController::class, 'store']);     // Tambah user
+    Route::put('/users/{id}', [UserController::class, 'update']); // Edit user
+    Route::delete('/users/{id}', [UserController::class, 'destroy']); // Hapus user
+    // untuk admin
+});
 
     // ========================
     // 🏢 MODUL LKS
