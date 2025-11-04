@@ -1,12 +1,19 @@
 // src/App.jsx
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+
+import Register from "./pages/Register";
 import Login from "./pages/Login";
+import ProtectedRoute from "./components/ProtectedRoute";
+
+
 import DashboardAdmin from "./pages/DashboardAdmin";
 import DashboardOperator from "./pages/DashboardOperator";
 import DashboardPetugas from "./pages/DashboardPetugas";
 import DashboardLKS from "./pages/DashboardLKS";
-import ProtectedRoute from "./components/ProtectedRoute";
+
+
 
 // 📄 Import halaman modul LKS
 import LKSList from "./pages/admin/lks/LKSList";
@@ -17,12 +24,17 @@ import LKSProfil from "./pages/admin/lks/LKSProfil";
 import LKSUploadDokumen from "./pages/admin/lks/LKSUploadDokumen";
 import LKSKunjungan from "./pages/admin/lks/LKSKunjungan"; // ✅ Halaman baru untuk laporan kunjungan
 
+
+import ManajemenUser from "./pages/admin/ManajemenUser";
+import AdminLayout from "./components/AdminLayout";
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         {/* ================= LOGIN ================= */}
         <Route path="/" element={<Login />} />
+         <Route path="/register" element={<Register />} />
 
         {/* ================= ADMIN ================= */}
         <Route
@@ -30,6 +42,18 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <DashboardAdmin />
+            </ProtectedRoute>
+          }
+        />
+
+            {/* ✅ Modul Manajemen Pengguna */}
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminLayout>
+              <ManajemenUser />
+              </AdminLayout>
             </ProtectedRoute>
           }
         />
