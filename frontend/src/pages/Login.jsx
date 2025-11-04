@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../utils/api";
-import { LogIn, RefreshCcw } from "lucide-react";
+import { LogIn, RefreshCcw, UserPlus } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -26,50 +26,38 @@ const Login = () => {
   }, []);
 
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setErrorMsg("");
+    e.preventDefault();
+    setErrorMsg("");
 
-  if (captcha.toUpperCase() !== generatedCaptcha) {
-    setErrorMsg("Captcha tidak sesuai, silakan coba lagi!");
-    generateCaptcha();
-    return;
-  }
-
-  try {
-    console.log("Mengirim request ke backend...");
-    const response = await API.post("/login", { email, password });
-
-    console.log("Response dari backend:", response.data);
-
-    const { access_token, role, user } = response.data;
-
-    if (!access_token) {
-      setErrorMsg("Login gagal. Token tidak diterima dari server.");
+    if (captcha.toUpperCase() !== generatedCaptcha) {
+      setErrorMsg("Captcha tidak sesuai, silakan coba lagi!");
+      generateCaptcha();
       return;
     }
 
-    // Simpan ke localStorage
-    localStorage.setItem("token", access_token);
-    localStorage.setItem("role", role);
-    localStorage.setItem("user", JSON.stringify(user));
+    try {
+      const response = await API.post("/login", { email, password });
+      const { access_token, role, user } = response.data;
 
-    // Debug redirect
-    console.log("Role user:", role);
+      if (!access_token) {
+        setErrorMsg("Login gagal. Token tidak diterima dari server.");
+        return;
+      }
 
-    // Redirect sesuai role
-    if (role === "admin") navigate("/admin");
-    else if (role === "operator") navigate("/operator");
-    else if (role === "petugas") navigate("/petugas");
-    else if (role === "lks") navigate("/lks");
-    else {
-      setErrorMsg("Role tidak dikenali, login gagal.");
-      console.error("Role tidak dikenali:", role);
+      localStorage.setItem("token", access_token);
+      localStorage.setItem("role", role);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      if (role === "admin") navigate("/admin");
+      else if (role === "operator") navigate("/operator");
+      else if (role === "petugas") navigate("/petugas");
+      else if (role === "lks") navigate("/lks");
+      else setErrorMsg("Role tidak dikenali, login gagal.");
+    } catch (error) {
+      console.error("Login Error:", error.response?.data || error.message);
+      setErrorMsg("Login gagal. Periksa email dan password Anda!");
     }
-  } catch (error) {
-    console.error("Login Error:", error.response?.data || error.message);
-    setErrorMsg("Login gagal. Periksa email dan password Anda!");
-  }
-};
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-blue-200 to-blue-100 relative overflow-hidden">
@@ -79,11 +67,7 @@ const Login = () => {
 
       <div className="relative z-10 backdrop-blur-xl bg-white/70 border border-white/40 shadow-2xl rounded-2xl p-8 w-full max-w-md">
         <div className="flex justify-center mb-6">
-          <img
-            src="/logo.png"
-            alt="Logo"
-             className="h-28 w-auto drop-shadow-md object-contain"
-         />
+          <img src="/logo.png" alt="Logo" className="h-28 w-auto drop-shadow-md object-contain" />
         </div>
 
         <h1 className="text-3xl font-bold text-center text-blue-700 tracking-wider">SIDALEKAS</h1>
@@ -162,6 +146,15 @@ const Login = () => {
             className="w-full flex items-center justify-center gap-2 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-md hover:opacity-90 transition font-semibold"
           >
             <LogIn size={18} /> Login
+          </button>
+
+          {/* Tombol Daftar */}
+          <button
+            type="button"
+            onClick={() => navigate("/register")}
+            className="w-full flex items-center justify-center gap-2 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg shadow-md hover:opacity-90 transition font-semibold"
+          >
+            <UserPlus size={18} /> Daftar Akun
           </button>
         </form>
 
