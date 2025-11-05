@@ -10,6 +10,7 @@ import {
   UploadCloud,
 } from "lucide-react";
 
+
 const LKSLayout = ({ children }) => {
   const location = useLocation();
   const current = location.pathname;

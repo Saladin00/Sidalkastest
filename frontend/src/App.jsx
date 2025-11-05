@@ -1,40 +1,59 @@
-// src/App.jsx
-
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-
-
+// =========================
+// 📦 IMPORT DASAR
+// =========================
+import { BrowserRouter, Routes, Route, useParams } from "react-router-dom";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-
+// =========================
+// 🏠 DASHBOARD
+// =========================
 import DashboardAdmin from "./pages/DashboardAdmin";
 import DashboardOperator from "./pages/DashboardOperator";
 import DashboardPetugas from "./pages/DashboardPetugas";
 import DashboardLKS from "./pages/DashboardLKS";
 
+// =========================
+// 🧩 KOMPONEN LAYOUT
+// =========================
+import AdminLayout from "./components/AdminLayout";
+import PetugasLayout from "./components/PetugasLayout";
 
+// =========================
+// 👥 MODUL MANAJEMEN USER
+// =========================
+import ManajemenUser from "./pages/admin/ManajemenUser";
 
-// 📄 Import halaman modul LKS
+// =========================
+// 🏢 MODUL LKS
+// =========================
 import LKSList from "./pages/admin/lks/LKSList";
 import LKSForm from "./pages/admin/lks/LKSForm";
 import LKSDetail from "./pages/admin/lks/LKSDetail";
 import LKSEditForm from "./pages/admin/lks/LKSEditForm";
 import LKSProfil from "./pages/admin/lks/LKSProfil";
 import LKSUploadDokumen from "./pages/admin/lks/LKSUploadDokumen";
-import LKSKunjungan from "./pages/admin/lks/LKSKunjungan"; // ✅ Halaman baru untuk laporan kunjungan
+import LKSKunjungan from "./pages/admin/lks/LKSKunjungan";
 
+// =========================
+// 🔍 MODUL VERIFIKASI
+// =========================
+import AdminVerifikasiList from "./pages/admin/verifikasi/VerifikasiList";
+import AdminVerifikasiReview from "./pages/admin/verifikasi/VerifikasiReview";
+import PetugasVerifikasiList from "./pages/petugas/verifikasi/VerifikasiList";
+import PetugasVerifikasiForm from "./pages/petugas/verifikasi/VerifikasiForm";
 
-import ManajemenUser from "./pages/admin/ManajemenUser";
-import AdminLayout from "./components/AdminLayout";
-
+// =========================
+// 🚀 APP ROUTES
+// =========================
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ================= LOGIN ================= */}
+        {/* ================= LOGIN & REGISTER ================= */}
         <Route path="/" element={<Login />} />
-         <Route path="/register" element={<Register />} />
+        <Route path="/register" element={<Register />} />
 
         {/* ================= ADMIN ================= */}
         <Route
@@ -46,13 +65,13 @@ function App() {
           }
         />
 
-            {/* ✅ Modul Manajemen Pengguna */}
+        {/* ✅ Manajemen Pengguna */}
         <Route
           path="/admin/users"
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <AdminLayout>
-              <ManajemenUser />
+                <ManajemenUser />
               </AdminLayout>
             </ProtectedRoute>
           }
@@ -127,16 +146,23 @@ function App() {
         />
 
         {/* ================= PETUGAS ================= */}
-        <Route
-          path="/petugas"
-          element={
-            <ProtectedRoute allowedRoles={["petugas"]}>
-              <DashboardPetugas />
-            </ProtectedRoute>
-          }
-        />
+        <Route element={<ProtectedRoute allowedRoles={["petugas"]} />}>
+          <Route path="/petugas" element={<PetugasLayout />}>
+            {/* Default dashboard petugas */}
+            <Route index element={<DashboardPetugas />} />
 
-        {/* ================= LKS (User LKS) ================= */}
+            {/* ✅ Verifikasi */}
+            <Route path="verifikasi" element={<PetugasVerifikasiList />} />
+            <Route
+              path="verifikasi/:lksId/form"
+              element={
+                <ParamWrapper component={PetugasVerifikasiForm} paramKey="lksId" />
+              }
+            />
+          </Route>
+        </Route>
+
+        {/* ================= LKS (USER LKS) ================= */}
         <Route
           path="/lks"
           element={
@@ -145,9 +171,30 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* ================= ADMIN VERIFIKASI ================= */}
+        <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route path="verifikasi" element={<AdminVerifikasiList />} />
+            <Route
+              path="verifikasi/:id"
+              element={
+                <ParamWrapper component={AdminVerifikasiReview} paramKey="id" />
+              }
+            />
+          </Route>
+        </Route>
       </Routes>
     </BrowserRouter>
   );
+}
+
+// 🔧 Helper untuk meneruskan param ID ke komponen child
+function ParamWrapper({ component: Comp, paramKey }) {
+  const params = useParams();
+  const prop = {};
+  prop[paramKey] = params[paramKey];
+  return <Comp {...prop} />;
 }
 
 export default App;
