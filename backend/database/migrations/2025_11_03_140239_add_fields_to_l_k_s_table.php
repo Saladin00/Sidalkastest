@@ -11,33 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('l_k_s', function (Blueprint $table) {
-            $table->id();
-            $table->string('nama');
-            $table->string('jenis_layanan');
-            $table->string('kecamatan');
-            $table->string('kelurahan')->nullable();
-            $table->string('alamat')->nullable();
-            $table->enum('status', ['Aktif', 'Nonaktif'])->default('Aktif');
-            $table->string('legalitas')->nullable();
-            $table->string('akta_pendirian')->nullable();
-            $table->string('izin_operasional')->nullable();
+        Schema::table('lks', function (Blueprint $table) {
+            // Hanya tambahkan kolom baru yang belum ada
             $table->string('no_akta')->nullable();
-            $table->string('akreditasi')->nullable(); // alternatif jika kamu pakai "akreditasi" bukan "status_akreditasi"
-            $table->string('status_akreditasi')->nullable(); // jika kamu ingin menyimpan A/B/C/Belum
+            $table->string('izin_operasional')->nullable();
+            $table->string('akta_pendirian')->nullable();
+            $table->string('status_akreditasi')->nullable();
             $table->string('no_sertifikat')->nullable();
             $table->date('tanggal_akreditasi')->nullable();
             $table->string('npwp')->nullable();
             $table->string('kontak_pengurus')->nullable();
             $table->integer('jumlah_pengurus')->nullable();
-            $table->text('pengurus')->nullable(); // jika kamu isi detail pengurus
-            $table->text('sarana')->nullable();
             $table->text('hasil_observasi')->nullable();
             $table->text('tindak_lanjut')->nullable();
-            $table->string('koordinat')->nullable();
-            $table->json('dokumen')->nullable(); // untuk file akta, izin, sertifikat
-
-            $table->timestamps();
         });
     }
 
@@ -46,6 +32,21 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('l_k_s');
+        Schema::table('lks', function (Blueprint $table) {
+            // Hapus kolom yang ditambahkan jika rollback
+            $table->dropColumn([
+                'no_akta',
+                'izin_operasional',
+                'akta_pendirian',
+                'status_akreditasi',
+                'no_sertifikat',
+                'tanggal_akreditasi',
+                'npwp',
+                'kontak_pengurus',
+                'jumlah_pengurus',
+                'hasil_observasi',
+                'tindak_lanjut',
+            ]);
+        });
     }
 };

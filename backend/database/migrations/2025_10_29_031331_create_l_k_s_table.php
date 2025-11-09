@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('l_k_s', function (Blueprint $table) {
+        Schema::create('lks', function (Blueprint $table) {
             $table->id();
             $table->string('nama');
             $table->string('jenis_layanan');
@@ -22,7 +22,8 @@ return new class extends Migration
             $table->string('kecamatan');
             $table->string('alamat')->nullable();
             $table->string('koordinat')->nullable();
-            $table->enum('status', ['Aktif', 'Nonaktif'])->default('Aktif');
+            $table->enum('status', ['aktif', 'nonaktif', 'pending'])->default('pending');
+
 
             // ✅ Simpan banyak file (akta, izin, sertifikat) sebagai JSON
             $table->json('dokumen')->nullable();
@@ -36,6 +37,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('l_k_s');
+        Schema::dropIfExists('lks');
     }
 };

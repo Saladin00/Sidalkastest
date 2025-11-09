@@ -2,9 +2,12 @@ import axios from "axios";
 
 const API = axios.create({
   baseURL: "http://localhost:8000/api",
-  withCredentials: true,
+  headers: {
+    Accept: "application/json",
+  },
 });
 
+// ✅ Interceptor untuk otomatis kirim token ke semua request
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
