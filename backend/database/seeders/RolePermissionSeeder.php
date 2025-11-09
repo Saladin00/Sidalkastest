@@ -1,6 +1,7 @@
 <?php
 
 namespace Database\Seeders;
+
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
@@ -9,11 +10,12 @@ class RolePermissionSeeder extends Seeder
 {
     public function run()
     {
+        // Gunakan slug nama yang sama dengan frontend
         $roles = [
-            'Admin Dinsos',
-            'Operator Kecamatan',
-            'Petugas Lapangan',
-            'LKS'
+            'admin'    => 'Admin Dinsos',
+            'operator' => 'Operator Kecamatan',
+            'petugas'  => 'Petugas Lapangan',
+            'lks'      => 'Lembaga Kesejahteraan Sosial',
         ];
 
         $permissions = [
@@ -23,16 +25,26 @@ class RolePermissionSeeder extends Seeder
             'verify data',
             'view reports',
             'upload documents',
-            'submit complaints'
+            'submit complaints',
         ];
 
+        // Buat permission dengan guard web
         foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web',
+            ]);
         }
 
-        foreach ($roles as $roleName) {
-            $role = Role::firstOrCreate(['name' => $roleName]);
-            if ($roleName === 'Admin Dinsos') {
+        // Buat role dan assign permission
+        foreach ($roles as $slug => $displayName) {
+            $role = Role::firstOrCreate([
+                'name' => $slug,
+                'guard_name' => 'web',
+            ], ['display_name' => $displayName]);
+
+            // Admin dapat semua permission
+            if ($slug === 'admin') {
                 $role->syncPermissions(Permission::all());
             }
         }

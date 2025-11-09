@@ -1,6 +1,5 @@
-// src/components/AdminLayout.jsx
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, Outlet } from "react-router-dom";
 import {
   LayoutDashboard,
   Building2,
@@ -149,9 +148,9 @@ const AdminLayout = ({ children }) => {
                 <ul className="ml-4 space-y-1 mt-1">
                   <li>
                     <Link
-                      to="/petugas/verifikasi"
+                      to="/admin/verifikasi"
                       className={`flex items-center gap-2 p-2 rounded hover:bg-blue-100 ${
-                        current.includes("/petugas/verifikasi")
+                        current.includes("/admin/verifikasi")
                           ? "bg-blue-100 font-semibold"
                           : ""
                       }`}
@@ -232,7 +231,10 @@ const AdminLayout = ({ children }) => {
         </header>
 
         {/* 🟩 Tempat konten halaman (dynamic content dari route admin) */}
-        <main className="p-6 bg-gray-50 flex-1 overflow-y-auto">{children}</main>
+        <main className="p-6 bg-gray-50 flex-1 overflow-y-auto">
+          {/* ✅ FIX: Outlet agar route admin/verifikasi tampil */}
+          {children || <Outlet />}
+        </main>
       </div>
     </div>
   );

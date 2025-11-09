@@ -1,10 +1,12 @@
+// src/utils/api.js
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:8000/api",
-  withCredentials: true,
+  baseURL: import.meta.env.VITE_API_URL, // 🔹 Gunakan environment variable
+  withCredentials: true, // opsional, jika butuh cookie/session
 });
 
+// 🛠️ Interceptor untuk menyisipkan token JWT
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
