@@ -8,6 +8,18 @@ use App\Http\Controllers\KlienController;
 use App\Http\Controllers\LaporanKunjunganController;
 use App\Http\Controllers\DokumenLKSController;
 use App\Http\Controllers\VerifikasiController;
+use App\Http\Controllers\LksApprovalController;
+
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Semua endpoint API aplikasi disusun dengan rapi di bawah ini.
+| Pastikan hanya user yang sudah login (auth:sanctum) yang bisa
+| mengakses endpoint yang membutuhkan autentikasi.
+|
+*/
 
 // ========================
 // 🔹 AUTHENTIKASI (PUBLIC)
@@ -25,15 +37,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'profile']);
 
-    // 👤 Daftar user (khusus admin)
-    Route::middleware(['auth:sanctum'])->group(function () {
+    // ========================
+    // 👥 MANAJEMEN USER (ADMIN)
+    // ========================
     Route::get('/users', [UserController::class, 'index']);
-    Route::get('/users', [UserController::class, 'index']);      // Lihat semua user
-    Route::post('/users', [UserController::class, 'store']);     // Tambah user
-    Route::put('/users/{id}', [UserController::class, 'update']); // Edit user
-    Route::delete('/users/{id}', [UserController::class, 'destroy']); // Hapus user
-    // untuk admin
-});
+    Route::post('/users', [UserController::class, 'store']);
+    Route::put('/users/{id}', [UserController::class, 'update']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus']);
 
     // ========================
     // 🏢 MODUL LKS
@@ -57,10 +68,28 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // ========================
     Route::get('/lks/{id}/kunjungan', [LaporanKunjunganController::class, 'index']);
     Route::post('/lks/{id}/kunjungan', [LaporanKunjunganController::class, 'store']);
-    Route::get('/verifikasi', [VerifikasiController::class, 'index']);
 
-    // Detail verifikasi per ID
+    // ========================
+    // 🔍 VERIFIKASI LKS
+    // ========================
+    Route::get('/verifikasi', [VerifikasiController::class, 'index']);
     Route::get('/verifikasi/{id}', [VerifikasiController::class, 'show']);
 
+    // ========================
+    // 👤 DATA KLIEN
+    // ========================
+    Route::get('/klien', [KlienController::class, 'index']);
+    Route::post('/klien', [KlienController::class, 'store']);
+    Route::get('/klien/{id}', [KlienController::class, 'show']);
+    Route::put('/klien/{id}', [KlienController::class, 'update']);
+    Route::delete('/klien/{id}', [KlienController::class, 'destroy']);
 
+    // ========================
+    // 🧩 ADMIN: Persetujuan LKS
+    // ========================
+    Route::prefix('admin')->middleware('role:admin')->group(function () {
+        Route::get('/lks/pending', [LksApprovalController::class, 'index']);
+        Route::patch('/lks/{id}/approve', [LksApprovalController::class, 'approve']);
+        Route::patch('/lks/{id}/reject', [LksApprovalController::class, 'reject']);
+    });
 });

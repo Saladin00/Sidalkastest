@@ -49,7 +49,7 @@ class Lks extends Model
     {
         return $this->hasOne(User::class, 'lks_id');
     }
-    
+
     // 2️⃣ LKS punya banyak klien
     public function klien()
     {

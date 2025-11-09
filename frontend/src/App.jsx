@@ -30,10 +30,10 @@ import KlienForm from "./pages/admin/klien/KlienForm";
 import KlienDetail from "./pages/admin/klien/KlienDetail";
 import KlienEditForm from "./pages/admin/klien/KlienEditForm";
 
-// Operator Klien
+// 👥 Operator Klien
 import OperatorKlienList from "./pages/operator/klien/OperatorKlienList";
 
-// ✅ Modul Verifikasi Admin (lihat struktur folder-mu)
+// ✅ Modul Verifikasi Admin
 import AdminVerifikasiList from "./pages/admin/verifikasi/VerifikasiList";
 import AdminVerifikasiReview from "./pages/admin/verifikasi/VerifikasiReview";
 
@@ -41,7 +41,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ================= LOGIN ================= */}
+        {/* ==================== AUTH ==================== */}
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
@@ -54,8 +54,14 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        {/* ================= PETUGAS ================= */}
+        <Route
+          path="/operator"
+          element={
+            <ProtectedRoute allowedRoles={["operator"]}>
+              <DashboardOperator />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/petugas"
           element={
@@ -64,18 +70,16 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        {/* ================= LKS (User LKS) ================= */}
         <Route
-          path="/operator/klien"
+          path="/lks"
           element={
-            <ProtectedRoute allowedRoles={["operator"]}>
-              <OperatorKlienList />
+            <ProtectedRoute allowedRoles={["lks"]}>
+              <DashboardLKS />
             </ProtectedRoute>
           }
         />
 
-        {/* ✅ Modul Manajemen Pengguna */}
+        {/* ==================== ADMIN AREA ==================== */}
         <Route
           path="/admin/users"
           element={
@@ -181,7 +185,7 @@ function App() {
           }
         />
 
-        {/* ================= VERIFIKASI ADMIN ================= */}
+        {/* ==================== VERIFIKASI ADMIN ==================== */}
         <Route
           path="/admin/verifikasi"
           element={
@@ -192,7 +196,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/admin/verifikasi/:id"
           element={
@@ -200,6 +203,16 @@ function App() {
               <AdminLayout>
                 <AdminVerifikasiReview />
               </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ==================== OPERATOR AREA ==================== */}
+        <Route
+          path="/operator/klien"
+          element={
+            <ProtectedRoute allowedRoles={["operator"]}>
+              <OperatorKlienList />
             </ProtectedRoute>
           }
         />

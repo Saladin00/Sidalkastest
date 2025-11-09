@@ -2,12 +2,14 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL, // 🔹 Gunakan environment variable
+  // 🔹 Gunakan environment variable agar fleksibel antara dev dan production
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000/api",
   headers: {
     Accept: "application/json",
-  }, // opsional, jika butuh cookie/session
+  },
 });
 
+// ✅ Interceptor untuk otomatis kirim token ke semua request
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {

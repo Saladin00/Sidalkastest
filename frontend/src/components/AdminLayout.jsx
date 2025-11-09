@@ -137,7 +137,7 @@ const AdminLayout = ({ children }) => {
                 <ul className="ml-4 space-y-1 mt-1">
                   <li>
                     <Link
-                      to="/admin/klien" // ✅ arahkan ke route klien list
+                      to="/admin/klien"
                       className={`flex items-center gap-2 p-2 rounded hover:bg-blue-100 ${
                         current.includes("/admin/klien")
                           ? "bg-blue-100 font-semibold"
@@ -252,10 +252,8 @@ const AdminLayout = ({ children }) => {
 
         {/* 🟩 Konten halaman dinamis */}
         <main className="p-6 bg-gray-50 flex-1 overflow-y-auto">
-          
-          {/* ✅ FIX: Outlet agar route admin/verifikasi tampil */}
+          {/* ✅ Gunakan Outlet agar route anak (nested) tetap tampil */}
           {children || <Outlet />}
-        
         </main>
       </div>
     </div>
