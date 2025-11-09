@@ -1,21 +1,16 @@
 // src/pages/DashboardPetugas.jsx
-
-import PetugasLayout from "../components/PetugasLayout";
-
-const DashboardPetugas = () => {
+export default function DashboardPetugas() {
   return (
-    <PetugasLayout>
-      <h2 className="text-xl font-bold mb-4">Dashboard Petugas Lapangan</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white p-4 shadow rounded">
-          <p>Data verifikasi hari ini: <strong>5</strong></p>
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold">Dashboard Petugas Lapangan</h2>
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="border rounded p-3 bg-white">
+          Data verifikasi hari ini: <b>5</b>
         </div>
-        <div className="bg-white p-4 shadow rounded">
-          <p>Pengaduan baru: <strong>3</strong></p>
+        <div className="border rounded p-3 bg-white">
+          Pengaduan baru: <b>3</b>
         </div>
       </div>
-    </PetugasLayout>
+    </div>
   );
-};
-
-export default DashboardPetugas;
+}

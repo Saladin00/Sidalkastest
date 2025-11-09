@@ -29,7 +29,6 @@ class LKSController extends Controller
             'jenis_layanan' => 'required|string|max:255',
             'kecamatan' => 'required|string|max:255',
             'status' => 'required|in:Aktif,Nonaktif',
-
             'alamat' => 'nullable|string',
             'kelurahan' => 'nullable|string',
             'npwp' => 'nullable|string',
@@ -48,12 +47,11 @@ class LKSController extends Controller
             'tindak_lanjut' => 'nullable|string',
         ]);
 
-        // 🔹 Simpan data utama
         $lks = LKS::create($validated);
 
-        // 🔹 Tangani upload file dokumen
-        $dokumenPaths = [];
+        // 🔹 Upload dokumen (jika ada)
         if ($request->hasFile('dokumen')) {
+            $dokumenPaths = [];
             foreach ($request->file('dokumen') as $file) {
                 $path = $file->store('dokumen_lks', 'public');
                 $dokumenPaths[] = [
@@ -74,7 +72,12 @@ class LKSController extends Controller
     // 👁️ GET /api/lks/{id}
     public function show($id)
     {
-        $lks = LKS::with(['kunjungan'])->findOrFail($id);
+        $lks = LKS::with([
+            'verifikasiTerbaru' => function ($q) {
+                $q->with('petugas:id,name');
+            }
+        ])->findOrFail($id);
+
         return response()->json($lks);
     }
 
@@ -86,7 +89,6 @@ class LKSController extends Controller
             'jenis_layanan' => 'required|string|max:255',
             'kecamatan' => 'required|string|max:255',
             'status' => 'required|in:Aktif,Nonaktif',
-
             'alamat' => 'nullable|string',
             'kelurahan' => 'nullable|string',
             'npwp' => 'nullable|string',
@@ -108,9 +110,9 @@ class LKSController extends Controller
         $lks = LKS::findOrFail($id);
         $lks->update($validated);
 
-        // 🔹 Tambahkan dokumen baru tanpa menghapus yang lama
-        $existingDocs = $lks->dokumen ? json_decode($lks->dokumen, true) : [];
+        // 🔹 Tambahkan dokumen baru jika ada
         if ($request->hasFile('dokumen')) {
+            $existingDocs = $lks->dokumen ? json_decode($lks->dokumen, true) : [];
             foreach ($request->file('dokumen') as $file) {
                 $path = $file->store('dokumen_lks', 'public');
                 $existingDocs[] = [
@@ -133,7 +135,6 @@ class LKSController extends Controller
     {
         $lks = LKS::findOrFail($id);
 
-        // Hapus file dokumen dari storage jika ada
         if ($lks->dokumen) {
             $docs = json_decode($lks->dokumen, true);
             foreach ($docs as $doc) {
@@ -151,19 +152,19 @@ class LKSController extends Controller
     public function uploadDokumen(Request $request, $id)
     {
         $lks = LKS::findOrFail($id);
-        $dokumen = [];
 
         if ($request->hasFile('dokumen')) {
+            $dokumenBaru = [];
             foreach ($request->file('dokumen') as $file) {
                 $path = $file->store('dokumen_lks', 'public');
-                $dokumen[] = [
+                $dokumenBaru[] = [
                     'name' => $file->getClientOriginalName(),
                     'url'  => asset('storage/' . $path),
                 ];
             }
 
             $existing = $lks->dokumen ? json_decode($lks->dokumen, true) : [];
-            $lks->dokumen = json_encode(array_merge($existing, $dokumen));
+            $lks->dokumen = json_encode(array_merge($existing, $dokumenBaru));
             $lks->save();
         }
 
@@ -172,19 +173,20 @@ class LKSController extends Controller
             'dokumen' => json_decode($lks->dokumen, true),
         ]);
     }
-
     // 🖨️ CETAK PROFIL PDF
-    public function cetakProfil($id)
-    {
-        $lks = LKS::findOrFail($id);
+public function cetakProfil($id)
+{
+    $lks = LKS::with('verifikasiTerbaru.petugas')->find($id);
 
-        if (!$lks) {
-            abort(404, 'Data LKS tidak ditemukan.');
-        }
-
-        $pdf = Pdf::loadView('pdf.lks_profil', compact('lks'))
-            ->setPaper('A4', 'portrait');
-
-        return $pdf->stream('Profil_LKS_' . $lks->nama . '.pdf');
+    if (!$lks) {
+        abort(404, 'Data LKS tidak ditemukan.');
     }
+
+    // Sesuaikan dengan file resources/views/lks_pdf.blade.php
+    $pdf = Pdf::loadView('lks_pdf', compact('lks'))
+        ->setPaper('A4', 'portrait');
+
+    return $pdf->stream('Profil_LKS_' . preg_replace('/\s+/', '_', $lks->nama) . '.pdf');
+}
+
 }

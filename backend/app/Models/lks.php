@@ -57,8 +57,21 @@ class Lks extends Model
     }
 
     // 3️⃣ LKS punya banyak laporan kunjungan
+    // 📋 Relasi ke laporan kunjungan
     public function kunjungan()
     {
         return $this->hasMany(LaporanKunjungan::class, 'lks_id');
+    }
+
+    // 🔍 Relasi ke semua data verifikasi
+    public function verifikasi()
+    {
+        return $this->hasMany(\App\Models\Verifikasi::class, 'lks_id');
+    }
+
+    // 🕒 Relasi ke verifikasi terbaru
+    public function verifikasiTerbaru()
+    {
+        return $this->hasOne(\App\Models\Verifikasi::class, 'lks_id')->latestOfMany();
     }
 }

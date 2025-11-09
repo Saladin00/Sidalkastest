@@ -7,6 +7,7 @@ use App\Http\Controllers\LKSController;
 use App\Http\Controllers\KlienController;
 use App\Http\Controllers\LaporanKunjunganController;
 use App\Http\Controllers\DokumenLKSController;
+use App\Http\Controllers\VerifikasiController;
 use App\Http\Controllers\LksApprovalController;
 
 /*
@@ -67,6 +68,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // ========================
     Route::get('/lks/{id}/kunjungan', [LaporanKunjunganController::class, 'index']);
     Route::post('/lks/{id}/kunjungan', [LaporanKunjunganController::class, 'store']);
+
+    // ========================
+    // 🔍 VERIFIKASI LKS
+    // ========================
+    Route::get('/verifikasi', [VerifikasiController::class, 'index']);
+    Route::get('/verifikasi/{id}', [VerifikasiController::class, 'show']);
 
     // ========================
     // 👤 DATA KLIEN

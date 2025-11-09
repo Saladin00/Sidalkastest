@@ -1,7 +1,9 @@
+// src/utils/api.js
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:8000/api",
+  // 🔹 Gunakan environment variable agar fleksibel antara dev dan production
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000/api",
   headers: {
     Accept: "application/json",
   },

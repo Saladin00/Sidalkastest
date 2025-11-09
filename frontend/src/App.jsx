@@ -30,8 +30,12 @@ import KlienForm from "./pages/admin/klien/KlienForm";
 import KlienDetail from "./pages/admin/klien/KlienDetail";
 import KlienEditForm from "./pages/admin/klien/KlienEditForm";
 
-// Operator KLien
+// 👥 Operator Klien
 import OperatorKlienList from "./pages/operator/klien/OperatorKlienList";
+
+// ✅ Modul Verifikasi Admin
+import AdminVerifikasiList from "./pages/admin/verifikasi/VerifikasiList";
+import AdminVerifikasiReview from "./pages/admin/verifikasi/VerifikasiReview";
 
 function App() {
   return (
@@ -177,6 +181,28 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
               <KlienEditForm />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ==================== VERIFIKASI ADMIN ==================== */}
+        <Route
+          path="/admin/verifikasi"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminLayout>
+                <AdminVerifikasiList />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/verifikasi/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminLayout>
+                <AdminVerifikasiReview />
+              </AdminLayout>
             </ProtectedRoute>
           }
         />
