@@ -4,31 +4,36 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\LKSController;
+use App\Http\Controllers\KlienController;
 use App\Http\Controllers\LaporanKunjunganController;
 use App\Http\Controllers\DokumenLKSController;
-use App\Http\Controllers\VerifikasiController; // ✅ Tambahan import controller
+use App\Http\Controllers\VerifikasiController;
 
 // ========================
-// 🔹 AUTHENTIKASI
+// 🔹 AUTHENTIKASI (PUBLIC)
 // ========================
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']); // endpoint login utama
+Route::post('/login', [AuthController::class, 'login']);
 Route::get('/lks/{id}/cetak-pdf', [LKSController::class, 'cetakProfil']);
 
+// ========================
+// 🔐 ROUTE PROTECTED (auth:sanctum)
+// ========================
 Route::middleware(['auth:sanctum'])->group(function () {
 
-    // 🔐 Logout & Profil
+    // 🔸 Logout & Profile
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'profile']);
 
     // 👤 Daftar user (khusus admin)
     Route::middleware(['auth:sanctum'])->group(function () {
-        Route::get('/users', [UserController::class, 'index']);      // Lihat semua user
-        Route::post('/users', [UserController::class, 'store']);     // Tambah user
-        Route::put('/users/{id}', [UserController::class, 'update']); // Edit user
-        Route::delete('/users/{id}', [UserController::class, 'destroy']); // Hapus user
-        // untuk admin
-    });
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users', [UserController::class, 'index']);      // Lihat semua user
+    Route::post('/users', [UserController::class, 'store']);     // Tambah user
+    Route::put('/users/{id}', [UserController::class, 'update']); // Edit user
+    Route::delete('/users/{id}', [UserController::class, 'destroy']); // Hapus user
+    // untuk admin
+});
 
     // ========================
     // 🏢 MODUL LKS
@@ -38,30 +43,24 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/lks/{id}', [LKSController::class, 'show']);
     Route::put('/lks/{id}', [LKSController::class, 'update']);
     Route::delete('/lks/{id}', [LKSController::class, 'destroy']);
+    Route::post('/lks/{id}/upload-dokumen', [LKSController::class, 'uploadDokumen']);
 
     // ========================
     // 📎 DOKUMEN LKS
     // ========================
-    Route::get('/lks/{id}/dokumen', [DokumenLKSController::class, 'index']);      // ambil semua dokumen LKS tertentu
-    Route::post('/lks/dokumen', [DokumenLKSController::class, 'store']);          // upload dokumen baru
-    Route::delete('/lks/dokumen/{id}', [DokumenLKSController::class, 'destroy']); // hapus dokumen
-    Route::post('/lks/{id}/upload-dokumen', [LKSController::class, 'uploadDokumen']); // upload via relasi
+    Route::get('/lks/{id}/dokumen', [DokumenLKSController::class, 'index']);
+    Route::post('/lks/dokumen', [DokumenLKSController::class, 'store']);
+    Route::delete('/lks/dokumen/{id}', [DokumenLKSController::class, 'destroy']);
 
     // ========================
     // 📋 LAPORAN KUNJUNGAN
     // ========================
     Route::get('/lks/{id}/kunjungan', [LaporanKunjunganController::class, 'index']);
     Route::post('/lks/{id}/kunjungan', [LaporanKunjunganController::class, 'store']);
+    Route::get('/verifikasi', [VerifikasiController::class, 'index']);
 
-    // ========================
-    // 🔍 MODUL VERIFIKASI (Admin & Petugas)
-    // ========================
-    Route::get('/verifikasi', [VerifikasiController::class,'index']);            // list semua (admin) / miliknya (petugas)
-    Route::get('/verifikasi/{id}', [VerifikasiController::class,'show']);        // detail
+    // Detail verifikasi per ID
+    Route::get('/verifikasi/{id}', [VerifikasiController::class, 'show']);
 
-    Route::post('/verifikasi', [VerifikasiController::class,'store']);           // petugas isi verifikasi
-    Route::post('/verifikasi/{id}/foto', [VerifikasiController::class,'uploadFoto']); // upload foto tambahan
 
-    Route::put('/verifikasi/{id}/status', [VerifikasiController::class,'updateStatus']); // admin ubah status
-    Route::get('/verifikasi/{id}/logs', [VerifikasiController::class,'logs']);   // lihat log aktivitas
 });

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('lks_documents', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('lks_id')->constrained('l_k_s')->onDelete('cascade');
+            $table->foreignId('lks_id')->constrained('lks')->onDelete('cascade');
             $table->string('nama'); // contoh: "Akta Pendirian", "SK Kemenkumham"
             $table->string('file'); // path file dokumen
             $table->timestamps();

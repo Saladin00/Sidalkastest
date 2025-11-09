@@ -11,7 +11,7 @@ const Register = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "admin", // default role
+    jenis_layanan: "", // ✅ Tambahkan field baru
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -31,18 +31,19 @@ const Register = () => {
     }
 
     try {
-      // kirim data sesuai validasi Laravel
-      const res = await API.post("/register", {
+      await API.post("/register", {
         username: form.username,
         name: form.name,
         email: form.email,
         password: form.password,
         password_confirmation: form.confirmPassword,
-        role: form.role,
+        jenis_layanan: form.jenis_layanan, // ✅ Kirim ke backend
       });
 
-      setSuccess("Pendaftaran berhasil! Silakan login.");
-      setTimeout(() => navigate("/"), 2000);
+      setSuccess(
+        "Pendaftaran berhasil! Akun Anda sedang menunggu persetujuan dari Admin Dinsos."
+      );
+      setTimeout(() => navigate("/"), 2500);
     } catch (err) {
       console.error("Register error:", err.response?.data || err);
       setError(err.response?.data?.message || "Pendaftaran gagal.");
@@ -51,18 +52,24 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-100 via-emerald-200 to-green-100 relative overflow-hidden">
-      {/* Background efek */}
       <div className="absolute w-72 h-72 bg-green-400 rounded-full blur-3xl opacity-20 top-10 left-10 animate-pulse"></div>
       <div className="absolute w-80 h-80 bg-emerald-400 rounded-full blur-3xl opacity-20 bottom-10 right-10 animate-pulse"></div>
 
       <div className="relative z-10 backdrop-blur-xl bg-white/70 border border-white/40 shadow-2xl rounded-2xl p-8 w-full max-w-md">
         <div className="flex justify-center mb-6">
-          <img src="/logo.png" alt="Logo" className="h-28 w-auto drop-shadow-md object-contain" />
+          <img
+            src="/logo.png"
+            alt="Logo"
+            className="h-28 w-auto drop-shadow-md object-contain"
+          />
         </div>
 
-        <h1 className="text-3xl font-bold text-center text-emerald-700 tracking-wider">Daftar Akun</h1>
+        <h1 className="text-3xl font-bold text-center text-emerald-700 tracking-wider">
+          Daftar LKS
+        </h1>
         <p className="text-center text-gray-600 text-sm mb-6">
-          Buat akun untuk mengakses sistem SIDALEKAS
+          Pendaftaran akun LKS akan diverifikasi oleh Admin Dinsos sebelum dapat
+          login.
         </p>
 
         {error && (
@@ -77,9 +84,10 @@ const Register = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Username */}
           <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">Username</label>
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Username
+            </label>
             <input
               type="text"
               name="username"
@@ -90,9 +98,10 @@ const Register = () => {
             />
           </div>
 
-          {/* Nama Lengkap */}
           <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">Nama Lengkap</label>
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Nama LKS
+            </label>
             <input
               type="text"
               name="name"
@@ -103,9 +112,32 @@ const Register = () => {
             />
           </div>
 
-          {/* Email */}
+          {/* ✅ Jenis Layanan */}
           <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">E-mail</label>
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Jenis Layanan
+            </label>
+            <select
+              name="jenis_layanan"
+              value={form.jenis_layanan}
+              onChange={handleChange}
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-400 focus:outline-none bg-white/60"
+              required
+            >
+              <option value="">Pilih Jenis Layanan</option>
+              <option value="Anak">Anak</option>
+              <option value="Disabilitas">Disabilitas</option>
+              <option value="Lansia">Lansia</option>
+              <option value="Fakir Miskin">Fakir Miskin</option>
+              <option value="Kesejahteraan Sosial">Kesejahteraan Sosial</option>
+              <option value="Rehabilitasi Sosial">Rehabilitasi Sosial</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              E-mail
+            </label>
             <input
               type="email"
               name="email"
@@ -115,10 +147,30 @@ const Register = () => {
               required
             />
           </div>
-
-          {/* Password */}
           <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">Password</label>
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Kecamatan
+            </label>
+            <select
+              name="kecamatan"
+              value={form.kecamatan}
+              onChange={handleChange}
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-400 focus:outline-none bg-white/60"
+              required
+            >
+              <option value="">Pilih Kecamatan</option>
+              <option value="Lohbener">Lohbener</option>
+              <option value="Larangan">Larangan</option>
+              <option value="Sindang">Sindang</option>
+              <option value="Indramayu">Indramayu</option>
+              <option value="Jatibarang">Jatibarang</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Password
+            </label>
             <input
               type="password"
               name="password"
@@ -129,9 +181,10 @@ const Register = () => {
             />
           </div>
 
-          {/* Konfirmasi Password */}
           <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">Konfirmasi Password</label>
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Konfirmasi Password
+            </label>
             <input
               type="password"
               name="confirmPassword"
@@ -142,24 +195,6 @@ const Register = () => {
             />
           </div>
 
-          {/* Role */}
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">Pilih Role</label>
-            <select
-              name="role"
-              value={form.role}
-              onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-400 focus:outline-none bg-white/60"
-              required
-            >
-              <option value="lks">Admin</option>
-              <option value="lks">LKS</option>
-              <option value="operator">Operator</option>
-              <option value="petugas">Petugas</option>
-            </select>
-          </div>
-
-          {/* Tombol Submit */}
           <button
             type="submit"
             className="w-full flex items-center justify-center gap-2 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg shadow-md hover:opacity-90 transition font-semibold"
@@ -167,7 +202,6 @@ const Register = () => {
             <UserPlus size={18} /> Daftar
           </button>
 
-          {/* Tombol kembali ke login */}
           <button
             type="button"
             onClick={() => navigate("/")}

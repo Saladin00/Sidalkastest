@@ -17,7 +17,8 @@ const Login = () => {
   const generateCaptcha = () => {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let text = "";
-    for (let i = 0; i < 5; i++) text += chars.charAt(Math.floor(Math.random() * chars.length));
+    for (let i = 0; i < 5; i++)
+      text += chars.charAt(Math.floor(Math.random() * chars.length));
     setGeneratedCaptcha(text);
   };
 
@@ -37,10 +38,10 @@ const Login = () => {
 
     try {
       const response = await API.post("/login", { email, password });
-      const { access_token, role, user } = response.data;
+      const { access_token, role, user, message } = response.data;
 
       if (!access_token) {
-        setErrorMsg("Login gagal. Token tidak diterima dari server.");
+        setErrorMsg(message || "Login gagal. Token tidak diterima dari server.");
         return;
       }
 
@@ -48,6 +49,7 @@ const Login = () => {
       localStorage.setItem("role", role);
       localStorage.setItem("user", JSON.stringify(user));
 
+      // Redirect sesuai role
       if (role === "admin") navigate("/admin");
       else if (role === "operator") navigate("/operator");
       else if (role === "petugas") navigate("/petugas");
@@ -55,13 +57,19 @@ const Login = () => {
       else setErrorMsg("Role tidak dikenali, login gagal.");
     } catch (error) {
       console.error("Login Error:", error.response?.data || error.message);
-      setErrorMsg("Login gagal. Periksa email dan password Anda!");
+
+      if (error.response?.status === 403) {
+        setErrorMsg("Akun Anda belum disetujui oleh Admin Dinsos.");
+      } else if (error.response?.status === 401) {
+        setErrorMsg("Email atau password salah.");
+      } else {
+        setErrorMsg(error.response?.data?.message || "Login gagal, coba lagi nanti.");
+      }
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-blue-200 to-blue-100 relative overflow-hidden">
-      {/* Background */}
       <div className="absolute w-72 h-72 bg-blue-400 rounded-full blur-3xl opacity-20 top-10 left-10 animate-pulse"></div>
       <div className="absolute w-80 h-80 bg-indigo-400 rounded-full blur-3xl opacity-20 bottom-10 right-10 animate-pulse"></div>
 
@@ -70,7 +78,9 @@ const Login = () => {
           <img src="/logo.png" alt="Logo" className="h-28 w-auto drop-shadow-md object-contain" />
         </div>
 
-        <h1 className="text-3xl font-bold text-center text-blue-700 tracking-wider">SIDALEKAS</h1>
+        <h1 className="text-3xl font-bold text-center text-blue-700 tracking-wider">
+          SIDALEKAS
+        </h1>
         <p className="text-center text-gray-600 text-sm mb-6">
           Sistem Informasi Data Lembaga Kesejahteraan Sosial
         </p>
@@ -148,7 +158,6 @@ const Login = () => {
             <LogIn size={18} /> Login
           </button>
 
-          {/* Tombol Daftar */}
           <button
             type="button"
             onClick={() => navigate("/register")}
@@ -159,7 +168,7 @@ const Login = () => {
         </form>
 
         <div className="text-xs text-center text-gray-500 mt-6">
-          © Jokowi {new Date().getFullYear()}
+          © Dinas Sosial {new Date().getFullYear()}
         </div>
       </div>
     </div>

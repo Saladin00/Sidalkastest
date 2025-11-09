@@ -2,19 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
-class LKS extends Model
+class Lks extends Model
 {
     use HasFactory;
 
-    protected $table = 'l_k_s';
+    protected $table = 'lks';
 
     protected $fillable = [
         'nama',
         'jenis_layanan',
-        'status',
+        'status',              // aktif / pending / ditolak
         'alamat',
         'kelurahan',
         'kecamatan',
@@ -35,6 +35,28 @@ class LKS extends Model
         'dokumen',
     ];
 
+    protected $casts = [
+        'dokumen' => 'array',
+        'tanggal_akreditasi' => 'date',
+    ];
+
+    /* ----------------------------
+     * 🔗 RELASI
+     * ---------------------------- */
+
+    // 1️⃣ LKS dimiliki oleh satu user (akun LKS)
+    public function user()
+    {
+        return $this->hasOne(User::class, 'lks_id');
+    }
+    
+    // 2️⃣ LKS punya banyak klien
+    public function klien()
+    {
+        return $this->hasMany(Klien::class, 'lks_id');
+    }
+
+    // 3️⃣ LKS punya banyak laporan kunjungan
     // 📋 Relasi ke laporan kunjungan
     public function kunjungan()
     {

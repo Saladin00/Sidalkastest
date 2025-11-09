@@ -6,15 +6,14 @@ const ProtectedRoute = ({ allowedRoles = [], children }) => {
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
 
+  // ⛔ Belum login
   if (!token) {
     return <Navigate to="/" replace />;
   }
 
-  if (role === "admin") {
-    return children || <Outlet />;
-  }
-
-  if (!allowedRoles.includes(role)) {
+  // ✅ Kalau allowedRoles dikosongkan: artinya cukup login saja
+  if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
+    // Role tidak diizinkan
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
         <div className="text-center">
@@ -38,7 +37,7 @@ const ProtectedRoute = ({ allowedRoles = [], children }) => {
     );
   }
 
-  // ✅ Bisa render children langsung atau nested Outlet
+  // ✅ Lolos semua pengecekan → render konten
   return children || <Outlet />;
 };
 

@@ -3,10 +3,11 @@ import axios from "axios";
 
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL, // 🔹 Gunakan environment variable
-  withCredentials: true, // opsional, jika butuh cookie/session
+  headers: {
+    Accept: "application/json",
+  }, // opsional, jika butuh cookie/session
 });
 
-// 🛠️ Interceptor untuk menyisipkan token JWT
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {

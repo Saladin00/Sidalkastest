@@ -1,24 +1,17 @@
-// src/App.jsx
-import { BrowserRouter, Routes, Route, useParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-// 🧩 Layout dan Proteksi
-import AdminLayout from "./components/AdminLayout";
-import PetugasLayout from "./components/PetugasLayout";
-import ProtectedRoute from "./components/ProtectedRoute";
-
-// 📄 Auth Pages
+// 🔐 Auth Pages
 import Register from "./pages/Register";
 import Login from "./pages/Login";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-// 📊 Dashboard per Role
+// 🏠 Dashboard Pages
 import DashboardAdmin from "./pages/DashboardAdmin";
 import DashboardOperator from "./pages/DashboardOperator";
 import DashboardPetugas from "./pages/DashboardPetugas";
 import DashboardLKS from "./pages/DashboardLKS";
 
-// ========================
-// 🏢 MODUL LKS (ADMIN / OPERATOR)
-// ========================
+// 🧩 Modul LKS
 import LKSList from "./pages/admin/lks/LKSList";
 import LKSForm from "./pages/admin/lks/LKSForm";
 import LKSDetail from "./pages/admin/lks/LKSDetail";
@@ -27,36 +20,32 @@ import LKSProfil from "./pages/admin/lks/LKSProfil";
 import LKSUploadDokumen from "./pages/admin/lks/LKSUploadDokumen";
 import LKSKunjungan from "./pages/admin/lks/LKSKunjungan";
 
-// 👤 Manajemen Pengguna
+// 👤 Manajemen User
 import ManajemenUser from "./pages/admin/ManajemenUser";
+import AdminLayout from "./components/AdminLayout";
 
-// ========================
-// 🔍 MODUL VERIFIKASI
-// ========================
+// 📊 Modul Data Klien
+import KlienList from "./pages/admin/klien/KlienList";
+import KlienForm from "./pages/admin/klien/KlienForm";
+import KlienDetail from "./pages/admin/klien/KlienDetail";
+import KlienEditForm from "./pages/admin/klien/KlienEditForm";
+
+// Operator Klien
+import OperatorKlienList from "./pages/operator/klien/OperatorKlienList";
+
+// ✅ Modul Verifikasi Admin (lihat struktur folder-mu)
 import AdminVerifikasiList from "./pages/admin/verifikasi/VerifikasiList";
 import AdminVerifikasiReview from "./pages/admin/verifikasi/VerifikasiReview";
-import PetugasVerifikasiList from "./pages/petugas/verifikasi/VerifikasiList";
-import PetugasVerifikasiForm from "./pages/petugas/verifikasi/VerifikasiForm"; // ✅ sudah ada
 
-// ========================
-// 🧠 Helper ParamWrapper
-// ========================
-function ParamWrapper({ component: Comp, paramKey }) {
-  const params = useParams();
-  const prop = {};
-  prop[paramKey] = params[paramKey];
-  return <Comp {...prop} />;
-}
-
-export default function App() {
+function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ================= LOGIN & REGISTER ================= */}
+        {/* ================= LOGIN ================= */}
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* ================= ADMIN ================= */}
+        {/* ==================== DASHBOARD ==================== */}
         <Route
           path="/admin"
           element={
@@ -66,7 +55,27 @@ export default function App() {
           }
         />
 
-        {/* ✅ Manajemen Pengguna */}
+        {/* ================= PETUGAS ================= */}
+        <Route
+          path="/petugas"
+          element={
+            <ProtectedRoute allowedRoles={["petugas"]}>
+              <DashboardPetugas />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= LKS (User LKS) ================= */}
+        <Route
+          path="/operator/klien"
+          element={
+            <ProtectedRoute allowedRoles={["operator"]}>
+              <OperatorKlienList />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ✅ Modul Manajemen Pengguna */}
         <Route
           path="/admin/users"
           element={
@@ -78,7 +87,7 @@ export default function App() {
           }
         />
 
-        {/* ================= MODUL LKS ================= */}
+        {/* ==================== MODUL LKS ==================== */}
         <Route
           path="/admin/lks"
           element={
@@ -136,62 +145,67 @@ export default function App() {
           }
         />
 
-        {/* ================= OPERATOR ================= */}
+        {/* ==================== MODUL DATA KLIEN ==================== */}
         <Route
-          path="/operator"
+          path="/admin/klien"
           element={
-            <ProtectedRoute allowedRoles={["operator"]}>
-              <DashboardOperator />
+            <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
+              <AdminLayout>
+                <KlienList />
+              </AdminLayout>
             </ProtectedRoute>
           }
         />
-
-        {/*================= PETUGAS =================*/}
-        <Route element={<ProtectedRoute allowedRoles={["petugas"]} />}>
-          <Route path="/petugas" element={<PetugasLayout />}>
-            {/* Default dashboard petugas */}
-            <Route index element={<DashboardPetugas />} />
-
-            {/* ✅ List Verifikasi */}
-            <Route path="verifikasi" element={<PetugasVerifikasiList />} />
-
-            {/* ✅ Form Verifikasi (disesuaikan) */}
-            <Route
-              path="verifikasi/:id/form"
-              element={<PetugasVerifikasiForm />}
-            />
-          </Route>
-        </Route>
-
-
-        {/* ================= LKS (USER LKS) ================= */}
         <Route
-          path="/lks"
+          path="/admin/klien/tambah"
           element={
-            <ProtectedRoute allowedRoles={["lks"]}>
-              <DashboardLKS />
+            <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
+              <KlienForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/klien/detail/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
+              <KlienDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/klien/edit/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
+              <KlienEditForm />
             </ProtectedRoute>
           }
         />
 
         {/* ================= VERIFIKASI ADMIN ================= */}
         <Route
-          path="/admin"
+          path="/admin/verifikasi"
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
-              <AdminLayout />
+              <AdminLayout>
+                <AdminVerifikasiList />
+              </AdminLayout>
             </ProtectedRoute>
           }
-        >
-          <Route path="verifikasi" element={<AdminVerifikasiList />} />
-          <Route
-            path="verifikasi/:id"
-            element={
-              <ParamWrapper component={AdminVerifikasiReview} paramKey="id" />
-            }
-          />
-        </Route>
+        />
+
+        <Route
+          path="/admin/verifikasi/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminLayout>
+                <AdminVerifikasiReview />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
 }
+
+export default App;
