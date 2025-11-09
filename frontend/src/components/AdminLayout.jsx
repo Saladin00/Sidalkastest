@@ -1,4 +1,3 @@
-// src/components/AdminLayout.jsx
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -19,11 +18,12 @@ const AdminLayout = ({ children }) => {
   const location = useLocation();
   const current = location.pathname;
 
-  // 🟩 State untuk membuka/menutup sub-modul di sidebar
+  // 🟩 State buka/tutup sub-menu
   const [openModules, setOpenModules] = useState({
     lks: true,
     petugas: true,
     operator: true,
+    klien: true, // ✅ Modul Klien aktif default
   });
 
   const toggleModule = (mod) => {
@@ -39,12 +39,12 @@ const AdminLayout = ({ children }) => {
     <div className="flex min-h-screen bg-gray-100">
       {/* ================= SIDEBAR ================= */}
       <aside className="w-64 bg-white shadow-md border-r border-gray-200">
-        {/* 🟩 Logo dan Header Sidebar */}
+        {/* 🟩 Header Sidebar */}
         <div className="p-4 border-b text-center">
           <img src="/logo.png" alt="Logo" className="h-10 mx-auto" />
         </div>
 
-        {/* 🟩 Daftar Menu Navigasi */}
+        {/* 🟩 Menu Navigasi */}
         <nav className="p-4 text-sm text-gray-700">
           <ul className="space-y-1">
             {/* ===== Dashboard ===== */}
@@ -92,18 +92,6 @@ const AdminLayout = ({ children }) => {
                 <ul className="ml-4 space-y-1 mt-1">
                   <li>
                     <Link
-                      to="/lks/klien"
-                      className={`flex items-center gap-2 p-2 rounded hover:bg-blue-100 ${
-                        current.includes("/lks/klien")
-                          ? "bg-blue-100 font-semibold"
-                          : ""
-                      }`}
-                    >
-                      <Users size={16} /> Data Klien
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
                       to="/lks/dokumen"
                       className={`flex items-center gap-2 p-2 rounded hover:bg-blue-100 ${
                         current.includes("/lks/dokumen")
@@ -124,6 +112,39 @@ const AdminLayout = ({ children }) => {
                       }`}
                     >
                       <FileText size={16} /> Laporan Kegiatan
+                    </Link>
+                  </li>
+                </ul>
+              )}
+            </li>
+
+            {/* ================= Modul Klien (BARU) ================= */}
+            <li>
+              <button
+                onClick={() => toggleModule("klien")}
+                className="flex items-center gap-2 p-2 w-full rounded hover:bg-gray-100"
+              >
+                <Folder size={18} /> Modul Klien
+                <ChevronDown
+                  size={14}
+                  className={`ml-auto transform transition ${
+                    openModules.klien ? "rotate-180" : "rotate-0"
+                  }`}
+                />
+              </button>
+
+              {openModules.klien && (
+                <ul className="ml-4 space-y-1 mt-1">
+                  <li>
+                    <Link
+                      to="/admin/klien" // ✅ arahkan ke route klien list
+                      className={`flex items-center gap-2 p-2 rounded hover:bg-blue-100 ${
+                        current.includes("/admin/klien")
+                          ? "bg-blue-100 font-semibold"
+                          : ""
+                      }`}
+                    >
+                      <Users size={16} /> Data Klien
                     </Link>
                   </li>
                 </ul>
@@ -209,8 +230,6 @@ const AdminLayout = ({ children }) => {
                 <UserCog size={18} /> Manajemen Pengguna
               </Link>
             </li>
-
-            {/* 🟩 Tambahkan menu baru di bawah ini kalau diperlukan */}
           </ul>
         </nav>
       </aside>
@@ -231,8 +250,10 @@ const AdminLayout = ({ children }) => {
           </button>
         </header>
 
-        {/* 🟩 Tempat konten halaman (dynamic content dari route admin) */}
-        <main className="p-6 bg-gray-50 flex-1 overflow-y-auto">{children}</main>
+        {/* 🟩 Konten halaman dinamis */}
+        <main className="p-6 bg-gray-50 flex-1 overflow-y-auto">
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('laporan_kunjungan', function (Blueprint $table) {
             $table->id();
             $table->foreignId('lks_id')
-                  ->constrained('l_k_s')
+                  ->constrained('lks')
                   ->onDelete('cascade'); // otomatis hapus laporan jika LKS dihapus
             $table->string('petugas'); // nama petugas yang melakukan kunjungan
             $table->text('catatan');   // catatan hasil kunjungan

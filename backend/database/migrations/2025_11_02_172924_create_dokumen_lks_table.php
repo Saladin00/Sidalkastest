@@ -16,7 +16,7 @@ return new class extends Migration
 
             // Relasi ke tabel LKS
             $table->foreignId('lks_id')
-                  ->constrained('l_k_s')
+                  ->constrained('lks')
                   ->onDelete('cascade');
 
             // Kolom utama
