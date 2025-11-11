@@ -6,24 +6,23 @@ export default function KlienList() {
   const navigate = useNavigate();
   const [klien, setKlien] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // ⬇️ gunakan kecamatan_id agar sesuai backend baru
   const [filters, setFilters] = useState({
     status_bantuan: "",
     jenis_kebutuhan: "",
-    kecamatan: "",
+    kecamatan_id: "",
     lks_id: "",
   });
 
-  // Daftar opsi (untuk dropdown)
   const [daftarKecamatan, setDaftarKecamatan] = useState([]);
   const [daftarLKS, setDaftarLKS] = useState([]);
 
-  // 🚀 Ambil data klien dari API
   const fetchKlien = async () => {
     setLoading(true);
     try {
       const res = await api.get("/klien", { params: filters });
-      // Laravel paginate → array klien ada di res.data.data.data
-      const items = res.data?.data?.data || [];
+      const items = res.data?.data?.data || []; // paginate -> data.data
       setKlien(items);
     } catch (error) {
       console.error("Gagal mengambil data klien:", error);
@@ -34,31 +33,49 @@ export default function KlienList() {
     }
   };
 
-  // 🧭 Ambil daftar kecamatan dan LKS untuk dropdown
   const fetchFilterOptions = async () => {
     try {
-      const [kecamatanRes, lksRes] = await Promise.all([
-        api.get("/kecamatan"), // pastikan endpoint ini ada di backend
-        api.get("/lks"),       // endpoint untuk ambil daftar LKS
-      ]);
+      // ambil semua kecamatan
+      const kecamatanRes = await api.get("/kecamatan");
       setDaftarKecamatan(kecamatanRes.data?.data || []);
+      // ambil semua LKS (awal halaman). Nanti kalau kecamatan dipilih, kita filter lagi.
+      const lksRes = await api.get("/lks");
       setDaftarLKS(lksRes.data?.data || []);
     } catch (error) {
       console.error("Gagal memuat daftar kecamatan/LKS:", error);
     }
   };
 
-  // 🧩 Ambil data setiap kali filter berubah
+  // jika kecamatan dipilih -> ambil LKS by kecamatan
   useEffect(() => {
-    fetchKlien();
-  }, [filters]);
+    const loadLksByKecamatan = async () => {
+      if (!filters.kecamatan_id) {
+        // jika filter kecamatan dikosongkan, muat ulang semua LKS
+        const lksRes = await api.get("/lks");
+        setDaftarLKS(lksRes.data?.data || []);
+        return;
+      }
+      try {
+        const res = await api.get(`/lks/by-kecamatan/${filters.kecamatan_id}`);
+        setDaftarLKS(res.data?.data || []);
+      } catch (e) {
+        console.error("Gagal ambil LKS by kecamatan:", e);
+        setDaftarLKS([]);
+      }
+    };
+    loadLksByKecamatan();
+    // reset lks_id ketika ganti kecamatan
+    setFilters((f) => ({ ...f, lks_id: "" }));
+  }, [filters.kecamatan_id]);
 
-  // 🧭 Ambil daftar kecamatan & LKS sekali saat halaman dibuka
   useEffect(() => {
     fetchFilterOptions();
   }, []);
 
-  // 🗑️ Hapus data klien
+  useEffect(() => {
+    fetchKlien();
+  }, [filters]);
+
   const handleDelete = async (id) => {
     if (!window.confirm("Yakin ingin menghapus data klien ini?")) return;
     try {
@@ -85,7 +102,6 @@ export default function KlienList() {
 
       {/* Filter */}
       <div className="flex flex-wrap gap-4 mb-4">
-        {/* Filter Bantuan */}
         <select
           className="border p-2 rounded"
           value={filters.status_bantuan}
@@ -100,7 +116,6 @@ export default function KlienList() {
           <option value="lainnya">Lainnya</option>
         </select>
 
-        {/* Filter Jenis Kebutuhan */}
         <select
           className="border p-2 rounded"
           value={filters.jenis_kebutuhan}
@@ -115,29 +130,27 @@ export default function KlienList() {
           <option value="fakir_miskin">Fakir Miskin</option>
         </select>
 
-        {/* Filter Kecamatan */}
+        {/* Filter Kecamatan (pakai ID) */}
         <select
           className="border p-2 rounded"
-          value={filters.kecamatan}
+          value={filters.kecamatan_id}
           onChange={(e) =>
-            setFilters({ ...filters, kecamatan: e.target.value })
+            setFilters({ ...filters, kecamatan_id: e.target.value })
           }
         >
           <option value="">Semua Kecamatan</option>
           {daftarKecamatan.map((kec) => (
-            <option key={kec.id || kec} value={kec.nama || kec}>
-              {kec.nama || kec}
+            <option key={kec.id} value={kec.id}>
+              {kec.nama}
             </option>
           ))}
         </select>
 
-        {/* Filter LKS */}
+        {/* Filter LKS (akan mengikuti kecamatan bila dipilih) */}
         <select
           className="border p-2 rounded"
           value={filters.lks_id}
-          onChange={(e) =>
-            setFilters({ ...filters, lks_id: e.target.value })
-          }
+          onChange={(e) => setFilters({ ...filters, lks_id: e.target.value })}
         >
           <option value="">Semua LKS</option>
           {daftarLKS.map((lks) => (
@@ -178,7 +191,8 @@ export default function KlienList() {
                   <td className="border p-2">{item.nama}</td>
                   <td className="border p-2">{item.alamat}</td>
                   <td className="border p-2">{item.kelurahan}</td>
-                  <td className="border p-2">{item.kecamatan}</td>
+                  {/* tampilkan nama dari relasi */}
+                  <td className="border p-2">{item.kecamatan?.nama || "-"}</td>
                   <td className="border p-2">{item.jenis_kebutuhan || "-"}</td>
                   <td className="border p-2">{item.status_bantuan || "-"}</td>
                   <td className="border p-2">{item.lks?.nama || "-"}</td>

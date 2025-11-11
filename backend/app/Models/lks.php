@@ -17,7 +17,7 @@ class Lks extends Model
         'status', // aktif / pending / ditolak
         'alamat',
         'kelurahan',
-        'kecamatan',
+        'kecamatan_id',
         'npwp',
         'kontak_pengurus',
         'akta_pendirian',
@@ -44,38 +44,53 @@ class Lks extends Model
      * 🔗 RELASI
      * ---------------------------- */
 
-    // 1️⃣ LKS dimiliki oleh satu user (akun LKS)
+    /**
+     * 🧍 1️⃣ Satu LKS dimiliki oleh satu user (akun LKS)
+     */
     public function user()
     {
-        return $this->hasOne(User::class, 'lks_id');
+        return $this->hasOne(User::class, 'lks_id', 'id');
     }
 
-    // 2️⃣ LKS punya banyak klien
+    /**
+     * 👥 2️⃣ LKS memiliki banyak klien
+     */
     public function klien()
     {
-        return $this->hasMany(Klien::class, 'lks_id');
+        return $this->hasMany(Klien::class, 'lks_id', 'id');
     }
 
-    // 3️⃣ LKS punya banyak laporan kunjungan
+    /**
+     * 🏙️ 3️⃣ LKS berada di satu kecamatan
+     */
+    public function kecamatan()
+    {
+        return $this->belongsTo(Kecamatan::class, 'kecamatan_id', 'id');
+    }
+
+    /**
+     * 🧾 4️⃣ LKS memiliki banyak laporan kunjungan
+     */
     public function kunjungan()
     {
-        return $this->hasMany(LaporanKunjungan::class, 'lks_id');
+        return $this->hasMany(LaporanKunjungan::class, 'lks_id', 'id');
     }
 
-    // 🔍 Relasi ke semua data verifikasi
+    /**
+     * 📋 5️⃣ Relasi ke semua data verifikasi
+     */
     public function verifikasi()
     {
-        return $this->hasMany(\App\Models\Verifikasi::class, 'lks_id');
+        return $this->hasMany(\App\Models\Verifikasi::class, 'lks_id', 'id');
     }
 
-   public function verifikasiTerbaru()
-{
-    return $this->hasOne(\App\Models\Verifikasi::class, 'lks_id')
-        ->latest('id')
-        ->select('verifikasi.*'); // ✅ hilangkan ambiguitas kolom
-}
-
-
-
-
+    /**
+     * ✅ 6️⃣ Relasi ke verifikasi terbaru
+     * Mengambil data verifikasi terakhir berdasarkan kolom ID.
+     */
+    public function verifikasiTerbaru()
+    {
+        return $this->hasOne(\App\Models\Verifikasi::class, 'lks_id', )
+                    ->latestOfMany(); // lebih rapi dari manual latest('id')
+    }
 }
