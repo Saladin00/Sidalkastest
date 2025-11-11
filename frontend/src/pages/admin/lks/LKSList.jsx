@@ -1,24 +1,27 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { Eye, Pencil, Trash2, RotateCw, Loader2 } from "lucide-react";
 import AdminLayout from "../../../components/AdminLayout";
 import API from "../../../utils/api";
 
 const LKSList = () => {
   const [lksList, setLksList] = useState([]);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const location = useLocation();
 
   // 🔹 Ambil data LKS dari API
   const loadLKS = async () => {
+    setLoading(true);
     try {
-      const res = await API.get("/lks", {
-        params: { search },
-      });
-      setLksList(res.data);
+      const res = await API.get("/lks", { params: { search } });
+      setLksList(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.error("Gagal ambil data LKS:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -35,9 +38,10 @@ const LKSList = () => {
     }
   };
 
+  // 🔹 Reload otomatis saat halaman dikunjungi ulang (misal setelah ubah verifikasi)
   useEffect(() => {
     loadLKS();
-  }, []);
+  }, [location]);
 
   // 🔹 Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -49,7 +53,22 @@ const LKSList = () => {
     <AdminLayout>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-[18px] font-semibold text-gray-800">Daftar LKS</h2>
+
         <div className="flex items-center gap-2">
+          {/* 🔄 Tombol Refresh */}
+          <button
+            onClick={loadLKS}
+            className="flex items-center gap-1 border border-gray-300 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-100 text-sm transition"
+          >
+            {loading ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <RotateCw size={14} />
+            )}
+            {loading ? "Memuat..." : "Refresh"}
+          </button>
+
+          {/* 🔍 Search */}
           <div className="flex items-center border border-gray-300 rounded-md overflow-hidden bg-white">
             <input
               type="text"
@@ -65,6 +84,8 @@ const LKSList = () => {
               🔍
             </button>
           </div>
+
+          {/* ➕ Tambah LKS */}
           <Link
             to="/admin/lks/tambah"
             className="bg-[#1e3a8a] text-white px-4 py-2 rounded-md hover:bg-[#1e40af] text-sm transition"
@@ -76,128 +97,140 @@ const LKSList = () => {
 
       {/* 📋 Tabel */}
       <div className="overflow-x-auto bg-white border border-gray-200 rounded-md shadow-sm">
-        <table className="min-w-full text-sm text-gray-700">
-          <thead className="bg-gray-50 text-xs font-medium text-gray-600 border-b">
-            <tr>
-              <th className="px-4 py-3 text-center w-16 border-r">No</th>
-              <th className="px-4 py-3 border-r">Nama</th>
-              <th className="px-4 py-3 border-r">Jenis</th>
-              <th className="px-4 py-3 border-r">Kecamatan</th>
-              <th className="px-4 py-3 border-r">Status</th>
-              <th className="px-4 py-3 text-center w-32">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentItems.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center items-center py-20 text-gray-500">
+            <Loader2 size={24} className="animate-spin mr-2" />
+            Memuat data LKS...
+          </div>
+        ) : (
+          <table className="min-w-full text-sm text-gray-700">
+            <thead className="bg-gray-50 text-xs font-medium text-gray-600 border-b">
               <tr>
-                <td colSpan="6" className="text-center py-6 text-gray-400">
-                  Tidak ada data ditemukan.
-                </td>
+                <th className="px-4 py-3 text-center w-16 border-r">No</th>
+                <th className="px-4 py-3 border-r">Nama</th>
+                <th className="px-4 py-3 border-r">Jenis</th>
+                <th className="px-4 py-3 border-r">Kecamatan</th>
+                <th className="px-4 py-3 border-r">Status</th>
+                <th className="px-4 py-3 text-center w-32">Aksi</th>
               </tr>
-            ) : (
-              currentItems.map((lks, index) => (
-                <tr
-                  key={lks.id}
-                  className="border-t hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-4 py-3 text-center border-r">
-                    {indexOfFirstItem + index + 1}
-                  </td>
-                  <td className="px-4 py-3 border-r font-medium text-gray-800">
-                    {lks.nama}
-                  </td>
-                  <td className="px-4 py-3 border-r">{lks.jenis_layanan}</td>
-                  <td className="px-4 py-3 border-r">{lks.kecamatan}</td>
-                  <td className="px-4 py-3 border-r">
-                    <span
-                      className={`px-3 py-1 text-xs font-medium rounded-full ${
-                        lks.status === "Aktif"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-600"
-                      }`}
-                    >
-                      {lks.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <div className="flex justify-center gap-3">
-                      <Link
-                        to={`/admin/lks/detail/${lks.id}`}
-                        className="text-blue-600 hover:text-blue-800"
-                        title="Detail"
-                      >
-                        <Eye size={18} />
-                      </Link>
-                      <Link
-                        to={`/admin/lks/edit/${lks.id}`}
-                        className="text-yellow-500 hover:text-yellow-600"
-                        title="Edit"
-                      >
-                        <Pencil size={18} />
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(lks.id)}
-                        className="text-red-600 hover:text-red-700"
-                        title="Hapus"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
+            </thead>
+            <tbody>
+              {currentItems.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="text-center py-6 text-gray-400">
+                    Tidak ada data ditemukan.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                currentItems.map((lks, index) => (
+                  <tr
+                    key={lks.id}
+                    className="border-t hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-4 py-3 text-center border-r">
+                      {indexOfFirstItem + index + 1}
+                    </td>
+                    <td className="px-4 py-3 border-r font-medium text-gray-800">
+                      {lks.nama}
+                    </td>
+                    <td className="px-4 py-3 border-r">{lks.jenis_layanan}</td>
+                    <td className="px-4 py-3 border-r">{lks.kecamatan}</td>
+                    <td className="px-4 py-3 border-r">
+                      <span
+                        className={`px-3 py-1 text-xs font-medium rounded-full ${
+                          lks.status?.toLowerCase() === "valid"
+                            ? "bg-green-100 text-green-700"
+                            : lks.status?.toLowerCase() === "tidak_valid"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        }`}
+                      >
+                        {lks.verifikasi_terbaru?.status?.toUpperCase() ||
+                          "PENDING"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex justify-center gap-3">
+                        <Link
+                          to={`/admin/lks/detail/${lks.id}`}
+                          className="text-blue-600 hover:text-blue-800"
+                          title="Detail"
+                        >
+                          <Eye size={18} />
+                        </Link>
+                        <Link
+                          to={`/admin/lks/edit/${lks.id}`}
+                          className="text-yellow-500 hover:text-yellow-600"
+                          title="Edit"
+                        >
+                          <Pencil size={18} />
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(lks.id)}
+                          className="text-red-600 hover:text-red-700"
+                          title="Hapus"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* 📄 Pagination & Show per page */}
-      <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
-        <div className="flex items-center gap-2">
-          <span>Show</span>
-          <select
-            value={itemsPerPage}
-            onChange={(e) => {
-              setItemsPerPage(Number(e.target.value));
-              setCurrentPage(1);
-            }}
-            className="border border-gray-300 rounded px-2 py-1 text-sm"
-          >
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-          </select>
-          <span>per page</span>
-        </div>
+      {!loading && (
+        <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <span>Show</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="border border-gray-300 rounded px-2 py-1 text-sm"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+            <span>per page</span>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            disabled={currentPage === 1}
-            className={`px-3 py-1 border rounded ${
-              currentPage === 1
-                ? "text-gray-400 border-gray-200"
-                : "hover:bg-gray-100"
-            }`}
-          >
-            Prev
-          </button>
-          <span>
-            {currentPage} / {totalPages || 1}
-          </span>
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-            disabled={currentPage === totalPages || totalPages === 0}
-            className={`px-3 py-1 border rounded ${
-              currentPage === totalPages || totalPages === 0
-                ? "text-gray-400 border-gray-200"
-                : "hover:bg-gray-100"
-            }`}
-          >
-            Next
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className={`px-3 py-1 border rounded ${
+                currentPage === 1
+                  ? "text-gray-400 border-gray-200"
+                  : "hover:bg-gray-100"
+              }`}
+            >
+              Prev
+            </button>
+            <span>
+              {currentPage} / {totalPages || 1}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className={`px-3 py-1 border rounded ${
+                currentPage === totalPages || totalPages === 0
+                  ? "text-gray-400 border-gray-200"
+                  : "hover:bg-gray-100"
+              }`}
+            >
+              Next
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </AdminLayout>
   );
 };

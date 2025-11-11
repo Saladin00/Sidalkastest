@@ -16,9 +16,14 @@ class VerifikasiController extends Controller
         if ($r->filled('status')) $q->where('status', $r->status);
         if ($r->filled('lks_id')) $q->where('lks_id', $r->lks_id);
 
-        if ($r->user()->hasRole('petugas')) {
-            $q->where('petugas_id', $r->user()->id);
-        }
+       if ($r->user()->hasRole('petugas')) {
+    // tetap filter untuk petugas
+    $q->where('petugas_id', $r->user()->id);
+} else {
+    // kalau admin, lihat semua
+    $q->get();
+}
+
 
         return response()->json($q->paginate(15));
     }
@@ -39,7 +44,7 @@ class VerifikasiController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'lks_id' => 'required|exists:l_k_s,id',
+            'lks_id' => 'required|exists:lks,id',
             'catatan' => 'nullable|string',
             'penilaian' => 'nullable|string',
             'foto_bukti.*' => 'nullable|image|max:2048',
@@ -90,35 +95,57 @@ class VerifikasiController extends Controller
         return response()->json($verif->load(['logs.user', 'lks', 'petugas']), 201);
     }
 
-    // 🔹 ADMIN: Ubah status akhir
-    public function updateStatus(Request $r, $id)
-    {
-        if (!$r->user()->hasRole('admin')) {
-            return response()->json(['message' => 'Akses ditolak'], 403);
-        }
-
-        $data = $r->validate([
-            'status' => 'required|in:menunggu,valid,tidak_valid',
-            'catatan_admin' => 'nullable|string'
-        ]);
-
-        $ver = Verifikasi::findOrFail($id);
-        $ver->status = $data['status'];
-
-        if (!empty($data['catatan_admin'])) {
-            $ver->catatan = trim(($ver->catatan ? $ver->catatan . "\n" : '') . "[ADMIN] " . $data['catatan_admin']);
-        }
-        $ver->save();
-
-        VerifikasiLog::create([
-            'verifikasi_id' => $ver->id,
-            'user_id' => $r->user()->id,
-            'aksi' => 'update_status',
-            'keterangan' => 'Status: ' . $data['status']
-        ]);
-
-        return response()->json($ver->load('logs.user'));
+   // 🔹 ADMIN: Ubah status akhir
+public function updateStatus(Request $r, $id)
+{
+    if (!$r->user()->hasRole('admin')) {
+        return response()->json(['message' => 'Akses ditolak'], 403);
     }
+
+    $data = $r->validate([
+        'status' => 'required|in:menunggu,valid,tidak_valid',
+        'catatan_admin' => 'nullable|string'
+    ]);
+
+    $ver = Verifikasi::with('lks')->findOrFail($id);
+    $ver->status = $data['status'];
+
+    if (!empty($data['catatan_admin'])) {
+        $ver->catatan = trim(
+            ($ver->catatan ? $ver->catatan . "\n" : '') . "[ADMIN] " . $data['catatan_admin']
+        );
+    }
+
+    $ver->save();
+
+    // 🔹 Update status LKS otomatis
+    // 🔹 Update status LKS otomatis
+if ($ver->lks) {
+    if ($data['status'] === 'valid') {
+        $ver->lks->update(['status' => 'Aktif']);
+    } elseif ($data['status'] === 'tidak_valid') {
+        $ver->lks->update(['status' => 'Nonaktif']);
+    } else {
+        $ver->lks->update(['status' => 'Pending']);
+    }
+}
+
+
+    // 🔹 Simpan log
+    VerifikasiLog::create([
+        'verifikasi_id' => $ver->id,
+        'user_id' => $r->user()->id,
+        'aksi' => 'update_status',
+        'keterangan' => 'Status diubah menjadi: ' . $data['status']
+    ]);
+
+    // 🔹 Refresh data agar status LKS terbaru ikut dikembalikan
+    $ver->load(['lks', 'logs.user']);
+
+    return response()->json($ver);
+}
+
+
 
     // 🔹 ADMIN / PETUGAS (yang sama): Upload foto tambahan
     public function uploadFoto(Request $r, $id)

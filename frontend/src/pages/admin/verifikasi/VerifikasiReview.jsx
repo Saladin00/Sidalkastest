@@ -1,32 +1,47 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom"; // ⬅️ Tambahkan ini
+import { useParams, useNavigate } from "react-router-dom";
 import { getVerifikasiDetail, updateStatusVerifikasi } from "@/services/verifikasiApi";
 import VerificationBadge from "@/components/shared/VerificationBadge";
 import VerifikasiLog from "@/components/verifikasi/VerifikasiLog";
 
-export default function VerifikasiReview({ id }) {
+export default function VerifikasiReview() {
+  const { id } = useParams();
   const [data, setData] = useState(null);
   const [status, setStatus] = useState("valid");
   const [catatanAdmin, setCatatanAdmin] = useState("");
-  const navigate = useNavigate(); // ⬅️ Hook navigasi
+  const navigate = useNavigate();
 
-  useEffect(() => { load(); }, [id]);
-  async function load() { setData(await getVerifikasiDetail(id)); }
+  useEffect(() => {
+    if (!id) return; // ✅ perbaikan: jangan return kalau ada id
+    load();
+  }, [id]);
+
+  async function load() {
+    try {
+      const result = await getVerifikasiDetail(id);
+      console.log("Verifikasi Detail:", result); // debug log
+      setData(result);
+      setStatus(result.status || "menunggu");
+    } catch (err) {
+      console.error("Gagal memuat data verifikasi:", err);
+      alert("Gagal memuat data verifikasi!");
+    }
+  }
 
   async function save() {
     try {
       await updateStatusVerifikasi(id, { status, catatan_admin: catatanAdmin });
       alert("✅ Status berhasil diperbarui!");
-      navigate("/admin/verifikasi"); // ⬅️ Kembali ke daftar setelah sukses
+      navigate("/admin/verifikasi");
     } catch (err) {
       console.error(err);
       alert("❌ Gagal menyimpan status. Periksa koneksi atau server!");
     }
   }
 
-  if (!data) return <div>Loading…</div>;
+  if (!data) return <div className="p-4">Loading…</div>;
 
-  const storage = import.meta.env.VITE_STORAGE_URL;
+  const storage = import.meta.env.VITE_STORAGE_URL || import.meta.env.VITE_API_URL;
 
   return (
     <div className="space-y-4">
@@ -39,7 +54,7 @@ export default function VerifikasiReview({ id }) {
         <div className="border rounded p-3">
           <div className="font-medium mb-2">Data LKS</div>
           <div>{data.lks?.nama}</div>
-          <div className="text-sm text-gray-500">{data.lks?.alamat}</div>
+          <div className="text-sm text-gray-500">{data.lks?.alamat || "-"}</div>
         </div>
         <div className="border rounded p-3">
           <div className="font-medium mb-2">Hasil Petugas</div>
@@ -52,12 +67,11 @@ export default function VerifikasiReview({ id }) {
         <div className="flex gap-3 flex-wrap">
           {data.foto_bukti.map((p, i) => (
             <img
-  key={i}
-  src={`${storage}/${p.replace(/^storage\//, '')}`}
-  alt={`Foto ${i + 1}`}
-  className="w-40 h-40 object-cover border rounded"
-/>
-
+              key={i}
+              src={`${storage}/storage/${p.replace(/^storage\//, "")}`}
+              alt={`Foto ${i + 1}`}
+              className="w-40 h-40 object-cover border rounded"
+            />
           ))}
         </div>
       )}
@@ -87,6 +101,7 @@ export default function VerifikasiReview({ id }) {
           Simpan Status
         </button>
       </div>
+
       <VerifikasiLog verifikasiId={data.id} />
     </div>
   );

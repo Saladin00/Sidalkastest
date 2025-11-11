@@ -11,7 +11,7 @@ return new class extends Migration {
             $t->id();
 
             // FK ke tabel LKS kamu: 'l_k_s'
-            $t->foreignId('lks_id')->constrained('l_k_s')->cascadeOnDelete();
+            $t->foreignId('lks_id')->constrained('lks')->cascadeOnDelete();
 
             // siapkan kolom klien kalau nanti dipakai
             $t->unsignedBigInteger('klien_id')->nullable();

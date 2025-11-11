@@ -41,7 +41,7 @@ class UserController extends Controller
                 'lks_status' => $user->lks?->status,
                 'lks_kecamatan' => $user->lks?->kecamatan,
 
-                'created_at' => $user->created_at->format('Y-m-d H:i'),
+                'created_at' => optional($user->created_at)->format('Y-m-d H:i'),
             ];
         });
 

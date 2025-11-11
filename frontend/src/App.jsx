@@ -37,9 +37,6 @@ import OperatorKlienList from "./pages/operator/klien/OperatorKlienList";
 import AdminVerifikasiList from "./pages/admin/verifikasi/VerifikasiList";
 import AdminVerifikasiReview from "./pages/admin/verifikasi/VerifikasiReview";
 
-// 🧑‍🚒 Layout Petugas (TAMBAHAN)
-import PetugasLayout from "./components/PetugasLayout";
-
 function App() {
   return (
     <BrowserRouter>
@@ -69,9 +66,7 @@ function App() {
           path="/petugas"
           element={
             <ProtectedRoute allowedRoles={["petugas"]}>
-              <PetugasLayout>
-                <DashboardPetugas />
-              </PetugasLayout>
+              <DashboardPetugas />
             </ProtectedRoute>
           }
         />
@@ -169,7 +164,9 @@ function App() {
           path="/admin/klien/tambah"
           element={
             <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
-              <KlienForm />
+              <AdminLayout>
+                <KlienForm />
+              </AdminLayout>
             </ProtectedRoute>
           }
         />

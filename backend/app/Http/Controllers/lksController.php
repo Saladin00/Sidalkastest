@@ -2,85 +2,116 @@
 
 namespace App\Http\Controllers;
 
+
+use Illuminate\Support\Facades\Auth;
+
 use App\Models\LKS;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Verifikasi;
+use App\Models\VerifikasiLog;
+use App\Models\User;
+
 
 class LKSController extends Controller
+
 {
     // 🔍 GET /api/lks
-    public function index(Request $request)
-    {
-        $query = LKS::query();
+public function index(Request $request)
+{
+    $query = LKS::with('verifikasiTerbaru'); // tambahkan relasi ini
 
-        if ($request->status) $query->where('status', $request->status);
-        if ($request->kecamatan) $query->where('kecamatan', $request->kecamatan);
-        if ($request->jenis) $query->where('jenis_layanan', $request->jenis);
+    if ($request->status) $query->where('status', $request->status);
+    if ($request->kecamatan) $query->where('kecamatan', $request->kecamatan);
+    if ($request->jenis) $query->where('jenis_layanan', $request->jenis);
 
-        return response()->json($query->latest()->get());
+    return response()->json($query->latest()->get());
+
     }
 
     // ➕ POST /api/lks
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'nama' => 'required|string|max:255',
-            'jenis_layanan' => 'required|string|max:255',
-            'kecamatan' => 'required|string|max:255',
-            'status' => 'required|in:Aktif,Nonaktif',
-            'alamat' => 'nullable|string',
-            'kelurahan' => 'nullable|string',
-            'npwp' => 'nullable|string',
-            'kontak_pengurus' => 'nullable|string',
-            'akta_pendirian' => 'nullable|string',
-            'izin_operasional' => 'nullable|string',
-            'legalitas' => 'nullable|string',
-            'no_akta' => 'nullable|string',
-            'status_akreditasi' => 'nullable|string',
-            'no_sertifikat' => 'nullable|string',
-            'tanggal_akreditasi' => 'nullable|date',
-            'koordinat' => 'nullable|string',
-            'jumlah_pengurus' => 'nullable|integer',
-            'sarana' => 'nullable|string',
-            'hasil_observasi' => 'nullable|string',
-            'tindak_lanjut' => 'nullable|string',
-        ]);
+   public function store(Request $request)
+{
+    $validated = $request->validate([
+        'nama' => 'required|string|max:255',
+        'jenis_layanan' => 'required|string|max:255',
+        'kecamatan' => 'required|string|max:255',
+       'status' => 'nullable|in:Aktif,Nonaktif,pending',
 
-        $lks = LKS::create($validated);
+        'alamat' => 'nullable|string',
+        'kelurahan' => 'nullable|string',
+        'npwp' => 'nullable|string',
+        'kontak_pengurus' => 'nullable|string',
+        'akta_pendirian' => 'nullable|string',
+        'izin_operasional' => 'nullable|string',
+        'legalitas' => 'nullable|string',
+        'no_akta' => 'nullable|string',
+        'status_akreditasi' => 'nullable|string',
+        'no_sertifikat' => 'nullable|string',
+        'tanggal_akreditasi' => 'nullable|date',
+        'koordinat' => 'nullable|string',
+        'jumlah_pengurus' => 'nullable|integer',
+        'sarana' => 'nullable|string',
+        'hasil_observasi' => 'nullable|string',
+        'tindak_lanjut' => 'nullable|string',
+    ]);
 
-        // 🔹 Upload dokumen (jika ada)
-        if ($request->hasFile('dokumen')) {
-            $dokumenPaths = [];
-            foreach ($request->file('dokumen') as $file) {
-                $path = $file->store('dokumen_lks', 'public');
-                $dokumenPaths[] = [
-                    'name' => $file->getClientOriginalName(),
-                    'url'  => asset('storage/' . $path),
-                ];
-            }
-            $lks->dokumen = json_encode($dokumenPaths);
-            $lks->save();
+    // 🟢 Buat LKS baru
+    $lks = Lks::create(array_merge($validated, [
+        'status' => $validated['status'] ?? 'pending', // default pending kalau tidak dikirim
+    ]));
+
+    // 📎 Upload dokumen (jika ada)
+    if ($request->hasFile('dokumen')) {
+        $dokumenPaths = [];
+        foreach ($request->file('dokumen') as $file) {
+            $path = $file->store('dokumen_lks', 'public');
+            $dokumenPaths[] = [
+                'name' => $file->getClientOriginalName(),
+                'url'  => asset('storage/' . $path),
+            ];
         }
-
-        return response()->json([
-            'message' => '✅ LKS berhasil ditambahkan',
-            'data' => $lks
-        ]);
+        $lks->dokumen = json_encode($dokumenPaths);
+        $lks->save();
     }
+
+    // 🧩 Otomatis buat verifikasi pertama (status awal: "menunggu")
+
+$petugasId = Auth::check() ? Auth::id() :\App\Models\User::first()->id;
+
+
+$verif = Verifikasi::create([
+    'lks_id' => $lks->id,
+    'petugas_id' => $petugasId,
+    'status' => 'menunggu',
+    'penilaian' => 'Menunggu proses verifikasi.',
+    'catatan' => 'Verifikasi otomatis dibuat saat LKS baru dibuat.',
+    'tanggal_verifikasi' => now(),
+]);
+
+
+// debug log
+\Log::info('Verifikasi otomatis dibuat', ['verifikasi_id' => $verif->id]);
+
+
+    return response()->json([
+        'message' => 'LKS berhasil dibuat dan verifikasi awal ditambahkan.',
+        'data' => $lks->load('verifikasiTerbaru')
+    ], 201);
+}
 
     // 👁️ GET /api/lks/{id}
-    public function show($id)
-    {
-        $lks = LKS::with([
-            'verifikasiTerbaru' => function ($q) {
-                $q->with('petugas:id,name');
-            }
-        ])->findOrFail($id);
+public function show($id)
+{
+    $lks = \App\Models\Lks::with(['verifikasiTerbaru.petugas'])->findOrFail($id);
+    return response()->json($lks);
+}
 
-        return response()->json($lks);
-    }
 
+
+
+    
     // ✏️ PUT /api/lks/{id}
     public function update(Request $request, $id)
     {
@@ -88,7 +119,7 @@ class LKSController extends Controller
             'nama' => 'required|string|max:255',
             'jenis_layanan' => 'required|string|max:255',
             'kecamatan' => 'required|string|max:255',
-            'status' => 'required|in:Aktif,Nonaktif',
+            'status' => 'required|in:Aktif,Nonaktif,Pending',
             'alamat' => 'nullable|string',
             'kelurahan' => 'nullable|string',
             'npwp' => 'nullable|string',
@@ -108,6 +139,7 @@ class LKSController extends Controller
         ]);
 
         $lks = LKS::findOrFail($id);
+        
         $lks->update($validated);
 
         // 🔹 Tambahkan dokumen baru jika ada

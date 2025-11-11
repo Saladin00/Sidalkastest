@@ -1,19 +1,57 @@
-// src/components/ProtectedRoute.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
+import API from "@/utils/api";
 
 const ProtectedRoute = ({ allowedRoles = [], children }) => {
-  const token = localStorage.getItem("token");
-  const role = localStorage.getItem("role");
+  const [isValid, setIsValid] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  // ⛔ Belum login
-  if (!token) {
-    return <Navigate to="/" replace />;
+  // Gunakan sessionStorage supaya tidak berbagi antar-tab
+  const token = sessionStorage.getItem("token");
+  const role = sessionStorage.getItem("role");
+
+  const handleLogout = () => {
+    sessionStorage.clear();
+    window.location.href = "/";
+  };
+
+  useEffect(() => {
+    const verifyToken = async () => {
+      try {
+        if (!token) {
+          setIsValid(false);
+          return;
+        }
+
+        const res = await API.get("/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res?.data?.user) throw new Error("Token invalid");
+        setIsValid(true);
+      } catch (err) {
+        console.warn("⚠️ Token expired atau tidak valid:", err);
+        setIsValid(false);
+        sessionStorage.clear();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verifyToken();
+  }, [token]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <p className="text-gray-600 animate-pulse">Memverifikasi sesi...</p>
+      </div>
+    );
   }
 
-  // ✅ Kalau allowedRoles dikosongkan: artinya cukup login saja
+  if (!token || !isValid) return <Navigate to="/" replace />;
+
   if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
-    // Role tidak diizinkan
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
         <div className="text-center">
@@ -24,10 +62,7 @@ const ProtectedRoute = ({ allowedRoles = [], children }) => {
             Anda tidak memiliki izin untuk mengakses halaman ini.
           </p>
           <button
-            onClick={() => {
-              localStorage.clear();
-              window.location.href = "/";
-            }}
+            onClick={handleLogout}
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Kembali ke Login
@@ -37,7 +72,6 @@ const ProtectedRoute = ({ allowedRoles = [], children }) => {
     );
   }
 
-  // ✅ Lolos semua pengecekan → render konten
   return children || <Outlet />;
 };
 

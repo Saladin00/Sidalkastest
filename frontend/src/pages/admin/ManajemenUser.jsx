@@ -72,7 +72,7 @@ const ManajemenUser = () => {
     try {
       const token = localStorage.getItem("token");
       await API.patch(
-        `/admin/lks/${lksId}/approve`,
+        `/admin/lks/ma/${lksId}/approve`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
