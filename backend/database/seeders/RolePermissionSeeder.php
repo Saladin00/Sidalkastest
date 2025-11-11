@@ -37,16 +37,17 @@ class RolePermissionSeeder extends Seeder
         }
 
         // Buat role dan assign permission
-        foreach ($roles as $slug => $displayName) {
-            $role = Role::firstOrCreate([
-                'name' => $slug,
-                'guard_name' => 'web',
-            ], ['display_name' => $displayName]);
+       foreach ($roles as $slug => $displayName) {
+    $role = Role::firstOrCreate([
+        'name' => $slug,
+        'guard_name' => 'web',
+    ]);
 
-            // Admin dapat semua permission
-            if ($slug === 'admin') {
-                $role->syncPermissions(Permission::all());
-            }
-        }
+    // Admin dapat semua permission
+    if ($slug === 'admin') {
+        $role->syncPermissions(Permission::all());
+    }
+}
+
     }
 }

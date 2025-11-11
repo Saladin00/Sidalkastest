@@ -11,7 +11,8 @@ const Register = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    jenis_layanan: "", // ✅ Tambahkan field baru
+    jenis_layanan: "",
+    kecamatan:"", // ✅ Tambahkan field baru
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");

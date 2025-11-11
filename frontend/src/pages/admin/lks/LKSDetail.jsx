@@ -29,6 +29,7 @@ const LKSDetail = () => {
         const res = await API.get(`/lks/${id}`);
         setLks(res.data);
       } catch (err) {
+        console.error("gagal Mengambil data", err);
         alert("Gagal mengambil data");
         navigate("/admin/lks");
       }
@@ -199,15 +200,23 @@ const LKSDetail = () => {
             <ArrowLeftIcon className="h-4 w-4" />
             Kembali ke Daftar LKS
           </button>
+
           <div className="flex gap-2">
-            {verif && (
+            {lks.verifikasi_terbaru && lks.verifikasi_terbaru.id ? (
               <button
-                onClick={() => navigate(`/admin/verifikasi/${verif.id}`)}
+                onClick={() =>
+                  navigate(`/admin/verifikasi/${lks.verifikasi_terbaru.id}`)
+                }
                 className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md"
               >
-                Lihat/Review Verifikasi
+                Lihat / Review Verifikasi
               </button>
+            ) : (
+              <p className="text-gray-500 text-sm italic">
+                Belum ada data verifikasi.
+              </p>
             )}
+
             <button
               onClick={printPDF}
               className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 rounded-md"

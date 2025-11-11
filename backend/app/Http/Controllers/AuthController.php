@@ -2,81 +2,90 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Lks;
-use Illuminate\Validation\ValidationException;
-use Spatie\Permission\Models\Role;
+use App\Models\Verifikasi;
 
 class AuthController extends Controller
 {
-    // 🔹 REGISTER: khusus untuk LKS
+    // 🔹 REGISTER: otomatis buat akun LKS, data LKS, & verifikasi awal
     public function register(Request $request)
-{
-    $validated = $request->validate([
-        'username' => 'required|string|unique:users',
-        'name' => 'required|string',
-        'email' => 'required|email|unique:users',
-        'password' => 'required|min:6|confirmed',
-    ]);
+    {
+        $validated = $request->validate([
+            'username' => 'required|string|unique:users',
+            'name' => 'required|string',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|min:6|confirmed',
+            'jenis_layanan' => 'nullable|string',
+            'kecamatan' => 'nullable|string',
+        ]);
 
-    // Buat akun user tapi BELUM AKTIF
-    $user = User::create([
-        'username' => $validated['username'],
-        'name' => $validated['name'],
-        'email' => $validated['email'],
-        'password' => bcrypt($validated['password']),
-        'status_aktif' => false, // belum disetujui admin
-    ]);
+        // ✅ 1. Buat akun user (belum aktif)
+        $user = User::create([
+            'username' => $validated['username'],
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => bcrypt($validated['password']),
+            'status_aktif' => false,
+        ]);
 
-    // Role otomatis menjadi 'lks'
-    $user->assignRole('lks');
+        // ✅ 2. Beri role "lks"
+        $user->assignRole('lks');
 
-    // Buat data LKS baru (status pending)
-$lks = Lks::create([
-    'nama' => $validated['name'],
-    'jenis_layanan' => $request->jenis_layanan ?? 'Umum',
-    'kecamatan' => $request->kecamatan ?? 'Belum Ditentukan',
-    'status' => 'pending',
-]);
+        // ✅ 3. Buat LKS baru & hubungkan ke user
+        $lks = Lks::create([
+            'nama' => $validated['name'],
+            'jenis_layanan' => $request->jenis_layanan ?? 'Umum',
+            'kecamatan' => $request->kecamatan ?? 'Belum Ditentukan',
+            'status' => 'pending',
+            'user_id' => $user->id, // kolom user_id harus ada di tabel lks
+        ]);
 
-// Hubungkan user ke LKS (pastikan kolom lks_id ada di users)
-$user->lks_id = $lks->id;
-$user->save();
+        // ✅ 4. Hubungkan user ke LKS (via kolom lks_id di users)
+        $user->lks_id = $lks->id;
+        $user->save();
 
+        // ✅ 5. Buat verifikasi awal otomatis
+        $petugas = User::whereHas('roles', fn($q) => $q->where('name', 'petugas'))->first();
 
+        Verifikasi::create([
+            'lks_id' => $lks->id,
+            'petugas_id' => $petugas?->id ?? $user->id,
+            'status' => 'menunggu',
+            'penilaian' => 'Menunggu proses verifikasi.',
+            'catatan' => 'Verifikasi otomatis dibuat saat registrasi LKS.',
+            'tanggal_verifikasi' => now(),
+        ]);
 
-    return response()->json([
-        'message' => 'Pendaftaran berhasil. Akun Anda menunggu persetujuan Admin Dinsos.',
-    ], 201);
-}
+        return response()->json([
+            'message' => '✅ Pendaftaran berhasil. Akun Anda menunggu persetujuan Admin Dinsos.',
+            'user' => $user,
+            'lks' => $lks,
+        ], 201);
+    }
 
     // 🔹 LOGIN
     public function login(Request $request)
     {
         $validated = $request->validate([
             'email' => 'required|email',
-            'password' => 'required',
+            'password' => 'required|string',
         ]);
 
         $user = User::where('email', $validated['email'])->first();
 
         if (!$user || !Hash::check($validated['password'], $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['Email atau password salah.'],
-            ]);
+            return response()->json(['message' => 'Email atau password salah.'], 401);
         }
 
-        // 🚫 Cek apakah sudah aktif
         if (!$user->status_aktif) {
-            return response()->json([
-                'message' => 'Akun Anda belum disetujui oleh Admin Dinsos.',
-            ], 403);
+            return response()->json(['message' => 'Akun Anda belum disetujui oleh Admin Dinsos.'], 403);
         }
 
-        $user->tokens()->delete(); // hapus token lama
+        $user->tokens()->delete();
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
