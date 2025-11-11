@@ -11,58 +11,98 @@ export default function KlienEditForm() {
     nama: "",
     alamat: "",
     kelurahan: "",
-    kecamatan: "",
+    kecamatan_id: "",
+    lks_id: "",
     jenis_kebutuhan: "",
     status_bantuan: "",
   });
 
   const [loading, setLoading] = useState(false);
+  const [kecamatanList, setKecamatanList] = useState([]);
+  const [lksList, setLksList] = useState([]);
 
-  // 🧩 Ambil data klien saat halaman dibuka
+  // 🏙️ Ambil daftar kecamatan dari API
   useEffect(() => {
-    const fetchKlien = async () => {
+    api
+      .get("/kecamatan")
+      .then((res) => setKecamatanList(res.data?.data || []))
+      .catch((err) => console.error("Gagal ambil kecamatan:", err));
+  }, []);
+
+  // 👤 Ambil data klien saat halaman dibuka
+  useEffect(() => {
+    const load = async () => {
       try {
         const res = await api.get(`/klien/${id}`);
-        const klien = res.data.data; // ✅ ambil data sesuai struktur backend
+        const k = res.data.data;
+
         setForm({
-          nik: klien.nik || "",
-          nama: klien.nama || "",
-          alamat: klien.alamat || "",
-          kelurahan: klien.kelurahan || "",
-          kecamatan: klien.kecamatan || "",
-          jenis_kebutuhan: klien.jenis_kebutuhan || "",
-          status_bantuan: klien.status_bantuan || "",
+          nik: k.nik || "",
+          nama: k.nama || "",
+          alamat: k.alamat || "",
+          kelurahan: k.kelurahan || "",
+          kecamatan_id: k.kecamatan_id || k.kecamatan?.id || "",
+          lks_id: k.lks_id || "",
+          jenis_kebutuhan: k.jenis_kebutuhan || "",
+          status_bantuan: k.status_bantuan || "",
         });
+
+        // Ambil daftar LKS sesuai kecamatan klien
+        const kecId = k.kecamatan_id || k.kecamatan?.id;
+        if (kecId) {
+          const lksRes = await api.get(`/lks/by-kecamatan/${kecId}`);
+          setLksList(lksRes.data?.data || []);
+        }
       } catch (error) {
         console.error("Gagal mengambil data klien:", error);
         alert("Data klien tidak ditemukan");
+        navigate("/admin/klien");
       }
     };
-    fetchKlien();
-  }, [id]);
+    load();
+  }, [id, navigate]);
 
-  // 🧾 Simpan perubahan data
+  // 🔁 Jika user ganti kecamatan, ambil ulang daftar LKS
+  useEffect(() => {
+    const loadLks = async () => {
+      if (!form.kecamatan_id) {
+        setLksList([]);
+        setForm((f) => ({ ...f, lks_id: "" }));
+        return;
+      }
+      try {
+        const res = await api.get(`/lks/by-kecamatan/${form.kecamatan_id}`);
+        setLksList(res.data?.data || []);
+        setForm((f) => ({ ...f, lks_id: "" })); // reset pilihan LKS
+      } catch (error) {
+        console.error("Gagal ambil LKS:", error);
+        setLksList([]);
+      }
+    };
+    loadLks();
+  }, [form.kecamatan_id]);
+
+  // 🖊️ Handler input
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  // 💾 Simpan data
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       await api.put(`/klien/${id}`, form);
-      alert("Data klien berhasil diperbarui!");
+      alert("✅ Data klien berhasil diperbarui!");
       navigate("/admin/klien");
     } catch (error) {
       console.error(error);
-      alert("Gagal memperbarui data klien.");
+      alert("❌ Gagal memperbarui data klien.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
-
-  // 🖊️ Handler input
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   return (
-    <div className="p-6 max-w-xl mx-auto">
+    <div className="p-6 max-w-xl mx-auto bg-white shadow-md rounded-lg">
       <h1 className="text-xl font-bold mb-4">Edit Data Klien</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -70,7 +110,6 @@ export default function KlienEditForm() {
           name="nik"
           placeholder="NIK"
           value={form.nik}
-          onChange={handleChange}
           disabled
           className="border p-2 w-full bg-gray-100"
         />
@@ -95,19 +134,49 @@ export default function KlienEditForm() {
           onChange={handleChange}
           className="border p-2 w-full"
         />
-        <input
-          name="kecamatan"
-          placeholder="Kecamatan"
-          value={form.kecamatan}
-          onChange={handleChange}
-          className="border p-2 w-full"
-        />
 
+        {/* 🏙️ Kecamatan */}
+        <select
+          name="kecamatan_id"
+          value={form.kecamatan_id}
+          onChange={handleChange}
+          className="border p-2 w-full rounded"
+        >
+          <option value="">Pilih Kecamatan</option>
+          {kecamatanList.map((kec) => (
+            <option key={kec.id} value={kec.id}>
+              {kec.nama}
+            </option>
+          ))}
+        </select>
+
+        {/* 🏢 LKS */}
+        {lksList.length > 0 ? (
+          <select
+            name="lks_id"
+            value={form.lks_id}
+            onChange={handleChange}
+            className="border p-2 w-full rounded"
+          >
+            <option value="">Pilih Lembaga (LKS)</option>
+            {lksList.map((lks) => (
+              <option key={lks.id} value={lks.id}>
+                {lks.nama}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <p className="text-gray-500 text-sm italic">
+            Pilih kecamatan terlebih dahulu untuk menampilkan daftar LKS.
+          </p>
+        )}
+
+        {/* Jenis Kebutuhan */}
         <select
           name="jenis_kebutuhan"
           value={form.jenis_kebutuhan}
           onChange={handleChange}
-          className="border p-2 w-full"
+          className="border p-2 w-full rounded"
         >
           <option value="">Pilih Jenis Kebutuhan</option>
           <option value="anak">Anak</option>
@@ -117,11 +186,12 @@ export default function KlienEditForm() {
           <option value="lainnya">Lainnya</option>
         </select>
 
+        {/* Status Bantuan */}
         <select
           name="status_bantuan"
           value={form.status_bantuan}
           onChange={handleChange}
-          className="border p-2 w-full"
+          className="border p-2 w-full rounded"
         >
           <option value="">Pilih Bantuan</option>
           <option value="PKH">PKH</option>
@@ -130,10 +200,11 @@ export default function KlienEditForm() {
           <option value="lainnya">Lainnya</option>
         </select>
 
+        {/* Tombol Aksi */}
         <div className="flex justify-between mt-4">
           <button
             type="button"
-            className="bg-gray-500 text-white px-4 py-2 rounded"
+            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
             onClick={() => navigate("/admin/klien")}
           >
             Kembali
@@ -141,7 +212,9 @@ export default function KlienEditForm() {
           <button
             type="submit"
             disabled={loading}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            className={`px-4 py-2 rounded text-white ${
+              loading ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"
+            }`}
           >
             {loading ? "Menyimpan..." : "Simpan Perubahan"}
           </button>

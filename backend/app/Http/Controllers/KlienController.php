@@ -6,32 +6,37 @@ use App\Models\Klien;
 use Illuminate\Http\Request;
 
 class KlienController extends Controller
-
-
 {
     // 🔹 Daftar Klien
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = Klien::with('lks');
 
-        if ($user->hasRole('admin') && $request->filled('kecamatan')) {
-            $query->where('kecamatan', $request->kecamatan);
+        // relasi lks + kecamatan
+        $query = Klien::with(['lks', 'kecamatan']);
+
+        // 🔍 filter berdasarkan role user
+        if ($user->hasRole('admin') && $request->filled('kecamatan_id')) {
+            $query->where('kecamatan_id', $request->kecamatan_id);
         } elseif ($user->hasRole('operator')) {
-            $query->where('kecamatan', $user->kecamatan);
+            // operator hanya bisa lihat klien di kecamatannya sendiri
+            $query->where('kecamatan_id', $user->kecamatan_id);
         } elseif ($user->hasRole('lks')) {
+            // lks hanya bisa lihat klien di lembaganya
             $query->where('lks_id', $user->lks_id);
         }
 
+        // 🔍 filter tambahan
         if ($request->filled('status_bantuan')) {
             $query->where('status_bantuan', $request->status_bantuan);
         }
+
         if ($request->filled('jenis_kebutuhan')) {
             $query->where('jenis_kebutuhan', $request->jenis_kebutuhan);
         }
 
         return response()->json([
-            'data' => $query->paginate(20)
+            'data' => $query->latest()->paginate(20)
         ], 200);
     }
 
@@ -45,25 +50,26 @@ class KlienController extends Controller
             'nama' => 'required|string|max:255',
             'alamat' => 'required|string',
             'kelurahan' => 'required|string',
-            'kecamatan' => 'required|string',
+            'kecamatan_id' => 'required|exists:kecamatan,id',
             'lks_id' => 'nullable|exists:lks,id',
             'jenis_kebutuhan' => 'nullable|string',
             'status_bantuan' => 'nullable|string',
             'status_pembinaan' => 'nullable|string',
         ]);
 
+        // 🔐 Sesuaikan otomatis berdasarkan role
         if ($user->hasRole('lks')) {
             $validated['lks_id'] = $user->lks_id;
-            $validated['kecamatan'] = $user->lks->kecamatan ?? $validated['kecamatan'];
+            $validated['kecamatan_id'] = $user->lks->kecamatan_id ?? $validated['kecamatan_id'];
         } elseif ($user->hasRole('operator')) {
-            $validated['kecamatan'] = $user->kecamatan;
+            $validated['kecamatan_id'] = $user->kecamatan_id;
         }
 
         $klien = Klien::create($validated);
 
         return response()->json([
-            'message' => 'Klien berhasil ditambahkan',
-            'data' => $klien
+            'message' => '✅ Klien berhasil ditambahkan',
+            'data' => $klien->load(['lks', 'kecamatan'])
         ], 201);
     }
 
@@ -71,7 +77,7 @@ class KlienController extends Controller
     public function show($id)
     {
         try {
-            $klien = Klien::with('lks')->findOrFail($id);
+            $klien = Klien::with(['lks', 'kecamatan'])->findOrFail($id);
 
             return response()->json([
                 'data' => $klien
@@ -95,7 +101,8 @@ class KlienController extends Controller
                 'nama' => 'required|string|max:255',
                 'alamat' => 'nullable|string',
                 'kelurahan' => 'nullable|string',
-                'kecamatan' => 'nullable|string',
+                'kecamatan_id' => 'nullable|exists:kecamatan,id',
+                'lks_id' => 'nullable|exists:lks,id',
                 'jenis_kebutuhan' => 'nullable|string',
                 'status_bantuan' => 'nullable|string',
                 'status_pembinaan' => 'nullable|string',
@@ -104,8 +111,8 @@ class KlienController extends Controller
             $klien->update($validated);
 
             return response()->json([
-                'message' => 'Data klien berhasil diperbarui',
-                'data' => $klien
+                'message' => '✅ Data klien berhasil diperbarui',
+                'data' => $klien->load(['lks', 'kecamatan'])
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -123,7 +130,7 @@ class KlienController extends Controller
             $klien->delete();
 
             return response()->json([
-                'message' => 'Klien berhasil dihapus'
+                'message' => '🗑️ Klien berhasil dihapus'
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
