@@ -12,7 +12,7 @@ class AdminUserSeeder extends Seeder
         $admin = User::firstOrCreate(
             ['email' => 'admin@sidalekas.go.id'],
             [
-                'username' => 'admin dinsos',
+                'username' => 'admin_dinsos',
                 'name' => 'Admin Dinsos',
                 'email' => 'admin@sidalekas.go.id',
                 'password' => bcrypt('admin123'),
@@ -20,6 +20,6 @@ class AdminUserSeeder extends Seeder
             ]
         );
 
-        $admin->assignRole('Admin Dinsos');
+        $admin->assignRole('admin');
     }
 }

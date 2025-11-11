@@ -6,6 +6,8 @@ use App\Models\Klien;
 use Illuminate\Http\Request;
 
 class KlienController extends Controller
+
+
 {
     // 🔹 Daftar Klien
     public function index(Request $request)

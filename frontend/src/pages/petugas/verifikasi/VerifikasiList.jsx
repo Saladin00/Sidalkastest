@@ -8,7 +8,9 @@ export default function VerifikasiList() {
   const [status, setStatus] = useState("");
   const navigate = useNavigate();
 
-  useEffect(() => { load(); }, [status]);
+  useEffect(() => {
+    load();
+  }, [status]);
 
   async function load() {
     try {
@@ -57,14 +59,18 @@ export default function VerifikasiList() {
               <tr key={v.id} className="border-t">
                 <td className="p-2">{v.lks?.nama || `LKS #${v.lks_id}`}</td>
                 <td className="p-2">
-                  {new Date(v.tanggal_verifikasi || v.created_at).toLocaleString()}
+                  {new Date(
+                    v.tanggal_verifikasi || v.created_at
+                  ).toLocaleString()}
                 </td>
                 <td className="p-2">
                   <VerificationBadge status={v.status} />
                 </td>
                 <td className="p-2 text-right">
                   <button
-                    onClick={() => navigate(`/petugas/verifikasi/${v.id}/form`)}
+                    onClick={() =>
+                      navigate(`/petugas/verifikasi/lks/${v.lks_id}`)
+                    }
                     className="text-blue-600 hover:underline"
                   >
                     Detail

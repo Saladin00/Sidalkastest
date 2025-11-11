@@ -37,7 +37,11 @@ const Login = () => {
     }
 
     try {
-      const response = await API.post("/login", { email, password });
+      const response = await API.post("/login", {
+        email: email.trim(),
+        password: password,
+      });
+
       const { access_token, role, user, message } = response.data;
 
       if (!access_token) {
@@ -45,16 +49,28 @@ const Login = () => {
         return;
       }
 
-      localStorage.setItem("token", access_token);
-      localStorage.setItem("role", role);
-      localStorage.setItem("user", JSON.stringify(user));
+      // 🔹 Gunakan sessionStorage agar tidak berbagi antar-tab
+      sessionStorage.setItem("token", access_token);
+      sessionStorage.setItem("role", role);
+      sessionStorage.setItem("user", JSON.stringify(user));
 
-      // Redirect sesuai role
-      if (role === "admin") navigate("/admin");
-      else if (role === "operator") navigate("/operator");
-      else if (role === "petugas") navigate("/petugas");
-      else if (role === "lks") navigate("/lks");
-      else setErrorMsg("Role tidak dikenali, login gagal.");
+      // 🔹 Arahkan sesuai role
+      switch (role) {
+        case "admin":
+          navigate("/admin");
+          break;
+        case "operator":
+          navigate("/operator");
+          break;
+        case "petugas":
+          navigate("/petugas");
+          break;
+        case "lks":
+          navigate("/lks");
+          break;
+        default:
+          setErrorMsg("Role tidak dikenali, login gagal.");
+      }
     } catch (error) {
       console.error("Login Error:", error.response?.data || error.message);
 
@@ -62,8 +78,16 @@ const Login = () => {
         setErrorMsg("Akun Anda belum disetujui oleh Admin Dinsos.");
       } else if (error.response?.status === 401) {
         setErrorMsg("Email atau password salah.");
+      } else if (error.response?.status === 422) {
+        const validationErrors = error.response?.data?.errors;
+        const message = validationErrors
+          ? Object.values(validationErrors).flat().join(", ")
+          : "Format data tidak valid.";
+        setErrorMsg(message);
       } else {
-        setErrorMsg(error.response?.data?.message || "Login gagal, coba lagi nanti.");
+        setErrorMsg(
+          error.response?.data?.message || "Login gagal, coba lagi nanti."
+        );
       }
     }
   };

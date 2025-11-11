@@ -14,7 +14,7 @@ class Lks extends Model
     protected $fillable = [
         'nama',
         'jenis_layanan',
-        'status',              // aktif / pending / ditolak
+        'status', // aktif / pending / ditolak
         'alamat',
         'kelurahan',
         'kecamatan',
@@ -57,7 +57,6 @@ class Lks extends Model
     }
 
     // 3️⃣ LKS punya banyak laporan kunjungan
-    // 📋 Relasi ke laporan kunjungan
     public function kunjungan()
     {
         return $this->hasMany(LaporanKunjungan::class, 'lks_id');
@@ -69,9 +68,14 @@ class Lks extends Model
         return $this->hasMany(\App\Models\Verifikasi::class, 'lks_id');
     }
 
-    // 🕒 Relasi ke verifikasi terbaru
-    public function verifikasiTerbaru()
-    {
-        return $this->hasOne(\App\Models\Verifikasi::class, 'lks_id')->latestOfMany();
-    }
+   public function verifikasiTerbaru()
+{
+    return $this->hasOne(\App\Models\Verifikasi::class, 'lks_id')
+        ->latest('id')
+        ->select('verifikasi.*'); // ✅ hilangkan ambiguitas kolom
+}
+
+
+
+
 }

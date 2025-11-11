@@ -14,24 +14,14 @@ use App\Http\Controllers\LksApprovalController;
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
-|
-| Semua endpoint API aplikasi disusun dengan rapi di bawah ini.
-| Pastikan hanya user yang sudah login (auth:sanctum) yang bisa
-| mengakses endpoint yang membutuhkan autentikasi.
-|
 */
 
-// ========================
-// 🔹 AUTHENTIKASI (PUBLIC)
-// ========================
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/lks/{id}/cetak-pdf', [LKSController::class, 'cetakProfil']);
 
-// ========================
-// 🔐 ROUTE PROTECTED (auth:sanctum)
-// ========================
-Route::middleware(['auth:sanctum'])->group(function () {
+// ✅ Semua route butuh login & token aktif
+Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
 
     // 🔸 Logout & Profile
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -74,6 +64,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // ========================
     Route::get('/verifikasi', [VerifikasiController::class, 'index']);
     Route::get('/verifikasi/{id}', [VerifikasiController::class, 'show']);
+    Route::post('/verifikasi', [VerifikasiController::class, 'store']);
+    Route::get('/verifikasi/{id}/logs', [VerifikasiController::class, 'logs']);
+    Route::put('/verifikasi/{id}/status', [VerifikasiController::class, 'updateStatus']);
 
     // ========================
     // 👤 DATA KLIEN

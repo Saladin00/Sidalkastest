@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Verifikasi extends Model
 {
+    use HasFactory;
+    
     protected $table = 'verifikasi';
 
     protected $fillable = [
@@ -36,6 +39,6 @@ class Verifikasi extends Model
 
     public function logs()
     {
-        return $this->hasMany(VerifikasiLog::class);
+        return $this->hasMany(VerifikasiLog::class,'verifikasi_id');
     }
 }

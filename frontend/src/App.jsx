@@ -1,3 +1,4 @@
+// src/App.jsx
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 // 🔐 Auth Pages
@@ -11,6 +12,10 @@ import DashboardOperator from "./pages/DashboardOperator";
 import DashboardPetugas from "./pages/DashboardPetugas";
 import DashboardLKS from "./pages/DashboardLKS";
 
+// 🧩 Layouts
+import AdminLayout from "./components/AdminLayout";
+import PetugasLayout from "./components/PetugasLayout";
+
 // 🧩 Modul LKS
 import LKSList from "./pages/admin/lks/LKSList";
 import LKSForm from "./pages/admin/lks/LKSForm";
@@ -22,7 +27,6 @@ import LKSKunjungan from "./pages/admin/lks/LKSKunjungan";
 
 // 👤 Manajemen User
 import ManajemenUser from "./pages/admin/ManajemenUser";
-import AdminLayout from "./components/AdminLayout";
 
 // 📊 Modul Data Klien
 import KlienList from "./pages/admin/klien/KlienList";
@@ -37,6 +41,12 @@ import OperatorKlienList from "./pages/operator/klien/OperatorKlienList";
 import AdminVerifikasiList from "./pages/admin/verifikasi/VerifikasiList";
 import AdminVerifikasiReview from "./pages/admin/verifikasi/VerifikasiReview";
 
+// 📋 Halaman Petugas
+// PETUGAS - Verifikasi
+import VerifikasiPage from "./pages/petugas/verifikasi/VerifikasiPage";
+import VerifikasiForm from "./pages/petugas/verifikasi/VerifikasiForm";
+import VerifikasiDetail from "./pages/petugas/verifikasi/VerifikasiDetail";
+
 function App() {
   return (
     <BrowserRouter>
@@ -45,7 +55,7 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* ==================== DASHBOARD ==================== */}
+        {/* ==================== ADMIN DASHBOARD ==================== */}
         <Route
           path="/admin"
           element={
@@ -54,6 +64,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* ==================== OPERATOR DASHBOARD ==================== */}
         <Route
           path="/operator"
           element={
@@ -62,14 +74,23 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* ==================== PETUGAS DASHBOARD (Nested Route) ==================== */}
         <Route
           path="/petugas"
           element={
             <ProtectedRoute allowedRoles={["petugas"]}>
-              <DashboardPetugas />
+              <PetugasLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<DashboardPetugas />} />
+          <Route path="verifikasi" element={<VerifikasiPage />} />
+          <Route path="verifikasi/lks/:lks_id" element={<VerifikasiForm />} />
+          <Route path="verifikasi/:id" element={<VerifikasiDetail />} />
+        </Route>
+
+        {/* ==================== LKS DASHBOARD ==================== */}
         <Route
           path="/lks"
           element={

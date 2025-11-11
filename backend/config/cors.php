@@ -22,10 +22,9 @@ return [
     'allowed_methods' => ['*'],
 
     // 🔹 Domain asal (frontend) yang diizinkan
-    'allowed_origins' => [
-        'http://localhost:5173',   // untuk pengembangan (Vite)
-        'https://sidaleka.id',     // untuk production
-    ],
+    'allowed_origins' => ['http://localhost:5173', 'http://127.0.0.1:5173'],
+'supports_credentials' => true,
+
 
     // 🔹 Tidak perlu pola wildcard, cukup kosongkan
     'allowed_origins_patterns' => [],
