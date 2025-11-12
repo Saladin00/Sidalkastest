@@ -6,16 +6,20 @@ const ManajemenUser = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [daftarKecamatan, setDaftarKecamatan] = useState([]);
+
   const [formData, setFormData] = useState({
     username: "",
     name: "",
     email: "",
     password: "",
     role: "operator",
+    kecamatan_id: "",
   });
 
   useEffect(() => {
     fetchUsers();
+    fetchKecamatan();
   }, []);
 
   // 🔹 Ambil semua user
@@ -23,16 +27,23 @@ const ManajemenUser = () => {
     setLoading(true);
     setError("");
     try {
-      const token = localStorage.getItem("token");
-      const res = await API.get("/users", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await API.get("/users");
       setUsers(res.data.users || []);
     } catch (err) {
       console.error("❌ Gagal ambil data user:", err);
       setError("Gagal memuat data pengguna.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 🔹 Ambil daftar kecamatan
+  const fetchKecamatan = async () => {
+    try {
+      const res = await API.get("/kecamatan");
+      setDaftarKecamatan(res.data.data || []);
+    } catch (err) {
+      console.error("Gagal ambil daftar kecamatan:", err);
     }
   };
 
@@ -46,10 +57,7 @@ const ManajemenUser = () => {
     }
 
     try {
-      const token = localStorage.getItem("token");
-      await API.post("/users", formData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await API.post("/users", formData);
       alert("✅ Akun berhasil dibuat!");
       setShowForm(false);
       setFormData({
@@ -58,6 +66,7 @@ const ManajemenUser = () => {
         email: "",
         password: "",
         role: "operator",
+        kecamatan_id: "",
       });
       fetchUsers();
     } catch (err) {
@@ -66,58 +75,11 @@ const ManajemenUser = () => {
     }
   };
 
-  // 🔹 Approve LKS
-  const handleApprove = async (lksId) => {
-    if (!window.confirm("Setujui akun LKS ini?")) return;
-    try {
-      const token = localStorage.getItem("token");
-      await API.patch(
-        `/admin/lks/ma/${lksId}/approve`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      alert("✅ LKS berhasil disetujui");
-      fetchUsers();
-    } catch (err) {
-      console.error("❌ Gagal approve LKS:", err);
-      alert("Gagal menyetujui akun LKS.");
-    }
-  };
-
-  // 🔹 Reject LKS
-  const handleReject = async (lksId) => {
-    if (!window.confirm("Tolak akun LKS ini?")) return;
-    try {
-      const token = localStorage.getItem("token");
-      await API.patch(
-        `/admin/lks/${lksId}/reject`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      alert("❌ Akun LKS ditolak");
-      fetchUsers();
-    } catch (err) {
-      console.error("❌ Gagal menolak LKS:", err);
-      alert("Gagal menolak akun LKS.");
-    }
-  };
-
   // 🔹 Toggle aktif/nonaktif
   const handleToggleStatus = async (userId) => {
     if (!window.confirm("Ubah status aktif pengguna ini?")) return;
     try {
-      const token = localStorage.getItem("token");
-      await API.patch(
-        `/users/${userId}/toggle-status`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await API.patch(`/users/${userId}/toggle-status`);
       fetchUsers();
     } catch (err) {
       console.error("❌ Gagal ubah status pengguna:", err);
@@ -157,6 +119,7 @@ const ManajemenUser = () => {
                 <th className="px-4 py-2">Nama</th>
                 <th className="px-4 py-2">Email</th>
                 <th className="px-4 py-2">Role</th>
+                <th className="px-4 py-2">Kecamatan</th>
                 <th className="px-4 py-2">Status Akun</th>
                 <th className="px-4 py-2 text-center">Aksi</th>
               </tr>
@@ -170,6 +133,9 @@ const ManajemenUser = () => {
                     <td className="px-4 py-2">{user.name}</td>
                     <td className="px-4 py-2">{user.email}</td>
                     <td className="px-4 py-2 capitalize">{user.role}</td>
+                    <td className="px-4 py-2">
+                      {user.kecamatan?.nama || "-"}
+                    </td>
                     <td className="px-4 py-2">
                       <span
                         className={`font-semibold ${
@@ -191,7 +157,7 @@ const ManajemenUser = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="text-center py-4 text-gray-500">
+                  <td colSpan="8" className="text-center py-4 text-gray-500">
                     Tidak ada pengguna.
                   </td>
                 </tr>
@@ -249,6 +215,8 @@ const ManajemenUser = () => {
                 }
                 required
               />
+
+              {/* Pilihan Role */}
               <select
                 className="w-full border rounded p-2"
                 value={formData.role}
@@ -259,6 +227,26 @@ const ManajemenUser = () => {
                 <option value="operator">Operator</option>
                 <option value="petugas">Petugas</option>
               </select>
+
+              {/* Pilihan Kecamatan */}
+              {(formData.role === "operator" ||
+                formData.role === "petugas") && (
+                <select
+                  className="w-full border rounded p-2"
+                  value={formData.kecamatan_id}
+                  onChange={(e) =>
+                    setFormData({ ...formData, kecamatan_id: e.target.value })
+                  }
+                  required
+                >
+                  <option value="">Pilih Kecamatan</option>
+                  {daftarKecamatan.map((kec) => (
+                    <option key={kec.id} value={kec.id}>
+                      {kec.nama}
+                    </option>
+                  ))}
+                </select>
+              )}
 
               <div className="flex justify-end gap-2 pt-2">
                 <button

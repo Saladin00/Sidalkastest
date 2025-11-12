@@ -21,6 +21,7 @@ use App\Http\Controllers\KecamatanController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/lks/{id}/cetak-pdf', [LKSController::class, 'cetakProfil']);
+Route::get('/kecamatan', [\App\Http\Controllers\KecamatanController::class, 'index']);
 
 // ✅ Semua route butuh login & token aktif
 Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
@@ -65,7 +66,7 @@ Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
     // ========================
 // 🏙️ DATA KECAMATAN & LKS
 // ========================
-    Route::get('/kecamatan', [\App\Http\Controllers\KecamatanController::class, 'index']);
+    
     Route::get('/lks/by-kecamatan/{id}', [LKSController::class, 'byKecamatan']);
     // routes/api.php
 Route::get('/lks/by-kecamatan/{id}', [LKSController::class, 'getByKecamatan']);

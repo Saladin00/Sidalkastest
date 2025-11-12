@@ -11,16 +11,18 @@ const LKSList = () => {
   const location = useLocation();
 
   const loadLKS = async () => {
-    setLoading(true);
-    try {
-      const res = await API.get("/lks", { params: { search } });
-      setLksList(Array.isArray(res.data) ? res.data : []);
-    } catch (error) {
-      console.error("Gagal ambil data LKS:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  setLoading(true);
+  try {
+    const res = await API.get("/lks", { params: { search } });
+    const items = res.data?.data || []; // ✅ ambil dari key 'data'
+    setLksList(items);
+  } catch (error) {
+    console.error("Gagal ambil data LKS:", error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleDelete = async (id) => {
     if (!window.confirm("Yakin ingin menghapus data LKS ini?")) return;

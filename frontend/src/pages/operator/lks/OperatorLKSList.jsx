@@ -1,42 +1,29 @@
+// src/pages/operator/lks/OperatorLKSList.jsx
 import React, { useEffect, useState } from "react";
-import { RotateCw, Loader2 } from "lucide-react";
+import { Eye, RotateCw, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import api from "../../../utils/api";
 
-const OperatorKlienList = () => {
-  const [klienList, setKlienList] = useState([]);
-  const [pagination, setPagination] = useState({
-    current_page: 1,
-    last_page: 1,
-    total: 0,
-  });
+const OperatorLKSList = () => {
+  const [lksList, setLksList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
 
-  // 🔹 Fungsi ambil data klien (otomatis bawa pagination)
-  const loadKlien = async (page = 1) => {
+  const loadLKS = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/klien", {
-        params: { search, page },
-      });
-
-      const data = res.data?.data;
-      setKlienList(data?.data || []);
-      setPagination({
-        current_page: data?.current_page,
-        last_page: data?.last_page,
-        total: data?.total,
-      });
+      const res = await api.get("/lks", { params: { search } });
+      setLksList(res.data?.data || []);
     } catch (error) {
-      console.error("Gagal mengambil data klien:", error);
-      alert("Terjadi kesalahan saat memuat data klien.");
+      console.error("Gagal mengambil data LKS:", error);
+      alert("Terjadi kesalahan saat memuat data LKS.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadKlien();
+    loadLKS();
   }, []);
 
   return (
@@ -44,20 +31,20 @@ const OperatorKlienList = () => {
       {/* Header */}
       <div className="flex justify-between items-center p-4 border-b border-slate-100">
         <h2 className="text-lg font-semibold text-slate-800">
-          Daftar Klien Kecamatan
+          Daftar Lembaga Kesejahteraan Sosial (LKS)
         </h2>
 
         <div className="flex items-center gap-2">
           <div className="flex items-center border border-slate-300 rounded-md overflow-hidden bg-white">
             <input
               type="text"
-              placeholder="Cari nama klien..."
+              placeholder="Cari nama LKS..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="px-3 py-1.5 text-sm outline-none w-48"
             />
             <button
-              onClick={() => loadKlien(1)}
+              onClick={loadLKS}
               className="bg-slate-100 px-3 py-1.5 text-slate-600 hover:bg-slate-200 transition"
             >
               🔍
@@ -65,7 +52,7 @@ const OperatorKlienList = () => {
           </div>
 
           <button
-            onClick={() => loadKlien(pagination.current_page)}
+            onClick={loadLKS}
             className="flex items-center gap-1 border border-slate-300 text-slate-700 px-3 py-1.5 rounded-md hover:bg-slate-100 text-sm transition"
           >
             {loading ? (
@@ -83,54 +70,71 @@ const OperatorKlienList = () => {
         {loading ? (
           <div className="flex justify-center items-center py-20 text-gray-500">
             <Loader2 size={24} className="animate-spin mr-2" />
-            Memuat data klien...
+            Memuat data LKS...
           </div>
         ) : (
           <table className="min-w-full text-sm text-gray-700">
             <thead className="bg-slate-50 text-xs font-medium text-slate-600 border-b">
               <tr>
-                <th className="px-4 py-3 text-center w-12 border-r">No</th>
-                <th className="px-4 py-3 border-r">Nama Klien</th>
-                <th className="px-4 py-3 border-r">Kelurahan</th>
-                <th className="px-4 py-3 border-r">Alamat</th>
+                <th className="px-4 py-3 text-center w-16 border-r">No</th>
+                <th className="px-4 py-3 border-r">Nama LKS</th>
+                <th className="px-4 py-3 border-r">Jenis Layanan</th>
                 <th className="px-4 py-3 border-r">Kecamatan</th>
-                <th className="px-4 py-3 border-r">LKS</th>
+                <th className="px-4 py-3 border-r">Status</th>
+                <th className="px-4 py-3 text-center w-28">Aksi</th>
               </tr>
             </thead>
             <tbody>
-              {klienList.length === 0 ? (
+              {lksList.length === 0 ? (
                 <tr>
                   <td
                     colSpan="6"
                     className="text-center py-6 text-slate-400 italic"
                   >
-                    Tidak ada data klien ditemukan.
+                    Tidak ada data LKS ditemukan.
                   </td>
                 </tr>
               ) : (
-                klienList.map((klien, index) => (
+                lksList.map((lks, index) => (
                   <tr
-                    key={klien.id}
+                    key={lks.id}
                     className="border-t hover:bg-slate-50 transition"
                   >
                     <td className="px-4 py-3 text-center border-r">
-                      {index + 1 +
-                        (pagination.current_page - 1) * 10}
+                      {index + 1}
                     </td>
                     <td className="px-4 py-3 border-r font-medium text-slate-800">
-                      {klien.nama}
+                      {lks.nama}
                     </td>
                     <td className="px-4 py-3 border-r">
-                      {klien.kelurahan || "-"}
+                      {lks.jenis_layanan || "-"}
                     </td>
                     <td className="px-4 py-3 border-r">
-                      {klien.alamat || "-"}
+                      {lks.kecamatan?.nama || "-"}
                     </td>
                     <td className="px-4 py-3 border-r">
-                      {klien.kecamatan?.nama || "-"}
+                      <span
+                        className={`px-3 py-1 text-xs font-medium rounded-full ${
+                          lks.verifikasi_terbaru?.status?.toLowerCase() ===
+                          "valid"
+                            ? "bg-green-100 text-green-700"
+                            : lks.verifikasi_terbaru?.status?.toLowerCase() ===
+                              "tidak_valid"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        }`}
+                      >
+                        {lks.verifikasi_terbaru?.status?.toUpperCase() ||
+                          "PENDING"}
+                      </span>
                     </td>
-                    <td className="px-4 py-3 border-r">
-                      {klien.lks?.nama || "-"}
+                    <td className="px-4 py-3 text-center">
+                      <Link
+                        to={`/operator/lks/detail/${lks.id}`}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        <Eye size={18} />
+                      </Link>
                     </td>
                   </tr>
                 ))
@@ -139,32 +143,8 @@ const OperatorKlienList = () => {
           </table>
         )}
       </div>
-
-      {/* Pagination */}
-      <div className="flex justify-between items-center p-4 text-sm text-slate-600">
-        <p>
-          Halaman {pagination.current_page} dari {pagination.last_page} — Total{" "}
-          {pagination.total} data
-        </p>
-        <div className="flex gap-2">
-          <button
-            disabled={pagination.current_page <= 1}
-            onClick={() => loadKlien(pagination.current_page - 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            ⬅️ Prev
-          </button>
-          <button
-            disabled={pagination.current_page >= pagination.last_page}
-            onClick={() => loadKlien(pagination.current_page + 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Next ➡️
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
 
-export default OperatorKlienList;
+export default OperatorLKSList;

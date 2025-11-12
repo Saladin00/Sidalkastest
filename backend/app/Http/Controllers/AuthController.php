@@ -19,11 +19,11 @@ class AuthController extends Controller
             'name' => 'required|string',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6|confirmed',
-            'jenis_layanan' => 'nullable|string',
-            'kecamatan' => 'nullable|string',
+            'jenis_layanan' => 'required|string',
+            'kecamatan_id' => 'required|exists:kecamatan,id', // ✅ ubah ke ID, bukan string
         ]);
 
-        // ✅ 1. Buat akun user (belum aktif)
+        // ✅ 1. Buat akun user (status pending)
         $user = User::create([
             'username' => $validated['username'],
             'name' => $validated['name'],
@@ -35,20 +35,20 @@ class AuthController extends Controller
         // ✅ 2. Beri role "lks"
         $user->assignRole('lks');
 
-        // ✅ 3. Buat LKS baru & hubungkan ke user
+        // ✅ 3. Buat data LKS baru (hubungkan dengan user & kecamatan)
         $lks = Lks::create([
             'nama' => $validated['name'],
-            'jenis_layanan' => $request->jenis_layanan ?? 'Umum',
-            'kecamatan' => $request->kecamatan ?? 'Belum Ditentukan',
+            'jenis_layanan' => $validated['jenis_layanan'],
+            'kecamatan_id' => $validated['kecamatan_id'], // ✅ simpan relasi foreign key
             'status' => 'pending',
-            'user_id' => $user->id, // kolom user_id harus ada di tabel lks
+            'user_id' => $user->id, // pastikan tabel lks punya kolom user_id
         ]);
 
-        // ✅ 4. Hubungkan user ke LKS (via kolom lks_id di users)
+        // ✅ 4. Hubungkan user ke LKS (via kolom lks_id di tabel users)
         $user->lks_id = $lks->id;
         $user->save();
 
-        // ✅ 5. Buat verifikasi awal otomatis
+        // ✅ 5. Buat verifikasi awal otomatis (langsung ke petugas pertama, atau fallback ke user)
         $petugas = User::whereHas('roles', fn($q) => $q->where('name', 'petugas'))->first();
 
         Verifikasi::create([
@@ -61,9 +61,10 @@ class AuthController extends Controller
         ]);
 
         return response()->json([
+            'success' => true,
             'message' => '✅ Pendaftaran berhasil. Akun Anda menunggu persetujuan Admin Dinsos.',
             'user' => $user,
-            'lks' => $lks,
+            'lks' => $lks->load('kecamatan'), // ✅ sekalian kirim data kecamatan-nya
         ], 201);
     }
 
