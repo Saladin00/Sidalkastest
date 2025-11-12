@@ -9,6 +9,8 @@ use App\Http\Controllers\LaporanKunjunganController;
 use App\Http\Controllers\DokumenLKSController;
 use App\Http\Controllers\VerifikasiController;
 use App\Http\Controllers\LksApprovalController;
+use App\Http\Controllers\KecamatanController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -47,7 +49,7 @@ Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
     Route::post('/lks/{id}/upload-dokumen', [LKSController::class, 'uploadDokumen']);
 
     // ========================
-    // 📎 DOKUMEN LKS
+    // 📎 Modul LKS
     // ========================
     Route::get('/lks/{id}/dokumen', [DokumenLKSController::class, 'index']);
     Route::post('/lks/dokumen', [DokumenLKSController::class, 'store']);
@@ -58,6 +60,17 @@ Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
     // ========================
     Route::get('/lks/{id}/kunjungan', [LaporanKunjunganController::class, 'index']);
     Route::post('/lks/{id}/kunjungan', [LaporanKunjunganController::class, 'store']);
+
+
+    // ========================
+// 🏙️ DATA KECAMATAN & LKS
+// ========================
+    Route::get('/kecamatan', [\App\Http\Controllers\KecamatanController::class, 'index']);
+    Route::get('/lks/by-kecamatan/{id}', [LKSController::class, 'byKecamatan']);
+    // routes/api.php
+Route::get('/lks/by-kecamatan/{id}', [LKSController::class, 'getByKecamatan']);
+
+
 
     // ========================
     // 🔍 VERIFIKASI LKS

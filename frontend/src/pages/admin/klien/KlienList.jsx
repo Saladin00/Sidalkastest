@@ -1,28 +1,31 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../utils/api";
+import { Search, Plus, Eye, Edit2, Trash2 } from "lucide-react";
 
 export default function KlienList() {
   const navigate = useNavigate();
   const [klien, setKlien] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [filters, setFilters] = useState({
     status_bantuan: "",
     jenis_kebutuhan: "",
-    kecamatan: "",
+    kecamatan_id: "",
     lks_id: "",
   });
 
-  // Daftar opsi (untuk dropdown)
   const [daftarKecamatan, setDaftarKecamatan] = useState([]);
   const [daftarLKS, setDaftarLKS] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // 🚀 Ambil data klien dari API
+  const [perPage, setPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
   const fetchKlien = async () => {
     setLoading(true);
     try {
       const res = await api.get("/klien", { params: filters });
-      // Laravel paginate → array klien ada di res.data.data.data
       const items = res.data?.data?.data || [];
       setKlien(items);
     } catch (error) {
@@ -34,31 +37,45 @@ export default function KlienList() {
     }
   };
 
-  // 🧭 Ambil daftar kecamatan dan LKS untuk dropdown
   const fetchFilterOptions = async () => {
     try {
-      const [kecamatanRes, lksRes] = await Promise.all([
-        api.get("/kecamatan"), // pastikan endpoint ini ada di backend
-        api.get("/lks"),       // endpoint untuk ambil daftar LKS
-      ]);
+      const kecamatanRes = await api.get("/kecamatan");
       setDaftarKecamatan(kecamatanRes.data?.data || []);
+
+      const lksRes = await api.get("/lks");
       setDaftarLKS(lksRes.data?.data || []);
     } catch (error) {
       console.error("Gagal memuat daftar kecamatan/LKS:", error);
     }
   };
 
-  // 🧩 Ambil data setiap kali filter berubah
   useEffect(() => {
-    fetchKlien();
-  }, [filters]);
+    const loadLksByKecamatan = async () => {
+      if (!filters.kecamatan_id) {
+        const lksRes = await api.get("/lks");
+        setDaftarLKS(lksRes.data?.data || []);
+        return;
+      }
+      try {
+        const res = await api.get(`/lks/by-kecamatan/${filters.kecamatan_id}`);
+        setDaftarLKS(res.data?.data || []);
+      } catch (e) {
+        console.error("Gagal ambil LKS by kecamatan:", e);
+        setDaftarLKS([]);
+      }
+    };
+    loadLksByKecamatan();
+    setFilters((f) => ({ ...f, lks_id: "" }));
+  }, [filters.kecamatan_id]);
 
-  // 🧭 Ambil daftar kecamatan & LKS sekali saat halaman dibuka
   useEffect(() => {
     fetchFilterOptions();
   }, []);
 
-  // 🗑️ Hapus data klien
+  useEffect(() => {
+    fetchKlien();
+  }, [filters]);
+
   const handleDelete = async (id) => {
     if (!window.confirm("Yakin ingin menghapus data klien ini?")) return;
     try {
@@ -71,142 +88,320 @@ export default function KlienList() {
     }
   };
 
+  const handleResetFilters = () => {
+    setFilters({
+      status_bantuan: "",
+      jenis_kebutuhan: "",
+      kecamatan_id: "",
+      lks_id: "",
+    });
+    setCurrentPage(1);
+  };
+
+  // FRONTEND SEARCH
+  const filteredKlien = klien.filter((item) => {
+    const q = searchTerm.toLowerCase();
+    if (!q) return true;
+    return (
+      item.nik?.toLowerCase().includes(q) ||
+      item.nama?.toLowerCase().includes(q) ||
+      item.alamat?.toLowerCase().includes(q) ||
+      item.kelurahan?.toLowerCase().includes(q) ||
+      item.kecamatan?.nama?.toLowerCase().includes(q) ||
+      item.lks?.nama?.toLowerCase().includes(q)
+    );
+  });
+
+  // PAGINATION
+  const totalPages = Math.max(1, Math.ceil(filteredKlien.length / perPage));
+  const currentPageSafe = Math.min(currentPage, totalPages);
+  const startIndex = (currentPageSafe - 1) * perPage;
+  const paginatedKlien = filteredKlien.slice(
+    startIndex,
+    startIndex + perPage
+  );
+
+  const handleChangePerPage = (e) => {
+    setPerPage(Number(e.target.value));
+    setCurrentPage(1);
+  };
+
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Data Klien</h1>
-        <button
-          onClick={() => navigate("/admin/klien/tambah")}
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-        >
-          + Tambah Klien
-        </button>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      {/* TOP BAR: filter + reset + search + tambah (sejajar) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        {/* Filters minimalis pill */}
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            className="h-8 min-w-[150px] rounded-full border border-gray-300 bg-white px-3 pr-7 text-xs focus:outline-none focus:ring-1 focus:ring-slate-500"
+            value={filters.status_bantuan}
+            onChange={(e) => {
+              setFilters({ ...filters, status_bantuan: e.target.value });
+              setCurrentPage(1);
+            }}
+          >
+            <option value="">Status Bantuan: Semua</option>
+            <option value="PKH">PKH</option>
+            <option value="BPNT">BPNT</option>
+            <option value="BLT">BLT</option>
+            <option value="lainnya">Lainnya</option>
+          </select>
+
+          <select
+            className="h-8 min-w-[160px] rounded-full border border-gray-300 bg-white px-3 pr-7 text-xs focus:outline-none focus:ring-1 focus:ring-slate-500"
+            value={filters.jenis_kebutuhan}
+            onChange={(e) => {
+              setFilters({ ...filters, jenis_kebutuhan: e.target.value });
+              setCurrentPage(1);
+            }}
+          >
+            <option value="">Jenis Kebutuhan: Semua</option>
+            <option value="anak">Anak</option>
+            <option value="disabilitas">Disabilitas</option>
+            <option value="lansia">Lansia</option>
+            <option value="fakir_miskin">Fakir Miskin</option>
+          </select>
+
+          <select
+            className="h-8 min-w-[150px] rounded-full border border-gray-300 bg-white px-3 pr-7 text-xs focus:outline-none focus:ring-1 focus:ring-slate-500"
+            value={filters.kecamatan_id}
+            onChange={(e) => {
+              setFilters({ ...filters, kecamatan_id: e.target.value });
+              setCurrentPage(1);
+            }}
+          >
+            <option value="">Kecamatan: Semua</option>
+            {daftarKecamatan.map((kec) => (
+              <option key={kec.id} value={kec.id}>
+                {kec.nama}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="h-8 min-w-[140px] rounded-full border border-gray-300 bg-white px-3 pr-7 text-xs focus:outline-none focus:ring-1 focus:ring-slate-500"
+            value={filters.lks_id}
+            onChange={(e) => {
+              setFilters({ ...filters, lks_id: e.target.value });
+              setCurrentPage(1);
+            }}
+          >
+            <option value="">LKS: Semua</option>
+            {daftarLKS.map((lks) => (
+              <option key={lks.id} value={lks.id}>
+                {lks.nama}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="button"
+            onClick={handleResetFilters}
+            className="h-8 rounded-full border border-gray-300 px-3 text-xs text-gray-700 hover:bg-gray-100"
+          >
+            Reset
+          </button>
+        </div>
+
+        {/* Search + Tambah Klien */}
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 pl-2 flex items-center text-gray-400">
+              <Search size={16} />
+            </span>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="Cari klien..."
+              className="h-9 min-w-[200px] pl-7 pr-3 border border-gray-300 rounded-full text-xs md:text-sm focus:outline-none focus:ring-1 focus:ring-slate-500 bg-white"
+            />
+          </div>
+
+          <button
+            onClick={() => navigate("/admin/klien/tambah")}
+            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow-sm"
+          >
+            <Plus size={16} />
+            <span>Tambah Klien</span>
+          </button>
+        </div>
       </div>
 
-      {/* Filter */}
-      <div className="flex flex-wrap gap-4 mb-4">
-        {/* Filter Bantuan */}
-        <select
-          className="border p-2 rounded"
-          value={filters.status_bantuan}
-          onChange={(e) =>
-            setFilters({ ...filters, status_bantuan: e.target.value })
-          }
-        >
-          <option value="">Semua Bantuan</option>
-          <option value="PKH">PKH</option>
-          <option value="BPNT">BPNT</option>
-          <option value="BLT">BLT</option>
-          <option value="lainnya">Lainnya</option>
-        </select>
-
-        {/* Filter Jenis Kebutuhan */}
-        <select
-          className="border p-2 rounded"
-          value={filters.jenis_kebutuhan}
-          onChange={(e) =>
-            setFilters({ ...filters, jenis_kebutuhan: e.target.value })
-          }
-        >
-          <option value="">Semua Jenis Kebutuhan</option>
-          <option value="anak">Anak</option>
-          <option value="disabilitas">Disabilitas</option>
-          <option value="lansia">Lansia</option>
-          <option value="fakir_miskin">Fakir Miskin</option>
-        </select>
-
-        {/* Filter Kecamatan */}
-        <select
-          className="border p-2 rounded"
-          value={filters.kecamatan}
-          onChange={(e) =>
-            setFilters({ ...filters, kecamatan: e.target.value })
-          }
-        >
-          <option value="">Semua Kecamatan</option>
-          {daftarKecamatan.map((kec) => (
-            <option key={kec.id || kec} value={kec.nama || kec}>
-              {kec.nama || kec}
-            </option>
-          ))}
-        </select>
-
-        {/* Filter LKS */}
-        <select
-          className="border p-2 rounded"
-          value={filters.lks_id}
-          onChange={(e) =>
-            setFilters({ ...filters, lks_id: e.target.value })
-          }
-        >
-          <option value="">Semua LKS</option>
-          {daftarLKS.map((lks) => (
-            <option key={lks.id} value={lks.id}>
-              {lks.nama}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Tabel Data */}
+      {/* TABEL DATA */}
       {loading ? (
         <p className="text-gray-600">Memuat data klien...</p>
-      ) : klien.length === 0 ? (
+      ) : filteredKlien.length === 0 ? (
         <p className="text-gray-500 italic">Tidak ada data klien ditemukan.</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse border text-sm">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border p-2 w-10">#</th>
-                <th className="border p-2">NIK</th>
-                <th className="border p-2">Nama</th>
-                <th className="border p-2">Alamat</th>
-                <th className="border p-2">Kelurahan</th>
-                <th className="border p-2">Kecamatan</th>
-                <th className="border p-2">Jenis Kebutuhan</th>
-                <th className="border p-2">Status Bantuan</th>
-                <th className="border p-2">LKS</th>
-                <th className="border p-2 w-48 text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {klien.map((item, index) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="border p-2 text-center">{index + 1}</td>
-                  <td className="border p-2">{item.nik}</td>
-                  <td className="border p-2">{item.nama}</td>
-                  <td className="border p-2">{item.alamat}</td>
-                  <td className="border p-2">{item.kelurahan}</td>
-                  <td className="border p-2">{item.kecamatan}</td>
-                  <td className="border p-2">{item.jenis_kebutuhan || "-"}</td>
-                  <td className="border p-2">{item.status_bantuan || "-"}</td>
-                  <td className="border p-2">{item.lks?.nama || "-"}</td>
-                  <td className="border p-2 text-center">
-                    <button
-                      className="bg-blue-500 text-white px-3 py-1 rounded mr-2 hover:bg-blue-600"
-                      onClick={() => navigate(`/admin/klien/detail/${item.id}`)}
-                    >
-                      Detail
-                    </button>
-                    <button
-                      className="bg-yellow-500 text-white px-3 py-1 rounded mr-2 hover:bg-yellow-600"
-                      onClick={() => navigate(`/admin/klien/edit/${item.id}`)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      Hapus
-                    </button>
-                  </td>
+        <>
+          <div className="overflow-x-auto bg-white shadow-md rounded-xl ring-1 ring-slate-200/60">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-800">
+                  <th className="px-3 py-2.5 border border-slate-200/70 w-10 text-left">
+                    No
+                  </th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">
+                    NIK
+                  </th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">
+                    Nama
+                  </th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">
+                    Alamat
+                  </th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">
+                    Kelurahan
+                  </th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">
+                    Kecamatan
+                  </th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">
+                    Jenis Kebutuhan
+                  </th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">
+                    Status Bantuan
+                  </th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">
+                    LKS
+                  </th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 text-center">
+                    Aksi
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {paginatedKlien.map((item, index) => (
+                  <tr
+                    key={item.id}
+                    className="hover:bg-slate-50 border-b border-slate-200/70 last:border-b-0"
+                  >
+                    <td className="px-3 py-2.5 border border-slate-200/70 text-center">
+                      {startIndex + index + 1}
+                    </td>
+                    <td className="px-3 py-2.5 border border-slate-200/70 whitespace-nowrap">
+                      {item.nik}
+                    </td>
+                    <td className="px-3 py-2.5 border border-slate-200/70">
+                      {item.nama}
+                    </td>
+                    <td className="px-3 py-2.5 border border-slate-200/70">
+                      {item.alamat}
+                    </td>
+                    <td className="px-3 py-2.5 border border-slate-200/70">
+                      {item.kelurahan}
+                    </td>
+                    <td className="px-3 py-2.5 border border-slate-200/70">
+                      {item.kecamatan?.nama || "-"}
+                    </td>
+                    <td className="px-3 py-2.5 border border-slate-200/70">
+                      {item.jenis_kebutuhan || "-"}
+                    </td>
+                    <td className="px-3 py-2.5 border border-slate-200/70">
+                      {item.status_bantuan || "-"}
+                    </td>
+                    <td className="px-3 py-2.5 border border-slate-200/70">
+                      {item.lks?.nama || "-"}
+                    </td>
+                    <td className="px-3 py-2.5 border border-slate-200/70">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          className="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 text-xs font-semibold hover:bg-blue-100"
+                          onClick={() =>
+                            navigate(`/admin/klien/detail/${item.id}`)
+                          }
+                        >
+                          <Eye size={14} />
+                          Detail
+                        </button>
+                        <button
+                          className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 text-xs font-semibold hover:bg-amber-100"
+                          onClick={() =>
+                            navigate(`/admin/klien/edit/${item.id}`)
+                          }
+                        >
+                          <Edit2 size={14} />
+                          Edit
+                        </button>
+                        <button
+                          className="inline-flex items-center gap-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 px-3 py-1 text-xs font-semibold hover:bg-rose-100"
+                          onClick={() => handleDelete(item.id)}
+                        >
+                          <Trash2 size={14} />
+                          Hapus
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* BOTTOM: show per page + info + pagination */}
+          <div className="mt-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2 text-xs text-gray-600">
+            <div className="flex flex-wrap items-center gap-2">
+              <span>Show</span>
+              <select
+                value={perPage}
+                onChange={handleChangePerPage}
+                className="border border-gray-300 rounded-md px-2 py-1 bg-white text-xs focus:outline-none focus:ring-1 focus:ring-slate-500"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+              </select>
+              <span>entries </span>
+            </div>
+
+            <div className="flex items-center gap-1 self-start md:self-auto">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPageSafe === 1}
+                className={`px-2 py-1.5 border rounded-md ${
+                  currentPageSafe === 1
+                    ? "text-gray-300 border-gray-200 cursor-not-allowed"
+                    : "text-gray-700 border-gray-300 hover:bg-gray-100"
+                }`}
+              >
+                Prev
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-3 py-1.5 border rounded-md ${
+                      page === currentPageSafe
+                        ? "bg-slate-900 text-white border-slate-900"
+                        : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
+              <button
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
+                disabled={currentPageSafe === totalPages}
+                className={`px-2 py-1.5 border rounded-md ${
+                  currentPageSafe === totalPages
+                    ? "text-gray-300 border-gray-200 cursor-not-allowed"
+                    : "text-gray-700 border-gray-300 hover:bg-gray-100"
+                }`}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

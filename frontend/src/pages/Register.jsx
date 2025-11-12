@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../utils/api";
 import { UserPlus, ArrowLeft } from "lucide-react";
@@ -12,10 +12,19 @@ const Register = () => {
     password: "",
     confirmPassword: "",
     jenis_layanan: "",
-    kecamatan:"", // ✅ Tambahkan field baru
+    kecamatan_id: "", // ✅ ubah ke id
   });
+
+  const [daftarKecamatan, setDaftarKecamatan] = useState([]); // daftar kecamatan dari API
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // ✅ Ambil daftar kecamatan dari backend
+  useEffect(() => {
+    API.get("/kecamatan")
+      .then((res) => setDaftarKecamatan(res.data?.data || []))
+      .catch((err) => console.error("Gagal ambil daftar kecamatan:", err));
+  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -38,7 +47,8 @@ const Register = () => {
         email: form.email,
         password: form.password,
         password_confirmation: form.confirmPassword,
-        jenis_layanan: form.jenis_layanan, // ✅ Kirim ke backend
+        jenis_layanan: form.jenis_layanan,
+        kecamatan_id: form.kecamatan_id, // ✅ kirim ID kecamatan ke backend
       });
 
       setSuccess(
@@ -69,8 +79,7 @@ const Register = () => {
           Daftar LKS
         </h1>
         <p className="text-center text-gray-600 text-sm mb-6">
-          Pendaftaran akun LKS akan diverifikasi oleh Admin Dinsos sebelum dapat
-          login.
+          Pendaftaran akun LKS akan diverifikasi oleh Admin Dinsos sebelum dapat login.
         </p>
 
         {error && (
@@ -135,6 +144,27 @@ const Register = () => {
             </select>
           </div>
 
+          {/* ✅ Kecamatan dari API */}
+          <div>
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Kecamatan
+            </label>
+            <select
+              name="kecamatan_id"
+              value={form.kecamatan_id}
+              onChange={handleChange}
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-400 focus:outline-none bg-white/60"
+              required
+            >
+              <option value="">Pilih Kecamatan</option>
+              {daftarKecamatan.map((kec) => (
+                <option key={kec.id} value={kec.id}>
+                  {kec.nama}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className="block text-gray-700 text-sm font-medium mb-1">
               E-mail
@@ -147,25 +177,6 @@ const Register = () => {
               className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-400 focus:outline-none bg-white/60"
               required
             />
-          </div>
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">
-              Kecamatan
-            </label>
-            <select
-              name="kecamatan"
-              value={form.kecamatan}
-              onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-400 focus:outline-none bg-white/60"
-              required
-            >
-              <option value="">Pilih Kecamatan</option>
-              <option value="Lohbener">Lohbener</option>
-              <option value="Larangan">Larangan</option>
-              <option value="Sindang">Sindang</option>
-              <option value="Indramayu">Indramayu</option>
-              <option value="Jatibarang">Jatibarang</option>
-            </select>
           </div>
 
           <div>

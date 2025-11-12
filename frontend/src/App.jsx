@@ -37,6 +37,7 @@ import OperatorKlienList from "./pages/operator/klien/OperatorKlienList";
 import AdminVerifikasiList from "./pages/admin/verifikasi/VerifikasiList";
 import AdminVerifikasiReview from "./pages/admin/verifikasi/VerifikasiReview";
 
+
 function App() {
   return (
     <BrowserRouter>
@@ -68,6 +69,7 @@ function App() {
             <ProtectedRoute allowedRoles={["petugas"]}>
               <PetugasLayout>
                 <DashboardPetugas />
+
               </PetugasLayout>
             </ProtectedRoute>
           }

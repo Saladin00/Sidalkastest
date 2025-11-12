@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from "react";
 import API from "../../utils/api";
+import { Search, UserPlus, X } from "lucide-react";
 
 const ManajemenUser = () => {
   const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [perPage, setPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
   const [formData, setFormData] = useState({
     username: "",
     name: "",
@@ -14,51 +19,31 @@ const ManajemenUser = () => {
     role: "operator",
   });
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  useEffect(() => { fetchUsers(); }, []);
 
-  // 🔹 Ambil semua user
   const fetchUsers = async () => {
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
     try {
-      const token = localStorage.getItem("token");
-      const res = await API.get("/users", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const token = sessionStorage.getItem("token");
+      const res = await API.get("/users", { headers: { Authorization: `Bearer ${token}` }});
       setUsers(res.data.users || []);
     } catch (err) {
       console.error("❌ Gagal ambil data user:", err);
       setError("Gagal memuat data pengguna.");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  // 🔹 Buat akun baru (oleh admin)
   const handleCreateUser = async (e) => {
     e.preventDefault();
-
     if (!formData.username || !formData.email || !formData.password) {
-      alert("Semua field wajib diisi!");
-      return;
+      alert("Semua field wajib diisi!"); return;
     }
-
     try {
-      const token = localStorage.getItem("token");
-      await API.post("/users", formData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      alert("✅ Akun berhasil dibuat!");
+      const token = sessionStorage.getItem("token");
+      await API.post("/users", formData, { headers: { Authorization: `Bearer ${token}` }});
+      alert("Akun berhasil dibuat!");
       setShowForm(false);
-      setFormData({
-        username: "",
-        name: "",
-        email: "",
-        password: "",
-        role: "operator",
-      });
+      setFormData({ username:"", name:"", email:"", password:"", role:"operator" });
       fetchUsers();
     } catch (err) {
       console.error("❌ Gagal membuat user:", err);
@@ -66,58 +51,11 @@ const ManajemenUser = () => {
     }
   };
 
-  // 🔹 Approve LKS
-  const handleApprove = async (lksId) => {
-    if (!window.confirm("Setujui akun LKS ini?")) return;
-    try {
-      const token = localStorage.getItem("token");
-      await API.patch(
-        `/admin/lks/ma/${lksId}/approve`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      alert("✅ LKS berhasil disetujui");
-      fetchUsers();
-    } catch (err) {
-      console.error("❌ Gagal approve LKS:", err);
-      alert("Gagal menyetujui akun LKS.");
-    }
-  };
-
-  // 🔹 Reject LKS
-  const handleReject = async (lksId) => {
-    if (!window.confirm("Tolak akun LKS ini?")) return;
-    try {
-      const token = localStorage.getItem("token");
-      await API.patch(
-        `/admin/lks/${lksId}/reject`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      alert("❌ Akun LKS ditolak");
-      fetchUsers();
-    } catch (err) {
-      console.error("❌ Gagal menolak LKS:", err);
-      alert("Gagal menolak akun LKS.");
-    }
-  };
-
-  // 🔹 Toggle aktif/nonaktif
   const handleToggleStatus = async (userId) => {
     if (!window.confirm("Ubah status aktif pengguna ini?")) return;
     try {
-      const token = localStorage.getItem("token");
-      await API.patch(
-        `/users/${userId}/toggle-status`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const token = sessionStorage.getItem("token");
+      await API.patch(`/users/${userId}/toggle-status`, {}, { headers: { Authorization: `Bearer ${token}` }});
       fetchUsers();
     } catch (err) {
       console.error("❌ Gagal ubah status pengguna:", err);
@@ -125,73 +63,129 @@ const ManajemenUser = () => {
     }
   };
 
+  // ===== filter + pagination
+  const filteredUsers = users.filter((u) => {
+    const q = searchTerm.toLowerCase();
+    return (
+      u.username?.toLowerCase().includes(q) ||
+      u.name?.toLowerCase().includes(q) ||
+      u.email?.toLowerCase().includes(q) ||
+      u.role?.toLowerCase().includes(q)
+    );
+  });
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / perPage));
+  const currentPageSafe = Math.min(currentPage, totalPages);
+  const startIndex = (currentPageSafe - 1) * perPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + perPage);
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold text-gray-700">
-          👥 Manajemen Pengguna
-        </h1>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg"
-        >
-          ➕ Tambah User
-        </button>
+      {/* Top bar */}
+      <div className="flex flex-col gap-3 mb-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-2 text-sm text-gray-700">
+          <span>Show</span>
+          <select
+            value={perPage}
+            onChange={(e)=>{ setPerPage(Number(e.target.value)); setCurrentPage(1); }}
+            className="border border-gray-300 rounded-md px-2 py-1 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-slate-500"
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+          </select>
+          <span>entries</span>
+        </div>
+
+        <div className="flex items-center gap-3 md:justify-end">
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 pl-2 flex items-center text-gray-400">
+              <Search size={16} />
+            </span>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e)=>{ setSearchTerm(e.target.value); setCurrentPage(1); }}
+              placeholder="Cari user..."
+              className="pl-7 pr-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-slate-500 bg-white min-w-[200px]"
+            />
+          </div>
+
+          <button
+            onClick={() => setShowForm(true)}
+            className="inline-flex items-center gap-2 bg-slate-900 hover:bg-black text-white px-4 py-2 rounded-md text-sm font-medium shadow-sm"
+          >
+            <UserPlus size={16} />
+            <span>Tambah User</span>
+          </button>
+        </div>
       </div>
 
-      {error && (
-        <p className="text-red-600 bg-red-100 border border-red-300 rounded p-3 mb-4">
-          {error}
-        </p>
-      )}
+      {error && <p className="text-red-600 bg-red-100 border border-red-300 rounded p-3 mb-4">{error}</p>}
 
       {loading ? (
         <p className="text-center text-gray-500">Memuat data...</p>
       ) : (
-        <div className="overflow-x-auto bg-white shadow-md rounded-lg">
-          <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto bg-white shadow-md rounded-xl ring-1 ring-slate-200/60">
+          <table className="w-full text-left text-sm">
             <thead>
-              <tr className="bg-emerald-600 text-white">
-                <th className="px-4 py-2">#</th>
-                <th className="px-4 py-2">Username</th>
-                <th className="px-4 py-2">Nama</th>
-                <th className="px-4 py-2">Email</th>
-                <th className="px-4 py-2">Role</th>
-                <th className="px-4 py-2">Status Akun</th>
-                <th className="px-4 py-2 text-center">Aksi</th>
+              <tr className="bg-slate-100 text-slate-800">
+                <th className="px-4 py-3 w-14 font-semibold">No</th>
+                <th className="px-4 py-3 font-semibold">Username</th>
+                <th className="px-4 py-3 font-semibold">Nama Lengkap</th>
+                <th className="px-4 py-3 font-semibold">Email</th>
+                <th className="px-4 py-3 font-semibold">Role</th>
+                <th className="px-4 py-3 font-semibold">Status Akun</th>
+                <th className="px-4 py-3 text-center font-semibold">Aksi</th>
               </tr>
             </thead>
             <tbody>
-              {users.length > 0 ? (
-                users.map((user, index) => (
-                  <tr key={user.id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-2">{index + 1}</td>
-                    <td className="px-4 py-2">{user.username}</td>
-                    <td className="px-4 py-2">{user.name}</td>
-                    <td className="px-4 py-2">{user.email}</td>
-                    <td className="px-4 py-2 capitalize">{user.role}</td>
-                    <td className="px-4 py-2">
+              {paginatedUsers.length > 0 ? (
+                paginatedUsers.map((user, idx) => (
+                  <tr
+                    key={user.id}
+                    className="border-b border-slate-200/60 last:border-b-0 hover:bg-slate-50 transition-colors"
+                  >
+                    <td className="px-4 py-3 align-middle">{startIndex + idx + 1}</td>
+                    <td className="px-4 py-3 whitespace-nowrap align-middle">{user.username}</td>
+                    <td className="px-4 py-3 whitespace-nowrap align-middle">{user.name}</td>
+                    <td className="px-4 py-3 whitespace-nowrap align-middle">{user.email}</td>
+                    <td className="px-4 py-3 capitalize align-middle">{user.role}</td>
+                    <td className="px-4 py-3 align-middle">
                       <span
-                        className={`font-semibold ${
-                          user.status_aktif ? "text-green-600" : "text-red-600"
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                          user.status_aktif
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                            : "bg-rose-50 text-rose-700 border border-rose-100"
                         }`}
                       >
                         {user.status_aktif ? "Aktif" : "Nonaktif"}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-center">
-                      <button
-                        onClick={() => handleToggleStatus(user.id)}
-                        className="text-blue-600 hover:underline"
-                      >
-                        {user.status_aktif ? "Nonaktifkan" : "Aktifkan"}
-                      </button>
+                    <td className="px-4 py-3 text-center align-middle">
+                      {user.status_aktif ? (
+                        <button
+                          onClick={() => handleToggleStatus(user.id)}
+                          className="inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold text-rose-700 ring-1 ring-rose-200 hover:bg-rose-50 hover:ring-rose-300 transition"
+                          title="Nonaktifkan pengguna"
+                        >
+                          Nonaktifkan
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleToggleStatus(user.id)}
+                          className="inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-50 hover:ring-emerald-300 transition"
+                          title="Aktifkan pengguna"
+                        >
+                          Aktifkan
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="text-center py-4 text-gray-500">
+                  <td colSpan="7" className="text-center py-6 text-gray-500">
                     Tidak ada pengguna.
                   </td>
                 </tr>
@@ -201,76 +195,108 @@ const ManajemenUser = () => {
         </div>
       )}
 
-      {/* 🧾 Modal Tambah User */}
-      {showForm && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-          <div className="bg-white p-6 rounded-lg w-96 shadow-lg">
-            <h2 className="text-xl font-semibold mb-4 text-gray-700">
-              ➕ Tambah Akun Baru
-            </h2>
-            <form onSubmit={handleCreateUser} className="space-y-3">
-              <input
-                type="text"
-                placeholder="Username"
-                className="w-full border rounded p-2"
-                value={formData.username}
-                onChange={(e) =>
-                  setFormData({ ...formData, username: e.target.value })
-                }
-                required
-              />
-              <input
-                type="text"
-                placeholder="Nama Lengkap"
-                className="w-full border rounded p-2"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                required
-              />
-              <input
-                type="email"
-                placeholder="Email"
-                className="w-full border rounded p-2"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                required
-              />
-              <input
-                type="password"
-                placeholder="Password"
-                className="w-full border rounded p-2"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
-                required
-              />
-              <select
-                className="w-full border rounded p-2"
-                value={formData.role}
-                onChange={(e) =>
-                  setFormData({ ...formData, role: e.target.value })
-                }
-              >
-                <option value="operator">Operator</option>
-                <option value="petugas">Petugas</option>
-              </select>
+      {/* Bottom info + pagination */}
+      {!loading && (
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-3 text-xs text-gray-600 gap-2">
+          <div>
+            {filteredUsers.length > 0
+              ? <>Showing <span className="font-semibold">{startIndex + 1}</span> to <span className="font-semibold">{Math.min(startIndex + perPage, filteredUsers.length)}</span> of <span className="font-semibold">{filteredUsers.length}</span> entries</>
+              : "Showing 0 entries"}
+          </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+          <div className="flex items-center gap-1 self-start md:self-auto">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPageSafe === 1}
+              className={`px-2 py-1.5 border rounded-md ${
+                currentPageSafe === 1
+                  ? "text-gray-300 border-gray-200 cursor-not-allowed"
+                  : "text-gray-700 border-gray-300 hover:bg-gray-100"
+              }`}
+            >
+              Prev
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`px-3 py-1.5 border rounded-md ${
+                  page === currentPageSafe
+                    ? "bg-slate-900 text-white border-slate-900"
+                    : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPageSafe === totalPages}
+              className={`px-2 py-1.5 border rounded-md ${
+                currentPageSafe === totalPages
+                  ? "text-gray-300 border-gray-200 cursor-not-allowed"
+                  : "text-gray-700 border-gray-300 hover:bg-gray-100"
+              }`}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Tambah User */}
+      {showForm && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between px-5 py-3 border-b">
+              <h3 className="text-sm font-semibold text-gray-800">Tambah Akun Baru</h3>
+              <button type="button" onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateUser} className="px-5 py-4 space-y-4">
+              {[
+                { key: "username", label: "Username", type: "text" },
+                { key: "name", label: "Nama Lengkap", type: "text" },
+                { key: "email", label: "Email", type: "email" },
+                { key: "password", label: "Password", type: "password" },
+              ].map((f) => (
+                <div key={f.key} className="space-y-1">
+                  <label className="text-xs font-medium text-gray-700">{f.label}</label>
+                  <input
+                    type={f.type}
+                    className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-500 focus:border-slate-500"
+                    value={formData[f.key]}
+                    onChange={(e) => setFormData({ ...formData, [f.key]: e.target.value })}
+                    required
+                  />
+                </div>
+              ))}
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-700">Role</label>
+                <select
+                  className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-500 focus:border-slate-500"
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                >
+                  <option value="operator">Operator</option>
+                  <option value="petugas">Petugas</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t mt-2">
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
+                  className="px-3 py-1.5 text-xs rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                  className="px-4 py-1.5 text-xs rounded-md bg-slate-900 text-white hover:bg-black"
                 >
                   Simpan
                 </button>

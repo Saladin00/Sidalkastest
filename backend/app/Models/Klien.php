@@ -7,25 +7,33 @@ use Illuminate\Database\Eloquent\Model;
 class Klien extends Model
 {
     protected $table = 'klien';
+
     protected $fillable = [
-        'nik', 
-        'nama', 
-        'alamat', 
-        'kecamatan', 
-        'kelurahan', 
-        'lks_id', 
-        'jenis_kebutuhan', 
-        'status_bantuan', 
-        'status_pembinaan', 
-        'dokumen'
+        'nik',
+        'nama',
+        'alamat',
+        'kelurahan',
+        'kecamatan_id',
+        'lks_id',
+        'jenis_kebutuhan',
+        'status_bantuan',
+        'status_pembinaan',
+        'dokumen',
     ];
 
     protected $casts = [
         'dokumen' => 'array'
     ];
 
-    public function lks() {
-        return $this->belongsTo(Lks::class, 'lks_id');
+    // 🔗 Relasi ke LKS
+    public function lks()
+    {
+        return $this->belongsTo(Lks::class, 'lks_id', 'id');
+    }
+
+    // 🔗 Relasi ke Kecamatan
+    public function kecamatan()
+    {
+        return $this->belongsTo(Kecamatan::class, 'kecamatan_id', );
     }
 }
-
