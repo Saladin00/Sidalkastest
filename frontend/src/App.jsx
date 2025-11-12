@@ -10,7 +10,7 @@ import DashboardAdmin from "./pages/DashboardAdmin";
 import DashboardOperator from "./pages/DashboardOperator";
 import DashboardPetugas from "./pages/DashboardPetugas";
 import DashboardLKS from "./pages/DashboardLKS";
-
+import PetugasLayout from "./components/PetugasLayout";
 // 🧩 Modul LKS
 import LKSList from "./pages/admin/lks/LKSList";
 import LKSForm from "./pages/admin/lks/LKSForm";
@@ -37,8 +37,6 @@ import OperatorKlienList from "./pages/operator/klien/OperatorKlienList";
 import AdminVerifikasiList from "./pages/admin/verifikasi/VerifikasiList";
 import AdminVerifikasiReview from "./pages/admin/verifikasi/VerifikasiReview";
 
-
-import PetugasLayout from "./components/PetugasLayout";
 
 function App() {
   return (
@@ -70,11 +68,13 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["petugas"]}>
               <PetugasLayout>
-              <DashboardPetugas />
+                <DashboardPetugas />
+
               </PetugasLayout>
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/lks"
           element={

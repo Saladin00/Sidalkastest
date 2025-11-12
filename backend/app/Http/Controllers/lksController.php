@@ -214,8 +214,8 @@ class LKSController extends Controller
             ->setPaper('A4', 'portrait');
 
         return $pdf->stream('Profil_LKS_' . preg_replace('/\s+/', '_', $lks->nama) . '.pdf');
- 
- 
+
+
     }
 
     public function getByKecamatan($id)
