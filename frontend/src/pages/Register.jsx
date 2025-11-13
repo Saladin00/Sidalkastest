@@ -1,7 +1,16 @@
+// src/pages/Register.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../utils/api";
-import { UserPlus, ArrowLeft } from "lucide-react";
+import {
+  UserPlus,
+  ArrowLeft,
+  ShieldCheck,
+  FileText,
+  ClipboardCheck,
+  Database,
+  RefreshCcw, // ✅ untuk tombol refresh captcha
+} from "lucide-react";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -12,18 +21,34 @@ const Register = () => {
     password: "",
     confirmPassword: "",
     jenis_layanan: "",
-    kecamatan_id: "", // ✅ ubah ke id
+    kecamatan_id: "",
   });
 
-  const [daftarKecamatan, setDaftarKecamatan] = useState([]); // daftar kecamatan dari API
+  const [daftarKecamatan, setDaftarKecamatan] = useState([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // ✅ Ambil daftar kecamatan dari backend
+  // ✅ captcha teks
+  const [captcha, setCaptcha] = useState("");
+  const [generatedCaptcha, setGeneratedCaptcha] = useState("");
+
+  // generator captcha huruf/angka
+  const generateCaptcha = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let text = "";
+    for (let i = 0; i < 5; i++) {
+      text += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setGeneratedCaptcha(text);
+    setCaptcha("");
+  };
+
   useEffect(() => {
     API.get("/kecamatan")
       .then((res) => setDaftarKecamatan(res.data?.data || []))
       .catch((err) => console.error("Gagal ambil daftar kecamatan:", err));
+
+    generateCaptcha(); // ✅ buat captcha pertama kali
   }, []);
 
   const handleChange = (e) => {
@@ -34,6 +59,13 @@ const Register = () => {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    // ✅ validasi captcha
+    if (captcha.toUpperCase() !== generatedCaptcha) {
+      setError("Captcha tidak sesuai, silakan coba lagi!");
+      generateCaptcha();
+      return;
+    }
 
     if (form.password !== form.confirmPassword) {
       setError("Konfirmasi password tidak sesuai.");
@@ -48,7 +80,7 @@ const Register = () => {
         password: form.password,
         password_confirmation: form.confirmPassword,
         jenis_layanan: form.jenis_layanan,
-        kecamatan_id: form.kecamatan_id, // ✅ kirim ID kecamatan ke backend
+        kecamatan_id: form.kecamatan_id,
       });
 
       setSuccess(
@@ -62,167 +94,299 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-100 via-emerald-200 to-green-100 relative overflow-hidden">
-      <div className="absolute w-72 h-72 bg-green-400 rounded-full blur-3xl opacity-20 top-10 left-10 animate-pulse"></div>
-      <div className="absolute w-80 h-80 bg-emerald-400 rounded-full blur-3xl opacity-20 bottom-10 right-10 animate-pulse"></div>
+    <div className="min-h-screen flex justify-center bg-gradient-to-br from-blue-100 via-blue-200 to-blue-100 relative overflow-hidden">
+      {/* bubble background sama seperti login */}
+      <div className="absolute w-72 h-72 bg-blue-400 rounded-full blur-3xl opacity-20 top-10 left-10 animate-pulse" />
+      <div className="absolute w-80 h-80 bg-indigo-400 rounded-full blur-3xl opacity-20 bottom-10 right-10 animate-pulse" />
 
-      <div className="relative z-10 backdrop-blur-xl bg-white/70 border border-white/40 shadow-2xl rounded-2xl p-8 w-full max-w-md">
-        <div className="flex justify-center mb-6">
-          <img
-            src="/logo.png"
-            alt="Logo"
-            className="h-28 w-auto drop-shadow-md object-contain"
-          />
+      {/* container tengah – padding atas/bawah sama login */}
+      <div className="relative z-10 w-full max-w-5xl px-4 py-16 md:py-10">
+        <div className="grid gap-8 md:grid-cols-2 items-stretch">
+          {/* PANEL KIRI – CARD REGISTER */}
+          <div className="backdrop-blur-xl bg-gradient-to-b from-sky-100/95 via-sky-50/95 to-blue-50/95 border border-white/70 shadow-2xl rounded-2xl px-7 py-7 flex flex-col justify-between">
+            <div>
+              <div className="flex justify-center mb-4">
+                <img
+                  src="/logo.png"
+                  alt="Logo SIDALEKAS"
+                  className="h-20 w-auto drop-shadow-md object-contain"
+                />
+              </div>
+              <h1 className="text-2xl font-bold text-center text-blue-700 tracking-wide">
+                SIDALEKAS
+              </h1>
+              <p className="text-center text-gray-600 text-xs mt-1">
+                Sistem Informasi Data Lembaga Kesejahteraan Sosial
+              </p>
+              <p className="text-center text-[11px] text-gray-600 mt-2 mb-5">
+                Formulir pendaftaran akun LKS. Akun akan diverifikasi terlebih
+                dahulu oleh Admin Dinas Sosial sebelum dapat digunakan untuk
+                login.
+              </p>
+
+              {error && (
+                <p className="text-red-600 text-xs mb-3 text-center font-medium bg-red-50/90 py-2 px-3 rounded-lg border border-red-100">
+                  {error}
+                </p>
+              )}
+              {success && (
+                <p className="text-emerald-600 text-xs mb-3 text-center font-medium bg-emerald-50/90 py-2 px-3 rounded-lg border border-emerald-100">
+                  {success}
+                </p>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-3.5">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    name="username"
+                    value={form.username}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Nama LKS
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Jenis Layanan
+                  </label>
+                  <select
+                    name="jenis_layanan"
+                    value={form.jenis_layanan}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm"
+                    required
+                  >
+                    <option value="">Pilih Jenis Layanan</option>
+                    <option value="Anak">Anak</option>
+                    <option value="Disabilitas">Disabilitas</option>
+                    <option value="Lansia">Lansia</option>
+                    <option value="Fakir Miskin">Fakir Miskin</option>
+                    <option value="Kesejahteraan Sosial">
+                      Kesejahteraan Sosial
+                    </option>
+                    <option value="Rehabilitasi Sosial">
+                      Rehabilitasi Sosial
+                    </option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Kecamatan
+                  </label>
+                  <select
+                    name="kecamatan_id"
+                    value={form.kecamatan_id}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm"
+                    required
+                  >
+                    <option value="">Pilih Kecamatan</option>
+                    {daftarKecamatan.map((kec) => (
+                      <option key={kec.id} value={kec.id}>
+                        {kec.nama}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    E-mail
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={form.password}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Konfirmasi Password
+                  </label>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={form.confirmPassword}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm"
+                    required
+                  />
+                </div>
+
+                {/* ✅ Captcha huruf/angka */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Captcha
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="px-4 py-2 font-mono text-lg tracking-[0.4em] bg-gradient-to-r from-blue-200 to-blue-100 border border-blue-300 rounded-lg shadow-inner select-none min-w-[110px] text-center">
+                      {generatedCaptcha}
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Masukkan captcha"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm"
+                      value={captcha}
+                      onChange={(e) => setCaptcha(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={generateCaptcha}
+                      className="p-2 rounded-full bg-blue-100 hover:bg-blue-200 border border-blue-300 transition"
+                    >
+                      <RefreshCcw size={18} className="text-blue-500" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Tombol daftar */}
+                <button
+                  type="submit"
+                  className="mt-2 w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg shadow-md hover:opacity-95 transition font-semibold text-sm"
+                >
+                  <UserPlus size={18} />
+                  Daftar Akun
+                </button>
+
+                {/* Tombol masuk (dari register ke halaman login) */}
+                <button
+                  type="button"
+                  onClick={() => navigate("/")}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition font-semibold text-sm"
+                >
+                  <ArrowLeft size={18} />
+                  Masuk
+                </button>
+              </form>
+            </div>
+
+            <div className="mt-6 text-[11px] text-center text-gray-500">
+              © Dinas Sosial {new Date().getFullYear()}
+            </div>
+          </div>
+
+          {/* PANEL KANAN – ALUR PROSES (sama seperti di Login) */}
+          <div className="hidden md:flex h-full">
+            <div className="flex flex-col justify-start py-10 pl-8 pr-4 text-left text-gray-800 w-full">
+              <div>
+                <h2 className="text-3xl font-semibold mb-3 leading-snug text-slate-900">
+                  Alur Proses Pendaftaran Lembaga
+                  <br />
+                  Kesejahteraan Sosial
+                </h2>
+
+                <p className="text-[13px] md:text-sm text-gray-600 max-w-xl">
+                  Pengurus lembaga sosial dapat melakukan registrasi akun,
+                  pendaftaran lembaga, hingga pengelolaan data secara terpusat
+                  melalui aplikasi{" "}
+                  <span className="font-semibold">SIDALEKAS</span>.
+                </p>
+              </div>
+
+              <div className="mt-6 space-y-6 max-w-xl">
+                <div className="flex gap-3 rounded-xl bg-white/40 border border-white/60 shadow-sm px-3 py-3">
+                  <div className="mt-1 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                    <ShieldCheck size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-slate-900">
+                      Registrasi Akun Dinsos
+                    </h3>
+                    <p className="text-[13px] md:text-sm text-gray-600">
+                      Akun lembaga didaftarkan dan diverifikasi oleh Dinas
+                      Sosial Kabupaten/Kota sebelum dapat mengakses SIDALEKAS.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 rounded-xl bg-white/40 border border-white/60 shadow-sm px-3 py-3">
+                  <div className="mt-1 flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                    <FileText size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-slate-900">
+                      Pendaftaran Lembaga
+                    </h3>
+                    <p className="text-[13px] md:text-sm text-gray-600">
+                      Pengurus mengisi biodata lengkap lembaga sebagai dasar
+                      pengajuan verifikasi dan penetapan status LKS.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 rounded-xl bg-white/40 border border-white/60 shadow-sm px-3 py-3">
+                  <div className="mt-1 flex h-11 w-11 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                    <ClipboardCheck size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-slate-900">
+                      Verifikasi oleh Dinas Sosial
+                    </h3>
+                    <p className="text-[13px] md:text-sm text-gray-600">
+                      Dinas Sosial melakukan validasi data dan kunjungan
+                      lapangan sebelum menetapkan status verifikasi lembaga.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 rounded-xl bg-white/40 border border-white/60 shadow-sm px-3 py-3">
+                  <div className="mt-1 flex h-11 w-11 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
+                    <Database size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-slate-900">
+                      Lembaga Mengelola Data
+                    </h3>
+                    <p className="text-[13px] md:text-sm text-gray-600">
+                      Setelah disetujui, lembaga dapat memperbarui data,
+                      pelaporan, dan monitoring program sosial secara berkala.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-
-        <h1 className="text-3xl font-bold text-center text-emerald-700 tracking-wider">
-          Daftar LKS
-        </h1>
-        <p className="text-center text-gray-600 text-sm mb-6">
-          Pendaftaran akun LKS akan diverifikasi oleh Admin Dinsos sebelum dapat login.
-        </p>
-
-        {error && (
-          <p className="text-red-600 text-sm mb-4 text-center font-medium bg-red-50 py-2 rounded">
-            {error}
-          </p>
-        )}
-        {success && (
-          <p className="text-green-600 text-sm mb-4 text-center font-medium bg-green-50 py-2 rounded">
-            {success}
-          </p>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">
-              Username
-            </label>
-            <input
-              type="text"
-              name="username"
-              value={form.username}
-              onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-400 focus:outline-none bg-white/60"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">
-              Nama LKS
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-400 focus:outline-none bg-white/60"
-              required
-            />
-          </div>
-
-          {/* ✅ Jenis Layanan */}
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">
-              Jenis Layanan
-            </label>
-            <select
-              name="jenis_layanan"
-              value={form.jenis_layanan}
-              onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-400 focus:outline-none bg-white/60"
-              required
-            >
-              <option value="">Pilih Jenis Layanan</option>
-              <option value="Anak">Anak</option>
-              <option value="Disabilitas">Disabilitas</option>
-              <option value="Lansia">Lansia</option>
-              <option value="Fakir Miskin">Fakir Miskin</option>
-              <option value="Kesejahteraan Sosial">Kesejahteraan Sosial</option>
-              <option value="Rehabilitasi Sosial">Rehabilitasi Sosial</option>
-            </select>
-          </div>
-
-          {/* ✅ Kecamatan dari API */}
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">
-              Kecamatan
-            </label>
-            <select
-              name="kecamatan_id"
-              value={form.kecamatan_id}
-              onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-400 focus:outline-none bg-white/60"
-              required
-            >
-              <option value="">Pilih Kecamatan</option>
-              {daftarKecamatan.map((kec) => (
-                <option key={kec.id} value={kec.id}>
-                  {kec.nama}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">
-              E-mail
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-400 focus:outline-none bg-white/60"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-400 focus:outline-none bg-white/60"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">
-              Konfirmasi Password
-            </label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-400 focus:outline-none bg-white/60"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full flex items-center justify-center gap-2 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg shadow-md hover:opacity-90 transition font-semibold"
-          >
-            <UserPlus size={18} /> Daftar
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate("/")}
-            className="w-full flex items-center justify-center gap-2 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition font-semibold"
-          >
-            <ArrowLeft size={18} /> Kembali ke Login
-          </button>
-        </form>
-      </div>
+      </div>      
     </div>
   );
 };
