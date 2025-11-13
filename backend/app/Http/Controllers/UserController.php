@@ -13,37 +13,31 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        // 🔒 Pastikan hanya admin yang bisa akses
+        // 🔒 Hanya admin yang boleh
         if (!$request->user()->hasRole('admin')) {
             return response()->json(['message' => 'Akses ditolak'], 403);
         }
 
-        // 🔍 Ambil semua user dengan relasi roles dan LKS
-        $users = User::with(['roles', 'lks'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        // Ambil semua user dengan relasi roles dan kecamatan (jika ada)
+       $users = User::with(['roles', 'lks', 'kecamatan'])
+    ->orderBy('created_at', 'desc')
+    ->get();
 
-        // 🎨 Format data untuk frontend
+
         $data = $users->map(function ($user) {
-            $role = $user->roles->pluck('name')->first();
+    $role = $user->roles->pluck('name')->first();
 
-            return [
-                'id' => $user->id,
-                'username' => $user->username,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $role,
-                'status_aktif' => $user->status_aktif,
-
-                // 🔗 Data LKS (jika role = lks)
-                'lks_id' => $user->lks?->id,
-                'lks_nama' => $user->lks?->nama,
-                'lks_status' => $user->lks?->status,
-                'lks_kecamatan' => $user->lks?->kecamatan,
-
-                'created_at' => optional($user->created_at)->format('Y-m-d H:i'),
-            ];
-        });
+    return [
+        'id' => $user->id,
+        'username' => $user->username,
+        'name' => $user->name,
+        'email' => $user->email,
+        'role' => $role,
+        'status_aktif' => $user->status_aktif,
+        'kecamatan' => $user->kecamatan ? ['id' => $user->kecamatan->id, 'nama' => $user->kecamatan->nama] : null, // ✅ tambahkan ini
+        'created_at' => optional($user->created_at)->format('Y-m-d H:i'),
+    ];
+});
 
         return response()->json(['users' => $data]);
     }
@@ -52,37 +46,40 @@ class UserController extends Controller
      * 🔹 Tambah user baru (oleh admin)
      */
     public function store(Request $request)
-    {
-        // 🔒 Hanya admin boleh
-        if (!$request->user()->hasRole('admin')) {
-            return response()->json(['message' => 'Akses ditolak'], 403);
-        }
-
-        $validated = $request->validate([
-            'username' => 'required|string|unique:users',
-            'name' => 'required|string',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:6',
-            'role' => 'required|in:operator,petugas', // hanya boleh dua role ini
-        ]);
-
-        // 🧩 Buat akun user
-        $user = User::create([
-            'username' => $validated['username'],
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'status_aktif' => true,
-        ]);
-
-        // 🏷️ Assign role
-        $user->assignRole($validated['role']);
-
-        return response()->json([
-            'message' => 'Akun berhasil dibuat oleh admin',
-            'user' => $user
-        ], 201);
+{
+    // 🔒 Hanya admin boleh
+    if (!$request->user()->hasRole('admin')) {
+        return response()->json(['message' => 'Akses ditolak'], 403);
     }
+
+    $validated = $request->validate([
+        'username' => 'required|string|unique:users',
+        'name' => 'required|string',
+        'email' => 'required|email|unique:users',
+        'password' => 'required|min:6',
+        'role' => 'required|in:operator,petugas', // hanya boleh dua role ini
+        'kecamatan_id' => 'nullable|exists:kecamatan,id', // ✅ tambahkan ini
+    ]);
+
+    // 🧩 Buat akun user
+    $user = User::create([
+        'username' => $validated['username'],
+        'name' => $validated['name'],
+        'email' => $validated['email'],
+        'password' => Hash::make($validated['password']),
+        'status_aktif' => true,
+        'kecamatan_id' => $validated['kecamatan_id'] ?? null, // ✅ simpan kecamatan
+    ]);
+
+    // 🏷️ Assign role
+    $user->assignRole($validated['role']);
+
+    return response()->json([
+        'message' => 'Akun berhasil dibuat oleh admin',
+        'user' => $user->load('kecamatan'), // ✅ kirim juga relasi kecamatan ke frontend
+    ], 201);
+}
+
 
     /**
      * 🔹 Update user
@@ -97,6 +94,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email,' . $id,
             'role' => 'required|string',
             'status_aktif' => 'required|boolean',
+            'kecamatan_id' => 'nullable|exists:kecamatan,id',
         ]);
 
         $user->update([
@@ -104,13 +102,14 @@ class UserController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'status_aktif' => $validated['status_aktif'],
+            'kecamatan_id' => $validated['kecamatan_id'] ?? null,
         ]);
 
         $user->syncRoles([$validated['role']]);
 
         return response()->json([
-            'message' => 'User berhasil diperbarui',
-            'user' => $user
+            'message' => '✅ User berhasil diperbarui',
+            'user' => $user->load('kecamatan')
         ]);
     }
 
@@ -122,11 +121,11 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $user->delete();
 
-        return response()->json(['message' => 'User berhasil dihapus']);
+        return response()->json(['message' => '🗑️ User berhasil dihapus']);
     }
 
     /**
-     * 🔹 Toggle status aktif / nonaktif (untuk manajemen user)
+     * 🔹 Toggle aktif / nonaktif
      */
     public function toggleStatus($id)
     {

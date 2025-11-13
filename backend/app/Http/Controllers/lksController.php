@@ -15,24 +15,51 @@ class LKSController extends Controller
     // 🔍 GET /api/lks
     public function index(Request $request)
     {
-        $query = Lks::with(['verifikasiTerbaru', 'kecamatan']); // relasi kecamatan ditambahkan
+        $user = $request->user();
+        $query = Lks::with(['verifikasiTerbaru', 'kecamatan']);
 
-        // filter berdasarkan parameter query
-        if ($request->status) {
+        // 🟢 Operator & Petugas hanya bisa lihat LKS di wilayahnya
+        if ($user->hasRole('operator') || $user->hasRole('petugas')) {
+            if ($user->kecamatan_id) {
+                $query->where('kecamatan_id', $user->kecamatan_id);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User belum memiliki kecamatan_id yang terdaftar.'
+                ], 403);
+            }
+        }
+
+        // 🟢 LKS hanya bisa lihat datanya sendiri
+        if ($user->hasRole('lks')) {
+            $query->where('user_id', $user->id);
+        }
+
+        // 🔍 Filter tambahan
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        if ($request->kecamatan_id) {
+        if ($request->filled('kecamatan_id')) {
             $query->where('kecamatan_id', $request->kecamatan_id);
         }
 
-        if ($request->jenis) {
+        if ($request->filled('jenis')) {
             $query->where('jenis_layanan', $request->jenis);
         }
 
+        if ($request->filled('search')) {
+            $query->where('nama', 'LIKE', '%' . $request->search . '%');
+        }
+
+     $data = $query->latest()->paginate(10);
+
+
         return response()->json([
-            'data' => $query->latest()->get()
-        ]);
+            'success' => true,
+            'message' => 'Data LKS berhasil diambil',
+            'data' => $data
+        ], 200);
     }
 
     // ➕ POST /api/lks
@@ -42,8 +69,7 @@ class LKSController extends Controller
             'nama' => 'required|string|max:255',
             'jenis_layanan' => 'required|string|max:255',
             'kecamatan_id' => 'required|exists:kecamatan,id',
-            'status' => 'nullable|in:Aktif,Nonaktif,Pending',
-
+            'status' => 'nullable|in:aktif,nonaktif,pending',
             'alamat' => 'nullable|string',
             'kelurahan' => 'nullable|string',
             'npwp' => 'nullable|string',
@@ -62,12 +88,12 @@ class LKSController extends Controller
             'tindak_lanjut' => 'nullable|string',
         ]);
 
-        // 🟢 Buat LKS baru
         $lks = Lks::create(array_merge($validated, [
-            'status' => $validated['status'] ?? 'Pending',
+            'status' => $validated['status'] ?? 'pending',
+            'user_id' => Auth::id()
         ]));
 
-        // 📎 Upload dokumen (jika ada)
+        // 📎 Upload dokumen (opsional)
         if ($request->hasFile('dokumen')) {
             $dokumenPaths = [];
             foreach ($request->file('dokumen') as $file) {
@@ -82,9 +108,8 @@ class LKSController extends Controller
         }
 
         // 🧩 Buat verifikasi awal otomatis
-        $petugasId = Auth::check() ? Auth::id() : User::first()->id;
-
-        $verif = Verifikasi::create([
+        $petugasId = User::role('petugas')->first()?->id ?? Auth::id();
+        Verifikasi::create([
             'lks_id' => $lks->id,
             'petugas_id' => $petugasId,
             'status' => 'menunggu',
@@ -93,20 +118,44 @@ class LKSController extends Controller
             'tanggal_verifikasi' => now(),
         ]);
 
-        \Log::info('Verifikasi otomatis dibuat', ['verifikasi_id' => $verif->id]);
-
         return response()->json([
+            'success' => true,
             'message' => 'LKS berhasil dibuat dan verifikasi awal ditambahkan.',
             'data' => $lks->load(['verifikasiTerbaru', 'kecamatan'])
         ], 201);
     }
 
     // 👁️ GET /api/lks/{id}
-    public function show($id)
-    {
-        $lks = Lks::with(['verifikasiTerbaru.petugas', 'kecamatan'])->findOrFail($id);
-        return response()->json($lks);
+   // 👁️ GET /api/lks/{id}
+public function show($id)
+{
+    try {
+       $lks = Lks::with([
+    'user:id,name,email',
+    'kecamatan:id,nama',
+    'verifikasiTerbaru.petugas:id,name',
+    'klien:id,lks_id,nama', // ✅ hapus jenis_kelamin & tanggal_lahir
+    'kunjungan:id,lks_id,tanggal,catatan',
+])->findOrFail($id);
+
+
+        return response()->json([
+            'success' => true,
+            'data' => $lks
+        ]);
+    } catch (\Throwable $e) {
+        \Log::error('Gagal ambil detail LKS', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan server',
+        ], 500);
     }
+}
+
+
 
     // ✏️ PUT /api/lks/{id}
     public function update(Request $request, $id)
@@ -115,7 +164,7 @@ class LKSController extends Controller
             'nama' => 'required|string|max:255',
             'jenis_layanan' => 'required|string|max:255',
             'kecamatan_id' => 'required|exists:kecamatan,id',
-            'status' => 'required|in:Aktif,Nonaktif,Pending',
+            'status' => 'required|in:aktif,nonaktif,pending',
             'alamat' => 'nullable|string',
             'kelurahan' => 'nullable|string',
             'npwp' => 'nullable|string',
@@ -137,7 +186,7 @@ class LKSController extends Controller
         $lks = Lks::findOrFail($id);
         $lks->update($validated);
 
-        // Tambah dokumen baru jika ada
+        // 📎 Update dokumen jika ada
         if ($request->hasFile('dokumen')) {
             $existingDocs = $lks->dokumen ? json_decode($lks->dokumen, true) : [];
             foreach ($request->file('dokumen') as $file) {
@@ -152,6 +201,7 @@ class LKSController extends Controller
         }
 
         return response()->json([
+            'success' => true,
             'message' => '✅ Data LKS berhasil diperbarui',
             'data' => $lks->load('kecamatan')
         ]);
@@ -163,8 +213,7 @@ class LKSController extends Controller
         $lks = Lks::findOrFail($id);
 
         if ($lks->dokumen) {
-            $docs = json_decode($lks->dokumen, true);
-            foreach ($docs as $doc) {
+            foreach (json_decode($lks->dokumen, true) as $doc) {
                 $relative = str_replace(asset('storage/'), '', $doc['url']);
                 Storage::disk('public')->delete($relative);
             }
@@ -172,14 +221,16 @@ class LKSController extends Controller
 
         $lks->delete();
 
-        return response()->json(['message' => '🗑️ LKS dihapus']);
+        return response()->json([
+            'success' => true,
+            'message' => '🗑️ Data LKS berhasil dihapus'
+        ]);
     }
 
     // 📎 POST /api/lks/{id}/upload-dokumen
     public function uploadDokumen(Request $request, $id)
     {
         $lks = Lks::findOrFail($id);
-
         if ($request->hasFile('dokumen')) {
             $dokumenBaru = [];
             foreach ($request->file('dokumen') as $file) {
@@ -189,13 +240,13 @@ class LKSController extends Controller
                     'url'  => asset('storage/' . $path),
                 ];
             }
-
             $existing = $lks->dokumen ? json_decode($lks->dokumen, true) : [];
             $lks->dokumen = json_encode(array_merge($existing, $dokumenBaru));
             $lks->save();
         }
 
         return response()->json([
+            'success' => true,
             'message' => '📎 Dokumen berhasil diunggah',
             'dokumen' => json_decode($lks->dokumen, true),
         ]);
@@ -205,7 +256,6 @@ class LKSController extends Controller
     public function cetakProfil($id)
     {
         $lks = Lks::with(['verifikasiTerbaru.petugas', 'kecamatan'])->find($id);
-
         if (!$lks) {
             abort(404, 'Data LKS tidak ditemukan.');
         }
@@ -213,38 +263,20 @@ class LKSController extends Controller
         $pdf = Pdf::loadView('lks_pdf', compact('lks'))
             ->setPaper('A4', 'portrait');
 
-        return $pdf->stream('Profil_LKS_' . preg_replace('/\s+/', '_', $lks->nama) . '.pdf');
+        return $pdf->stream('Profil_LKS_' . preg_replace('/\s+/', '_', $lks->nama) . '.pdf');    }
 
-
-    }
-
-    public function getByKecamatan($id)
-{
-    $data = Lks::where('kecamatan_id', $id)->get(['id', 'nama']);
-    return response()->json(['data' => $data]);
-
-
-}
-// 🏙️ Ambil daftar LKS berdasarkan kecamatan
-public function byKecamatan($id)
-{
-    try {
-        $data = \App\Models\Lks::where('kecamatan_id', $id)
+    // 🏙️ GET /api/lks/by-kecamatan/{id}
+    public function byKecamatan($id)
+    {
+        $data = Lks::where('kecamatan_id', $id)
             ->select('id', 'nama')
             ->orderBy('nama')
             ->get();
 
         return response()->json([
+            'success' => true,
             'message' => 'Daftar LKS berhasil diambil',
             'data' => $data
-        ], 200);
-    } catch (\Exception $e) {
-        \Log::error('Gagal ambil LKS by kecamatan', ['error' => $e->getMessage()]);
-        return response()->json([
-            'message' => 'Terjadi kesalahan saat mengambil data LKS'
-        ], 500);
+        ]);
     }
-}
-
-
 }

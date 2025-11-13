@@ -7,7 +7,6 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import {
   BuildingOfficeIcon,
-  ClipboardDocumentListIcon,
   MapPinIcon,
   UsersIcon,
   WrenchIcon,
@@ -15,7 +14,7 @@ import {
   PaperClipIcon,
 } from "@heroicons/react/24/outline";
 
-// 🧭 Marker Leaflet
+// 🧭 Marker leaflet
 const markerIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
   iconSize: [25, 41],
@@ -35,7 +34,7 @@ const LocationMarker = ({ position, setPosition, setFormData }) => {
 };
 
 // ✏️ Input umum
-const Field = memo(({ label, name, value, onChange, placeholder, desc, type = "text" }) => (
+const Field = memo(({ label, name, value, onChange, placeholder, type = "text" }) => (
   <div className="space-y-1">
     <label className="block text-sm font-medium text-gray-700">{label}</label>
     <input
@@ -46,7 +45,6 @@ const Field = memo(({ label, name, value, onChange, placeholder, desc, type = "t
       placeholder={placeholder}
       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm"
     />
-    {desc && <p className="text-xs text-gray-400">{desc}</p>}
   </div>
 ));
 Field.displayName = "Field";
@@ -82,18 +80,19 @@ const LKSEditForm = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [position, setPosition] = useState([-6.3264, 108.32]);
+  const [daftarKecamatan, setDaftarKecamatan] = useState([]);
 
   const [formData, setFormData] = useState({
     nama: "",
     alamat: "",
     jenis_layanan: "",
     npwp: "",
-    kecamatan: "",
+    kecamatan_id: "",
     kelurahan: "",
     akta_pendirian: "",
     izin_operasional: "",
     kontak_pengurus: "",
-    status: "Aktif",
+    status: "aktif",
     legalitas: "Sudah",
     no_akta: "",
     status_akreditasi: "Belum",
@@ -107,26 +106,40 @@ const LKSEditForm = () => {
   });
 
   const [dokumenFiles, setDokumenFiles] = useState([]);
-  const [existingDocs, setExistingDocs] = useState([]); // file lama
+  const [existingDocs, setExistingDocs] = useState([]);
 
-  // Ambil data awal
+  // Ambil data LKS & kecamatan
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await API.get(`/lks/${id}`);
-        setFormData(res.data);
-        if (res.data.koordinat) {
-          const [lat, lng] = res.data.koordinat.split(",").map(Number);
+        const [resLks, resKec] = await Promise.all([
+          API.get(`/lks/${id}`),
+          API.get("/kecamatan"),
+        ]);
+
+        const lks = resLks.data;
+        setFormData((prev) => ({
+          ...prev,
+          ...lks,
+          kecamatan_id: lks.kecamatan_id || "",
+          status: lks.status || "aktif",
+        }));
+
+        if (lks.koordinat) {
+          const [lat, lng] = lks.koordinat.split(",").map(Number);
           setPosition([lat, lng]);
         }
-        if (res.data.dokumen) {
-          const parsed = Array.isArray(res.data.dokumen)
-            ? res.data.dokumen
-            : JSON.parse(res.data.dokumen);
+
+        if (lks.dokumen) {
+          const parsed = Array.isArray(lks.dokumen)
+            ? lks.dokumen
+            : JSON.parse(lks.dokumen);
           setExistingDocs(parsed);
         }
+
+        setDaftarKecamatan(resKec.data?.data || []);
       } catch (err) {
-        console.error("Gagal ambil data:", err);
+        console.error("❌ Gagal ambil data:", err);
         alert("Gagal memuat data LKS!");
       }
     };
@@ -145,9 +158,13 @@ const LKSEditForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
     try {
       const data = new FormData();
-      Object.keys(formData).forEach((key) => data.append(key, formData[key] || ""));
+      Object.keys(formData).forEach((key) => {
+        if (formData[key] !== undefined && formData[key] !== null)
+          data.append(key, formData[key]);
+      });
       dokumenFiles.forEach((file) => data.append("dokumen[]", file));
 
       await API.post(`/lks/${id}?_method=PUT`, data, {
@@ -157,8 +174,16 @@ const LKSEditForm = () => {
       alert("✅ Data berhasil diperbarui!");
       navigate("/admin/lks");
     } catch (err) {
-      console.error("Error simpan:", err);
-      alert("❌ Gagal menyimpan perubahan.");
+      console.error("❌ Error simpan:", err);
+      if (err.response) {
+        console.group("⚠️ DETAIL ERROR LARAVEL 422");
+        console.log("Status:", err.response.status);
+        console.log("Data:", JSON.stringify(err.response.data, null, 2));
+        console.groupEnd();
+        alert("Gagal menyimpan. Periksa console untuk detail error.");
+      } else {
+        alert("Server tidak merespons.");
+      }
     } finally {
       setLoading(false);
     }
@@ -181,18 +206,33 @@ const LKSEditForm = () => {
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">
           Edit Data Lembaga Kesejahteraan Sosial
         </h1>
-        <p className="text-center text-gray-500 text-sm mb-8">
-          Perbarui informasi lembaga di bawah ini, lalu klik “Simpan Perubahan”.
-        </p>
 
-        {/* 🏢 PROFIL UMUM */}
+        {/* 🏢 Profil Umum */}
         <section>
           <SectionHeader icon={BuildingOfficeIcon} title="Profil Umum" color="blue" />
           <div className="grid md:grid-cols-2 gap-6">
             <Field label="Nama LKS *" name="nama" value={formData.nama} onChange={handleChange} />
             <Field label="Jenis Layanan *" name="jenis_layanan" value={formData.jenis_layanan} onChange={handleChange} />
             <AutoResizeTextarea label="Alamat Lengkap *" name="alamat" value={formData.alamat} onChange={handleChange} />
-            <Field label="Kecamatan *" name="kecamatan" value={formData.kecamatan} onChange={handleChange} />
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Kecamatan *</label>
+              <select
+                name="kecamatan_id"
+                value={formData.kecamatan_id}
+                onChange={handleChange}
+                className="border border-gray-300 p-2 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none"
+                required
+              >
+                <option value="">Pilih Kecamatan</option>
+                {daftarKecamatan.map((kec) => (
+                  <option key={kec.id} value={kec.id}>
+                    {kec.nama}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <Field label="Kelurahan / Desa *" name="kelurahan" value={formData.kelurahan} onChange={handleChange} />
             <Field label="NPWP" name="npwp" value={formData.npwp} onChange={handleChange} />
             <Field label="Kontak Pengurus" name="kontak_pengurus" value={formData.kontak_pengurus} onChange={handleChange} />
@@ -201,43 +241,7 @@ const LKSEditForm = () => {
           </div>
         </section>
 
-        {/* ⚖️ LEGALITAS */}
-        <section>
-          <SectionHeader icon={ClipboardDocumentListIcon} title="Legalitas & Akreditasi" color="yellow" />
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Status Legalitas</label>
-              <select
-                name="legalitas"
-                value={formData.legalitas}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 focus:outline-none"
-              >
-                <option value="Sudah">Sudah</option>
-                <option value="Belum">Belum</option>
-              </select>
-            </div>
-            <Field label="Nomor Akta / Izin" name="no_akta" value={formData.no_akta} onChange={handleChange} />
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Status Akreditasi</label>
-              <select
-                name="status_akreditasi"
-                value={formData.status_akreditasi}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 focus:outline-none"
-              >
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="Belum">Belum</option>
-              </select>
-            </div>
-            <Field label="Nomor Sertifikat Akreditasi" name="no_sertifikat" value={formData.no_sertifikat} onChange={handleChange} />
-            <Field label="Tanggal Akreditasi" name="tanggal_akreditasi" type="date" value={formData.tanggal_akreditasi} onChange={handleChange} />
-          </div>
-        </section>
-
-        {/* 📍 LOKASI */}
+        {/* 📍 Lokasi */}
         <section>
           <SectionHeader icon={MapPinIcon} title="Lokasi LKS" color="red" />
           <MapContainer center={position} zoom={13} className="h-72 rounded-lg border shadow-sm z-0">
@@ -250,38 +254,49 @@ const LKSEditForm = () => {
           </p>
         </section>
 
-        {/* 👥 PENGURUS */}
+        {/* Status */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Status *</label>
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            className="border border-gray-300 p-2 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none"
+            required
+          >
+            <option value="aktif">Aktif</option>
+            <option value="nonaktif">Nonaktif</option>
+            <option value="pending">Pending</option>
+          </select>
+        </div>
+
+        {/* 👥 Pengurus */}
         <section>
           <SectionHeader icon={UsersIcon} title="Pengurus" color="purple" />
           <Field label="Jumlah Pengurus" name="jumlah_pengurus" type="number" value={formData.jumlah_pengurus} onChange={handleChange} />
         </section>
 
-        {/* 🏗️ SARANA */}
+        {/* 🏗️ Sarana */}
         <section>
           <SectionHeader icon={WrenchIcon} title="Sarana & Prasarana" color="green" />
           <AutoResizeTextarea label="Sarana & Fasilitas" name="sarana" value={formData.sarana} onChange={handleChange} />
         </section>
 
-        {/* 📝 MONITORING */}
+        {/* 📝 Monitoring */}
         <section>
           <SectionHeader icon={ChartBarIcon} title="Monitoring" color="pink" />
           <AutoResizeTextarea label="Hasil Observasi" name="hasil_observasi" value={formData.hasil_observasi} onChange={handleChange} />
           <AutoResizeTextarea label="Tindak Lanjut" name="tindak_lanjut" value={formData.tindak_lanjut} onChange={handleChange} />
         </section>
 
-        {/* 📎 DOKUMEN */}
+        {/* 📎 Dokumen */}
         <section>
           <SectionHeader icon={PaperClipIcon} title="Dokumen Pendukung" color="gray" />
           {existingDocs?.length > 0 && (
             <ul className="list-disc pl-5 text-sm text-gray-600 mb-3">
               {existingDocs.map((file, idx) => (
                 <li key={idx}>
-                  <a
-                    href={file.url || file}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
+                  <a href={file.url || file} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                     {file.name || `Dokumen ${idx + 1}`}
                   </a>
                 </li>
@@ -294,7 +309,6 @@ const LKSEditForm = () => {
             onChange={handleFileChange}
             className="block w-full text-sm text-gray-700 border border-gray-300 rounded-lg cursor-pointer p-2 bg-gray-50 hover:bg-gray-100 transition"
           />
-          <p className="text-xs text-gray-400 mt-1">Unggah file baru jika ingin mengganti / menambah dokumen (.pdf / .jpg / .png)</p>
         </section>
 
         {/* SIMPAN */}

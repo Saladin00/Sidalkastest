@@ -7,6 +7,9 @@ const ManajemenUser = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [daftarKecamatan, setDaftarKecamatan] = useState([]);
+
+  // 🔍 Search & Pagination
   const [searchTerm, setSearchTerm] = useState("");
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -17,33 +20,63 @@ const ManajemenUser = () => {
     email: "",
     password: "",
     role: "operator",
+    kecamatan_id: "",
   });
 
-  useEffect(() => { fetchUsers(); }, []);
+  // ===== FETCH DATA =====
+  useEffect(() => {
+    fetchUsers();
+    fetchKecamatan();
+  }, []);
 
   const fetchUsers = async () => {
-    setLoading(true); setError("");
+    setLoading(true);
+    setError("");
     try {
       const token = sessionStorage.getItem("token");
-      const res = await API.get("/users", { headers: { Authorization: `Bearer ${token}` }});
+      const res = await API.get("/users", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setUsers(res.data.users || []);
     } catch (err) {
       console.error("❌ Gagal ambil data user:", err);
       setError("Gagal memuat data pengguna.");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const fetchKecamatan = async () => {
+    try {
+      const res = await API.get("/kecamatan");
+      setDaftarKecamatan(res.data.data || []);
+    } catch (err) {
+      console.error("Gagal ambil daftar kecamatan:", err);
+    }
+  };
+
+  // ===== CRUD =====
   const handleCreateUser = async (e) => {
     e.preventDefault();
     if (!formData.username || !formData.email || !formData.password) {
-      alert("Semua field wajib diisi!"); return;
+      alert("Semua field wajib diisi!");
+      return;
     }
     try {
       const token = sessionStorage.getItem("token");
-      await API.post("/users", formData, { headers: { Authorization: `Bearer ${token}` }});
-      alert("Akun berhasil dibuat!");
+      await API.post("/users", formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      alert("✅ Akun berhasil dibuat!");
       setShowForm(false);
-      setFormData({ username:"", name:"", email:"", password:"", role:"operator" });
+      setFormData({
+        username: "",
+        name: "",
+        email: "",
+        password: "",
+        role: "operator",
+        kecamatan_id: "",
+      });
       fetchUsers();
     } catch (err) {
       console.error("❌ Gagal membuat user:", err);
@@ -55,7 +88,9 @@ const ManajemenUser = () => {
     if (!window.confirm("Ubah status aktif pengguna ini?")) return;
     try {
       const token = sessionStorage.getItem("token");
-      await API.patch(`/users/${userId}/toggle-status`, {}, { headers: { Authorization: `Bearer ${token}` }});
+      await API.patch(`/users/${userId}/toggle-status`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       fetchUsers();
     } catch (err) {
       console.error("❌ Gagal ubah status pengguna:", err);
@@ -63,7 +98,7 @@ const ManajemenUser = () => {
     }
   };
 
-  // ===== filter + pagination
+  // ===== FILTER & PAGINATION =====
   const filteredUsers = users.filter((u) => {
     const q = searchTerm.toLowerCase();
     return (
@@ -73,20 +108,28 @@ const ManajemenUser = () => {
       u.role?.toLowerCase().includes(q)
     );
   });
+
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / perPage));
   const currentPageSafe = Math.min(currentPage, totalPages);
   const startIndex = (currentPageSafe - 1) * perPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + perPage);
+  const paginatedUsers = filteredUsers.slice(
+    startIndex,
+    startIndex + perPage
+  );
 
+  // ===== UI =====
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Top bar */}
+      {/* 🔝 Toolbar */}
       <div className="flex flex-col gap-3 mb-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-2 text-sm text-gray-700">
           <span>Show</span>
           <select
             value={perPage}
-            onChange={(e)=>{ setPerPage(Number(e.target.value)); setCurrentPage(1); }}
+            onChange={(e) => {
+              setPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
             className="border border-gray-300 rounded-md px-2 py-1 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-slate-500"
           >
             <option value={5}>5</option>
@@ -105,7 +148,10 @@ const ManajemenUser = () => {
             <input
               type="text"
               value={searchTerm}
-              onChange={(e)=>{ setSearchTerm(e.target.value); setCurrentPage(1); }}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
               placeholder="Cari user..."
               className="pl-7 pr-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-slate-500 bg-white min-w-[200px]"
             />
@@ -121,8 +167,14 @@ const ManajemenUser = () => {
         </div>
       </div>
 
-      {error && <p className="text-red-600 bg-red-100 border border-red-300 rounded p-3 mb-4">{error}</p>}
+      {/* ⚠️ Error */}
+      {error && (
+        <p className="text-red-600 bg-red-100 border border-red-300 rounded p-3 mb-4">
+          {error}
+        </p>
+      )}
 
+      {/* 📊 Table */}
       {loading ? (
         <p className="text-center text-gray-500">Memuat data...</p>
       ) : (
@@ -132,9 +184,10 @@ const ManajemenUser = () => {
               <tr className="bg-slate-100 text-slate-800">
                 <th className="px-4 py-3 w-14 font-semibold">No</th>
                 <th className="px-4 py-3 font-semibold">Username</th>
-                <th className="px-4 py-3 font-semibold">Nama Lengkap</th>
+                <th className="px-4 py-3 font-semibold">Nama</th>
                 <th className="px-4 py-3 font-semibold">Email</th>
                 <th className="px-4 py-3 font-semibold">Role</th>
+                <th className="px-4 py-3 font-semibold">Kecamatan</th>
                 <th className="px-4 py-3 font-semibold">Status Akun</th>
                 <th className="px-4 py-3 text-center font-semibold">Aksi</th>
               </tr>
@@ -146,12 +199,15 @@ const ManajemenUser = () => {
                     key={user.id}
                     className="border-b border-slate-200/60 last:border-b-0 hover:bg-slate-50 transition-colors"
                   >
-                    <td className="px-4 py-3 align-middle">{startIndex + idx + 1}</td>
-                    <td className="px-4 py-3 whitespace-nowrap align-middle">{user.username}</td>
-                    <td className="px-4 py-3 whitespace-nowrap align-middle">{user.name}</td>
-                    <td className="px-4 py-3 whitespace-nowrap align-middle">{user.email}</td>
-                    <td className="px-4 py-3 capitalize align-middle">{user.role}</td>
-                    <td className="px-4 py-3 align-middle">
+                    <td className="px-4 py-3">{startIndex + idx + 1}</td>
+                    <td className="px-4 py-3">{user.username}</td>
+                    <td className="px-4 py-3">{user.name}</td>
+                    <td className="px-4 py-3">{user.email}</td>
+                    <td className="px-4 py-3 capitalize">{user.role}</td>
+                    <td className="px-4 py-3">
+                      {user.kecamatan?.nama || "-"}
+                    </td>
+                    <td className="px-4 py-3">
                       <span
                         className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
                           user.status_aktif
@@ -162,20 +218,18 @@ const ManajemenUser = () => {
                         {user.status_aktif ? "Aktif" : "Nonaktif"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center align-middle">
+                    <td className="px-4 py-3 text-center">
                       {user.status_aktif ? (
                         <button
                           onClick={() => handleToggleStatus(user.id)}
-                          className="inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold text-rose-700 ring-1 ring-rose-200 hover:bg-rose-50 hover:ring-rose-300 transition"
-                          title="Nonaktifkan pengguna"
+                          className="inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold text-rose-700 ring-1 ring-rose-200 hover:bg-rose-50 transition"
                         >
                           Nonaktifkan
                         </button>
                       ) : (
                         <button
                           onClick={() => handleToggleStatus(user.id)}
-                          className="inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-50 hover:ring-emerald-300 transition"
-                          title="Aktifkan pengguna"
+                          className="inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-50 transition"
                         >
                           Aktifkan
                         </button>
@@ -185,7 +239,10 @@ const ManajemenUser = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="text-center py-6 text-gray-500">
+                  <td
+                    colSpan="8"
+                    className="text-center py-6 text-gray-500"
+                  >
                     Tidak ada pengguna.
                   </td>
                 </tr>
@@ -195,12 +252,25 @@ const ManajemenUser = () => {
         </div>
       )}
 
-      {/* Bottom info + pagination */}
+      {/* 📑 Pagination Info */}
       {!loading && (
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-3 text-xs text-gray-600 gap-2">
           <div>
             {filteredUsers.length > 0
-              ? <>Showing <span className="font-semibold">{startIndex + 1}</span> to <span className="font-semibold">{Math.min(startIndex + perPage, filteredUsers.length)}</span> of <span className="font-semibold">{filteredUsers.length}</span> entries</>
+              ? (
+                <>
+                  Showing{" "}
+                  <span className="font-semibold">{startIndex + 1}</span> to{" "}
+                  <span className="font-semibold">
+                    {Math.min(startIndex + perPage, filteredUsers.length)}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-semibold">
+                    {filteredUsers.length}
+                  </span>{" "}
+                  entries
+                </>
+              )
               : "Showing 0 entries"}
           </div>
 
@@ -230,7 +300,9 @@ const ManajemenUser = () => {
               </button>
             ))}
             <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() =>
+                setCurrentPage((p) => Math.min(totalPages, p + 1))
+              }
               disabled={currentPageSafe === totalPages}
               className={`px-2 py-1.5 border rounded-md ${
                 currentPageSafe === totalPages
@@ -244,13 +316,19 @@ const ManajemenUser = () => {
         </div>
       )}
 
-      {/* Modal Tambah User */}
+      {/* ➕ Modal Tambah User */}
       {showForm && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between px-5 py-3 border-b">
-              <h3 className="text-sm font-semibold text-gray-800">Tambah Akun Baru</h3>
-              <button type="button" onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600">
+              <h3 className="text-sm font-semibold text-gray-800">
+                Tambah Akun Baru
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
                 <X size={18} />
               </button>
             </div>
@@ -263,28 +341,63 @@ const ManajemenUser = () => {
                 { key: "password", label: "Password", type: "password" },
               ].map((f) => (
                 <div key={f.key} className="space-y-1">
-                  <label className="text-xs font-medium text-gray-700">{f.label}</label>
+                  <label className="text-xs font-medium text-gray-700">
+                    {f.label}
+                  </label>
                   <input
                     type={f.type}
                     className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-500 focus:border-slate-500"
                     value={formData[f.key]}
-                    onChange={(e) => setFormData({ ...formData, [f.key]: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, [f.key]: e.target.value })
+                    }
                     required
                   />
                 </div>
               ))}
 
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-700">Role</label>
+                <label className="text-xs font-medium text-gray-700">
+                  Role
+                </label>
                 <select
                   className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-500 focus:border-slate-500"
                   value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, role: e.target.value })
+                  }
                 >
                   <option value="operator">Operator</option>
                   <option value="petugas">Petugas</option>
                 </select>
               </div>
+
+              {(formData.role === "operator" ||
+                formData.role === "petugas") && (
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-700">
+                    Kecamatan
+                  </label>
+                  <select
+                    className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-500"
+                    value={formData.kecamatan_id}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        kecamatan_id: e.target.value,
+                      })
+                    }
+                    required
+                  >
+                    <option value="">Pilih Kecamatan</option>
+                    {daftarKecamatan.map((kec) => (
+                      <option key={kec.id} value={kec.id}>
+                        {kec.nama}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="flex justify-end gap-2 pt-2 border-t mt-2">
                 <button

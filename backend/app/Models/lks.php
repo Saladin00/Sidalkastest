@@ -33,6 +33,7 @@ class Lks extends Model
         'hasil_observasi',
         'tindak_lanjut',
         'dokumen',
+        'user_id'
     ];
 
     protected $casts = [
@@ -65,7 +66,7 @@ class Lks extends Model
      */
     public function kecamatan()
     {
-        return $this->belongsTo(Kecamatan::class, 'kecamatan_id', 'id');
+        return $this->belongsTo(Kecamatan::class, 'kecamatan_id');
     }
 
     /**
@@ -90,7 +91,7 @@ class Lks extends Model
      */
     public function verifikasiTerbaru()
     {
-        return $this->hasOne(\App\Models\Verifikasi::class, 'lks_id', )
+        return $this->hasOne(\App\Models\Verifikasi::class, 'lks_id', 'id' )
                     ->latestOfMany(); // lebih rapi dari manual latest('id')
     }
 }

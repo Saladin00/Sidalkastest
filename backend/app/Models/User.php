@@ -12,15 +12,14 @@ class User extends Authenticatable
     use HasApiTokens, Notifiable, HasRoles;
 
     protected $fillable = [
-        'username',
-        'name',
-        'email',
-        'password',
-        'no_hp',
-        'status_aktif',
-        'kecamatan',   // hanya untuk operator
-        'lks_id',      // foreign key untuk akun LKS
-    ];
+    'username',
+    'name',
+    'email',
+    'password',
+    'status_aktif',
+    'kecamatan_id', // ✅ tambahkan ini
+];
+
 
     protected $hidden = [
         'password',
@@ -60,4 +59,12 @@ class User extends Authenticatable
     {
         return $this->hasRole('lks');
     }
+    
+    public function kecamatan()
+{
+    return $this->belongsTo(Kecamatan::class);
 }
+
+}
+
+
