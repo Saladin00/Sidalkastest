@@ -10,41 +10,14 @@ class KecamatanSeeder extends Seeder
     public function run(): void
     {
         $list = [
-            'Anjatan',
-            'Arahan',
-            'Balongan',
-            'Bangodua',
-            'Bongas',
-            'Cantigi',
-            'Cikedung',
-            'Gabuswetan',
-            'Gantar',
-            'Haurgeulis',
-            'Indramayu',
-            'Jatibarang',
-            'Juntinyuat',
-            'Kandanghaur',
-            'Karangampel',
-            'Kedokan Bunder',
-            'Kertasemaya',
-            'Krangkeng',
-            'Kroya',
-            'Lelea',
-            'Lohbener',
-            'Losarang',
-            'Pasekan',
-            'Patrol',
-            'Sindang',
-            'Sliyeg',
-            'Sukagumiwang',
-            'Sukra',
-            'Trisi',
-            'Tukdana',
-            'Widasari',
+            'Indramayu', 'Lohbener', 'Sindang', 'Jatibarang', 'Kandanghaur',
+            'Balongan', 'Losarang', 'Anjatan', 'Krangkeng', 'Lelea',
         ];
 
         foreach ($list as $nama) {
             Kecamatan::firstOrCreate(['nama' => $nama]);
         }
+
+        $this->command->info('✅ KecamatanSeeder: 10 kecamatan berhasil dimasukkan.');
     }
 }

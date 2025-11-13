@@ -8,6 +8,7 @@ export default function KlienList() {
   const [klien, setKlien] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Filter sesuai backend
   const [filters, setFilters] = useState({
     status_bantuan: "",
     jenis_kebutuhan: "",
@@ -22,11 +23,45 @@ export default function KlienList() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // 🟢 Ambil daftar kecamatan dari tabel 'kecamatan'
+  const fetchKecamatan = async () => {
+    try {
+      const res = await api.get("/kecamatan");
+      setDaftarKecamatan(res.data?.data || []);
+    } catch (err) {
+      console.error("Gagal ambil kecamatan:", err);
+      setDaftarKecamatan([]);
+    }
+  };
+
+  // 🟢 Ambil daftar LKS (default atau by kecamatan)
+  const fetchLKS = async (kecamatanId = "") => {
+    try {
+      let res;
+      if (kecamatanId) {
+        res = await api.get(`/lks/by-kecamatan/${kecamatanId}`);
+        setDaftarLKS(res.data?.data || []);
+      } else {
+        res = await api.get("/lks");
+        setDaftarLKS(res.data?.data || []);
+      }
+    } catch (err) {
+      console.error("Gagal ambil LKS:", err);
+      setDaftarLKS([]);
+    }
+  };
+
+  // 🟢 Ambil data klien (terfilter)
   const fetchKlien = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/klien", { params: filters });
-      const items = res.data?.data?.data || [];
+      const token = sessionStorage.getItem("token");
+      const res = await api.get("/klien", {
+        params: filters,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const items = res.data?.data?.data || res.data?.data || [];
       setKlien(items);
     } catch (error) {
       console.error("Gagal mengambil data klien:", error);
@@ -37,41 +72,24 @@ export default function KlienList() {
     }
   };
 
-  const fetchFilterOptions = async () => {
-    try {
-      const kecamatanRes = await api.get("/kecamatan");
-      setDaftarKecamatan(kecamatanRes.data?.data || []);
-
-      const lksRes = await api.get("/lks");
-      setDaftarLKS(lksRes.data?.data || []);
-    } catch (error) {
-      console.error("Gagal memuat daftar kecamatan/LKS:", error);
-    }
-  };
-
+  // 🟢 Lifecycle
   useEffect(() => {
-    const loadLksByKecamatan = async () => {
-      if (!filters.kecamatan_id) {
-        const lksRes = await api.get("/lks");
-        setDaftarLKS(lksRes.data?.data || []);
-        return;
-      }
-      try {
-        const res = await api.get(`/lks/by-kecamatan/${filters.kecamatan_id}`);
-        setDaftarLKS(res.data?.data || []);
-      } catch (e) {
-        console.error("Gagal ambil LKS by kecamatan:", e);
-        setDaftarLKS([]);
-      }
-    };
-    loadLksByKecamatan();
+    fetchKecamatan();
+    fetchLKS();
+  }, []);
+
+  // Kalau kecamatan berubah, ambil ulang LKS by kecamatan
+  useEffect(() => {
+    if (filters.kecamatan_id) {
+      fetchLKS(filters.kecamatan_id);
+    } else {
+      fetchLKS();
+    }
+    // Reset lks_id tiap kali kecamatan berubah
     setFilters((f) => ({ ...f, lks_id: "" }));
   }, [filters.kecamatan_id]);
 
-  useEffect(() => {
-    fetchFilterOptions();
-  }, []);
-
+  // Ambil ulang data klien setiap kali filter berubah
   useEffect(() => {
     fetchKlien();
   }, [filters]);
@@ -79,7 +97,10 @@ export default function KlienList() {
   const handleDelete = async (id) => {
     if (!window.confirm("Yakin ingin menghapus data klien ini?")) return;
     try {
-      await api.delete(`/klien/${id}`);
+      const token = sessionStorage.getItem("token");
+      await api.delete(`/klien/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       alert("Klien berhasil dihapus!");
       fetchKlien();
     } catch (error) {
@@ -128,17 +149,16 @@ export default function KlienList() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      {/* TOP BAR: filter + reset + search + tambah (sejajar) */}
+      {/* TOP BAR: filter + reset + search + tambah */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        {/* Filters minimalis pill */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Filter dropdowns */}
           <select
-            className="h-8 min-w-[150px] rounded-full border border-gray-300 bg-white px-3 pr-7 text-xs focus:outline-none focus:ring-1 focus:ring-slate-500"
+            className="h-8 min-w-[150px] rounded-full border border-gray-300 bg-white px-3 text-xs focus:outline-none focus:ring-1 focus:ring-slate-500"
             value={filters.status_bantuan}
-            onChange={(e) => {
-              setFilters({ ...filters, status_bantuan: e.target.value });
-              setCurrentPage(1);
-            }}
+            onChange={(e) =>
+              setFilters({ ...filters, status_bantuan: e.target.value })
+            }
           >
             <option value="">Status Bantuan: Semua</option>
             <option value="PKH">PKH</option>
@@ -148,12 +168,11 @@ export default function KlienList() {
           </select>
 
           <select
-            className="h-8 min-w-[160px] rounded-full border border-gray-300 bg-white px-3 pr-7 text-xs focus:outline-none focus:ring-1 focus:ring-slate-500"
+            className="h-8 min-w-[160px] rounded-full border border-gray-300 bg-white px-3 text-xs focus:outline-none focus:ring-1 focus:ring-slate-500"
             value={filters.jenis_kebutuhan}
-            onChange={(e) => {
-              setFilters({ ...filters, jenis_kebutuhan: e.target.value });
-              setCurrentPage(1);
-            }}
+            onChange={(e) =>
+              setFilters({ ...filters, jenis_kebutuhan: e.target.value })
+            }
           >
             <option value="">Jenis Kebutuhan: Semua</option>
             <option value="anak">Anak</option>
@@ -163,12 +182,11 @@ export default function KlienList() {
           </select>
 
           <select
-            className="h-8 min-w-[150px] rounded-full border border-gray-300 bg-white px-3 pr-7 text-xs focus:outline-none focus:ring-1 focus:ring-slate-500"
+            className="h-8 min-w-[150px] rounded-full border border-gray-300 bg-white px-3 text-xs focus:outline-none focus:ring-1 focus:ring-slate-500"
             value={filters.kecamatan_id}
-            onChange={(e) => {
-              setFilters({ ...filters, kecamatan_id: e.target.value });
-              setCurrentPage(1);
-            }}
+            onChange={(e) =>
+              setFilters({ ...filters, kecamatan_id: e.target.value })
+            }
           >
             <option value="">Kecamatan: Semua</option>
             {daftarKecamatan.map((kec) => (
@@ -179,12 +197,11 @@ export default function KlienList() {
           </select>
 
           <select
-            className="h-8 min-w-[140px] rounded-full border border-gray-300 bg-white px-3 pr-7 text-xs focus:outline-none focus:ring-1 focus:ring-slate-500"
+            className="h-8 min-w-[140px] rounded-full border border-gray-300 bg-white px-3 text-xs focus:outline-none focus:ring-1 focus:ring-slate-500"
             value={filters.lks_id}
-            onChange={(e) => {
-              setFilters({ ...filters, lks_id: e.target.value });
-              setCurrentPage(1);
-            }}
+            onChange={(e) =>
+              setFilters({ ...filters, lks_id: e.target.value })
+            }
           >
             <option value="">LKS: Semua</option>
             {daftarLKS.map((lks) => (
@@ -203,7 +220,7 @@ export default function KlienList() {
           </button>
         </div>
 
-        {/* Search + Tambah Klien */}
+        {/* Search & Tambah */}
         <div className="flex items-center gap-3">
           <div className="relative">
             <span className="absolute inset-y-0 left-0 pl-2 flex items-center text-gray-400">
@@ -231,7 +248,7 @@ export default function KlienList() {
         </div>
       </div>
 
-      {/* TABEL DATA */}
+      {/* TABLE DATA */}
       {loading ? (
         <p className="text-gray-600">Memuat data klien...</p>
       ) : filteredKlien.length === 0 ? (
@@ -242,36 +259,16 @@ export default function KlienList() {
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-slate-100 text-slate-800">
-                  <th className="px-3 py-2.5 border border-slate-200/70 w-10 text-left">
-                    No
-                  </th>
-                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">
-                    NIK
-                  </th>
-                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">
-                    Nama
-                  </th>
-                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">
-                    Alamat
-                  </th>
-                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">
-                    Kelurahan
-                  </th>
-                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">
-                    Kecamatan
-                  </th>
-                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">
-                    Jenis Kebutuhan
-                  </th>
-                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">
-                    Status Bantuan
-                  </th>
-                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">
-                    LKS
-                  </th>
-                  <th className="px-3 py-2.5 border border-slate-200/70 text-center">
-                    Aksi
-                  </th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 w-10 text-left">No</th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">NIK</th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">Nama</th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">Alamat</th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">Kelurahan</th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">Kecamatan</th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">Jenis Kebutuhan</th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">Status Bantuan</th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 text-left">LKS</th>
+                  <th className="px-3 py-2.5 border border-slate-200/70 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -283,18 +280,10 @@ export default function KlienList() {
                     <td className="px-3 py-2.5 border border-slate-200/70 text-center">
                       {startIndex + index + 1}
                     </td>
-                    <td className="px-3 py-2.5 border border-slate-200/70 whitespace-nowrap">
-                      {item.nik}
-                    </td>
-                    <td className="px-3 py-2.5 border border-slate-200/70">
-                      {item.nama}
-                    </td>
-                    <td className="px-3 py-2.5 border border-slate-200/70">
-                      {item.alamat}
-                    </td>
-                    <td className="px-3 py-2.5 border border-slate-200/70">
-                      {item.kelurahan}
-                    </td>
+                    <td className="px-3 py-2.5 border border-slate-200/70">{item.nik}</td>
+                    <td className="px-3 py-2.5 border border-slate-200/70">{item.nama}</td>
+                    <td className="px-3 py-2.5 border border-slate-200/70">{item.alamat}</td>
+                    <td className="px-3 py-2.5 border border-slate-200/70">{item.kelurahan}</td>
                     <td className="px-3 py-2.5 border border-slate-200/70">
                       {item.kecamatan?.nama || "-"}
                     </td>
@@ -311,18 +300,14 @@ export default function KlienList() {
                       <div className="flex items-center justify-center gap-2">
                         <button
                           className="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 text-xs font-semibold hover:bg-blue-100"
-                          onClick={() =>
-                            navigate(`/admin/klien/detail/${item.id}`)
-                          }
+                          onClick={() => navigate(`/admin/klien/detail/${item.id}`)}
                         >
                           <Eye size={14} />
                           Detail
                         </button>
                         <button
                           className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 text-xs font-semibold hover:bg-amber-100"
-                          onClick={() =>
-                            navigate(`/admin/klien/edit/${item.id}`)
-                          }
+                          onClick={() => navigate(`/admin/klien/edit/${item.id}`)}
                         >
                           <Edit2 size={14} />
                           Edit
@@ -342,7 +327,7 @@ export default function KlienList() {
             </table>
           </div>
 
-          {/* BOTTOM: show per page + info + pagination */}
+          {/* PAGINATION */}
           <div className="mt-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2 text-xs text-gray-600">
             <div className="flex flex-wrap items-center gap-2">
               <span>Show</span>
@@ -371,25 +356,21 @@ export default function KlienList() {
               >
                 Prev
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (page) => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-3 py-1.5 border rounded-md ${
-                      page === currentPageSafe
-                        ? "bg-slate-900 text-white border-slate-900"
-                        : "border-gray-300 text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                )
-              )}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`px-3 py-1.5 border rounded-md ${
+                    page === currentPageSafe
+                      ? "bg-slate-900 text-white border-slate-900"
+                      : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
               <button
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(totalPages, p + 1))
-                }
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPageSafe === totalPages}
                 className={`px-2 py-1.5 border rounded-md ${
                   currentPageSafe === totalPages

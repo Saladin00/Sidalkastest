@@ -30,13 +30,16 @@ import KlienForm from "./pages/admin/klien/KlienForm";
 import KlienDetail from "./pages/admin/klien/KlienDetail";
 import KlienEditForm from "./pages/admin/klien/KlienEditForm";
 
-// 👥 Operator Klien
+// 👥 Operator LKS
+import OperatorLayout from "./components/OperatorLayout";
+import OperatorLKSList from "./pages/operator/lks/OperatorLKSList";
+import OperatorLKSDetail from "./pages/operator/lks/OperatorLKSDetail";
+
 import OperatorKlienList from "./pages/operator/klien/OperatorKlienList";
 
 // ✅ Modul Verifikasi Admin
 import AdminVerifikasiList from "./pages/admin/verifikasi/VerifikasiList";
 import AdminVerifikasiReview from "./pages/admin/verifikasi/VerifikasiReview";
-
 
 function App() {
   return (
@@ -63,13 +66,56 @@ function App() {
             </ProtectedRoute>
           }
         />
+        {/* ==================== OPERATOR AREA ==================== */}
+        <Route
+          path="/operator/lks"
+          element={
+            <ProtectedRoute allowedRoles={["operator", "petugas"]}>
+              <OperatorLayout>
+                <OperatorLKSList />
+              </OperatorLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/operator/lks/detail/:id"
+          element={
+            <ProtectedRoute allowedRoles={["operator", "petugas"]}>
+              <OperatorLayout>
+                <OperatorLKSDetail />
+              </OperatorLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/operator/klien"
+          element={
+            <ProtectedRoute allowedRoles={["operator"]}>
+              <OperatorLayout>
+                <OperatorKlienList />
+              </OperatorLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/operator/sebaran"
+          element={
+            <ProtectedRoute allowedRoles={["operator"]}>
+              <OperatorLayout>
+                <div>Halaman Sebaran Wilayah (coming soon)</div>
+              </OperatorLayout>
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/petugas"
           element={
             <ProtectedRoute allowedRoles={["petugas"]}>
               <PetugasLayout>
                 <DashboardPetugas />
-
               </PetugasLayout>
             </ProtectedRoute>
           }

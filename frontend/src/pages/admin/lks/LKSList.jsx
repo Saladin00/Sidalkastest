@@ -13,12 +13,27 @@ const LKSList = () => {
   const loadLKS = async () => {
     setLoading(true);
     try {
-      const res = await API.get("/lks", { params: { search } });
-      setLksList(Array.isArray(res.data) ? res.data : []);
+      const token = sessionStorage.getItem("token");
+      const res = await API.get("/lks", {
+        params: { search: search || "" },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      console.log("HASIL API:", res.data);
+
+      const items = res.data?.data?.data ?? [];
+      setLksList(items);
     } catch (error) {
-      console.error("Gagal ambil data LKS:", error);
+      console.error(
+        "❌ Gagal ambil data LKS:",
+        error.response?.data || error.message || error
+      );
+      alert(
+        error.response?.data?.message ||
+          "Terjadi kesalahan saat memuat data LKS."
+      );
     } finally {
-      setLoading(false);
+      setLoading(false); // ⬅ WAJIB
     }
   };
 
@@ -46,7 +61,11 @@ const LKSList = () => {
             onClick={loadLKS}
             className="flex items-center gap-1 border border-gray-300 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-100 text-sm transition"
           >
-            {loading ? <Loader2 size={14} className="animate-spin" /> : <RotateCw size={14} />}
+            {loading ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <RotateCw size={14} />
+            )}
             {loading ? "Memuat..." : "Refresh"}
           </button>
 
@@ -103,32 +122,50 @@ const LKSList = () => {
               ) : (
                 lksList.map((lks, index) => (
                   <tr key={lks.id} className="border-t hover:bg-gray-50">
-                    <td className="px-4 py-3 text-center border-r">{index + 1}</td>
-                    <td className="px-4 py-3 border-r font-medium text-gray-800">{lks.nama}</td>
+                    <td className="px-4 py-3 text-center border-r">
+                      {index + 1}
+                    </td>
+                    <td className="px-4 py-3 border-r font-medium text-gray-800">
+                      {lks.nama}
+                    </td>
                     <td className="px-4 py-3 border-r">{lks.jenis_layanan}</td>
-                    <td className="px-4 py-3 border-r">{lks.kecamatan?.nama || "-"}</td>
+                    <td className="px-4 py-3 border-r">
+                      {lks.kecamatan?.nama || "-"}
+                    </td>
                     <td className="px-4 py-3 border-r">
                       <span
                         className={`px-3 py-1 text-xs font-medium rounded-full ${
-                          lks.verifikasi_terbaru?.status?.toLowerCase() === "valid"
+                          lks.verifikasi_terbaru?.status?.toLowerCase() ===
+                          "valid"
                             ? "bg-green-100 text-green-700"
-                            : lks.verifikasi_terbaru?.status?.toLowerCase() === "tidak_valid"
+                            : lks.verifikasi_terbaru?.status?.toLowerCase() ===
+                              "tidak_valid"
                             ? "bg-red-100 text-red-700"
                             : "bg-yellow-100 text-yellow-700"
                         }`}
                       >
-                        {lks.verifikasi_terbaru?.status?.toUpperCase() || "PENDING"}
+                        {lks.verifikasi_terbaru?.status?.toUpperCase() ||
+                          "PENDING"}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex justify-center gap-3">
-                        <Link to={`/admin/lks/detail/${lks.id}`} className="text-blue-600 hover:text-blue-800">
+                        <Link
+                          to={`/admin/lks/detail/${lks.id}`}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
                           <Eye size={18} />
                         </Link>
-                        <Link to={`/admin/lks/edit/${lks.id}`} className="text-yellow-500 hover:text-yellow-600">
+                        <Link
+                          to={`/admin/lks/edit/${lks.id}`}
+                          className="text-yellow-500 hover:text-yellow-600"
+                        >
                           <Pencil size={18} />
                         </Link>
-                        <button onClick={() => handleDelete(lks.id)} className="text-red-600 hover:text-red-700">
+                        <button
+                          onClick={() => handleDelete(lks.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
                           <Trash2 size={18} />
                         </button>
                       </div>
