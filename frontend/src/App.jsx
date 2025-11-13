@@ -1,72 +1,207 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-// 🔐 Auth Pages
+// Auth
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// 🏠 Dashboard Pages
+// Layouts
+import AdminLayout from "./components/AdminLayout";
+import OperatorLayout from "./components/OperatorLayout";
+import PetugasLayout from "./components/PetugasLayout";
+import LKSLayout from "./components/LKSLayout";
+
+// Dashboard
 import DashboardAdmin from "./pages/DashboardAdmin";
 import DashboardOperator from "./pages/DashboardOperator";
 import DashboardPetugas from "./pages/DashboardPetugas";
 import DashboardLKS from "./pages/DashboardLKS";
-import PetugasLayout from "./components/PetugasLayout";
-// 🧩 Modul LKS
+
+// Admin: LKS
 import LKSList from "./pages/admin/lks/LKSList";
 import LKSForm from "./pages/admin/lks/LKSForm";
 import LKSDetail from "./pages/admin/lks/LKSDetail";
 import LKSEditForm from "./pages/admin/lks/LKSEditForm";
 import LKSProfil from "./pages/admin/lks/LKSProfil";
-import LKSUploadDokumen from "./pages/admin/lks/LKSUploadDokumen";
 import LKSKunjungan from "./pages/admin/lks/LKSKunjungan";
+import LKSUploadDokumen from "./pages/admin/lks/LKSUploadDokumen";
 
-// 👤 Manajemen User
-import ManajemenUser from "./pages/admin/ManajemenUser";
-import AdminLayout from "./components/AdminLayout";
-
-// 📊 Modul Data Klien
+// Admin: Klien
 import KlienList from "./pages/admin/klien/KlienList";
 import KlienForm from "./pages/admin/klien/KlienForm";
 import KlienDetail from "./pages/admin/klien/KlienDetail";
 import KlienEditForm from "./pages/admin/klien/KlienEditForm";
 
-// 👥 Operator LKS
-import OperatorLayout from "./components/OperatorLayout";
-import OperatorLKSList from "./pages/operator/lks/OperatorLKSList";
-import OperatorLKSDetail from "./pages/operator/lks/OperatorLKSDetail";
+// Admin: User
+import ManajemenUser from "./pages/admin/ManajemenUser";
 
-import OperatorKlienList from "./pages/operator/klien/OperatorKlienList";
-
-// ✅ Modul Verifikasi Admin
+// Admin: Verifikasi
 import AdminVerifikasiList from "./pages/admin/verifikasi/VerifikasiList";
 import AdminVerifikasiReview from "./pages/admin/verifikasi/VerifikasiReview";
+
+// Operator LKS & Klien
+import OperatorLKSList from "./pages/operator/lks/OperatorLKSList";
+import OperatorLKSDetail from "./pages/operator/lks/OperatorLKSDetail";
+import OperatorKlienList from "./pages/operator/klien/OperatorKlienList";
+
+// LKS Role: Klien
+import LKSKlienList from "./pages/lks/LKSKlienList";
+import LKSKlienForm from "./pages/lks/LKSKlienForm";
+import LKSKlienDetail from "./pages/lks/LKSKlienDetail";
+import LKSKlienEdit from "./pages/lks/LKSKlienEdit";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ==================== AUTH ==================== */}
+
+        {/* ================= AUTH ================= */}
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* ==================== DASHBOARD ==================== */}
+        {/* ================= ADMIN ================= */}
         <Route
           path="/admin"
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
-              <DashboardAdmin />
+              <AdminLayout>
+                <DashboardAdmin />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* --- ADMIN: USERS --- */}
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminLayout>
+                <ManajemenUser />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* --- ADMIN: LKS CRUD --- */}
+        <Route
+          path="/admin/lks"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "operator"]}>
+              <AdminLayout>
+                <LKSList />
+              </AdminLayout>
             </ProtectedRoute>
           }
         />
         <Route
-          path="/operator"
+          path="/admin/lks/tambah"
           element={
-            <ProtectedRoute allowedRoles={["operator"]}>
-              <DashboardOperator />
+            <ProtectedRoute allowedRoles={["admin", "operator"]}>
+              <AdminLayout>
+                <LKSForm />
+              </AdminLayout>
             </ProtectedRoute>
           }
         />
-        {/* ==================== OPERATOR AREA ==================== */}
+        <Route
+          path="/admin/lks/detail/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
+              <AdminLayout>
+                <LKSDetail />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/lks/edit/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "operator"]}>
+              <AdminLayout>
+                <LKSEditForm />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* --- ADMIN: KLIEN CRUD --- */}
+        <Route
+          path="/admin/klien"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "operator"]}>
+              <AdminLayout>
+                <KlienList />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/klien/tambah"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "operator"]}>
+              <AdminLayout>
+                <KlienForm />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/klien/detail/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "operator"]}>
+              <AdminLayout>
+                <KlienDetail />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/klien/edit/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "operator"]}>
+              <AdminLayout>
+                <KlienEditForm />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* --- ADMIN: VERIFIKASI --- */}
+        <Route
+          path="/admin/verifikasi"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminLayout>
+                <AdminVerifikasiList />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/verifikasi/review/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminLayout>
+                <AdminVerifikasiReview />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= OPERATOR ================= */}
+        <Route
+          path="/operator"
+          element={
+            <ProtectedRoute allowedRoles={["operator"]}>
+              <OperatorLayout>
+                <DashboardOperator />
+              </OperatorLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Operator LKS */}
         <Route
           path="/operator/lks"
           element={
@@ -88,6 +223,7 @@ function App() {
           }
         />
 
+        {/* Operator Klien */}
         <Route
           path="/operator/klien"
           element={
@@ -99,17 +235,7 @@ function App() {
           }
         />
 
-        <Route
-          path="/operator/sebaran"
-          element={
-            <ProtectedRoute allowedRoles={["operator"]}>
-              <OperatorLayout>
-                <div>Halaman Sebaran Wilayah (coming soon)</div>
-              </OperatorLayout>
-            </ProtectedRoute>
-          }
-        />
-
+        {/* ================= PETUGAS ================= */}
         <Route
           path="/petugas"
           element={
@@ -121,154 +247,60 @@ function App() {
           }
         />
 
+        {/* ================= LKS ROLE ================= */}
         <Route
           path="/lks"
           element={
             <ProtectedRoute allowedRoles={["lks"]}>
-              <DashboardLKS />
+              <LKSLayout>
+                <DashboardLKS />
+              </LKSLayout>
             </ProtectedRoute>
           }
         />
 
-        {/* ==================== ADMIN AREA ==================== */}
+        {/* LKS Klien */}
         <Route
-          path="/admin/users"
+          path="/lks/klien"
           element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <AdminLayout>
-                <ManajemenUser />
-              </AdminLayout>
+            <ProtectedRoute allowedRoles={["lks"]}>
+              <LKSLayout>
+                <LKSKlienList />
+              </LKSLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/lks/klien/tambah"
+          element={
+            <ProtectedRoute allowedRoles={["lks"]}>
+              <LKSLayout>
+                <LKSKlienForm />
+              </LKSLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/lks/klien/detail/:id"
+          element={
+            <ProtectedRoute allowedRoles={["lks"]}>
+              <LKSLayout>
+                <LKSKlienDetail />
+              </LKSLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/lks/klien/edit/:id"
+          element={
+            <ProtectedRoute allowedRoles={["lks"]}>
+              <LKSLayout>
+                <LKSKlienEdit />
+              </LKSLayout>
             </ProtectedRoute>
           }
         />
 
-        {/* ==================== MODUL LKS ==================== */}
-        <Route
-          path="/admin/lks"
-          element={
-            <ProtectedRoute allowedRoles={["admin", "operator"]}>
-              <LKSList />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/lks/tambah"
-          element={
-            <ProtectedRoute allowedRoles={["admin", "operator"]}>
-              <LKSForm />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/lks/detail/:id"
-          element={
-            <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
-              <LKSDetail />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/lks/profil/:id"
-          element={
-            <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
-              <LKSProfil />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/lks/edit/:id"
-          element={
-            <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
-              <LKSEditForm />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/lks/upload/:id"
-          element={
-            <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
-              <LKSUploadDokumen />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/lks/kunjungan/:id"
-          element={
-            <ProtectedRoute allowedRoles={["admin", "operator", "petugas"]}>
-              <LKSKunjungan />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* ==================== MODUL DATA KLIEN ==================== */}
-        <Route
-          path="/admin/klien"
-          element={
-            <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
-              <AdminLayout>
-                <KlienList />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/klien/tambah"
-          element={
-            <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
-              <AdminLayout>
-                <KlienForm />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/klien/detail/:id"
-          element={
-            <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
-              <KlienDetail />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/klien/edit/:id"
-          element={
-            <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
-              <KlienEditForm />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* ==================== VERIFIKASI ADMIN ==================== */}
-        <Route
-          path="/admin/verifikasi"
-          element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <AdminLayout>
-                <AdminVerifikasiList />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/verifikasi/:id"
-          element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <AdminLayout>
-                <AdminVerifikasiReview />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* ==================== OPERATOR AREA ==================== */}
-        <Route
-          path="/operator/klien"
-          element={
-            <ProtectedRoute allowedRoles={["operator"]}>
-              <OperatorKlienList />
-            </ProtectedRoute>
-          }
-        />
       </Routes>
     </BrowserRouter>
   );

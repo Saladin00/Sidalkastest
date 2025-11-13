@@ -266,17 +266,30 @@ public function show($id)
         return $pdf->stream('Profil_LKS_' . preg_replace('/\s+/', '_', $lks->nama) . '.pdf');    }
 
     // 🏙️ GET /api/lks/by-kecamatan/{id}
-    public function byKecamatan($id)
-    {
-        $data = Lks::where('kecamatan_id', $id)
-            ->select('id', 'nama')
-            ->orderBy('nama')
+   public function getByKecamatan($id)
+{
+    try {
+        $lks = Lks::select('id', 'nama', 'kecamatan_id')
+            ->where('kecamatan_id', $id)
             ->get();
 
         return response()->json([
             'success' => true,
-            'message' => 'Daftar LKS berhasil diambil',
-            'data' => $data
-        ]);
+            'data' => $lks,
+        ], 200);
+
+    } catch (\Exception $e) {
+
+        \Log::error("getByKecamatan Error: " . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil LKS berdasarkan kecamatan',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
+
+
 }

@@ -27,7 +27,9 @@ const LKSDetail = () => {
     const fetchData = async () => {
       try {
         const res = await API.get(`/lks/${id}`);
-        setLks(res.data);
+
+        // FIX: Ambil data dari response dengan benar
+        setLks(res.data.data);
       } catch (err) {
         console.error("gagal Mengambil data", err);
         alert("Gagal mengambil data");
@@ -36,7 +38,6 @@ const LKSDetail = () => {
     };
     fetchData();
   }, [id, navigate]);
-
   const printPDF = () => {
     window.open(
       `${import.meta.env.VITE_API_BASE_URL}/lks/${id}/cetak-profil`,
@@ -127,8 +128,9 @@ const LKSDetail = () => {
             <strong>No Akta:</strong> {display(no_akta)}
           </p>
           <p>
-            <strong>Kecamatan:</strong> {display(kecamatan)}
+            <strong>Kecamatan:</strong> {display(kecamatan?.nama)}
           </p>
+
           <p>
             <strong>Izin Operasional:</strong> {display(izin_operasional)}
           </p>
