@@ -52,7 +52,8 @@ class LKSController extends Controller
             $query->where('nama', 'LIKE', '%' . $request->search . '%');
         }
 
-        $data = $query->latest()->get();
+     $data = $query->latest()->paginate(10);
+
 
         return response()->json([
             'success' => true,
@@ -262,8 +263,7 @@ public function show($id)
         $pdf = Pdf::loadView('lks_pdf', compact('lks'))
             ->setPaper('A4', 'portrait');
 
-        return $pdf->stream('Profil_LKS_' . preg_replace('/\s+/', '_', $lks->nama) . '.pdf');
-    }
+        return $pdf->stream('Profil_LKS_' . preg_replace('/\s+/', '_', $lks->nama) . '.pdf');    }
 
     // 🏙️ GET /api/lks/by-kecamatan/{id}
     public function byKecamatan($id)

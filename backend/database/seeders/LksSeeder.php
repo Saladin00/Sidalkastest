@@ -14,7 +14,7 @@ class LksSeeder extends Seeder
     public function run(): void
     {
         $kecamatanList = Kecamatan::take(5)->get();
-        $jenisList = ['Anak', 'Lansia', 'Disabilitas', 'Fakir Miskin', 'Kesejahteraan Sosial'];
+        $jenisList = ['Anak', 'Lansia', 'Disabilitas', 'Fakir Miskin', 'Kessejahteraan Sosial'];
 
         foreach ($kecamatanList as $kec) {
             for ($i = 1; $i <= 10; $i++) {
@@ -22,15 +22,17 @@ class LksSeeder extends Seeder
                 $email = "{$username}@example.com";
 
                 // 👤 Buat user LKS
-                $user = User::firstOrCreate(
-                    ['username' => $username],
-                    [
-                        'name' => "LKS {$i} {$kec->nama}",
-                        'email' => $email,
-                        'password' => Hash::make('password'),
-                        'status_aktif' => true,
-                    ]
-                );
+                $user = $user = User::firstOrCreate(
+    ['username' => $username],
+    [
+        'name' => "LKS {$i} {$kec->nama}",
+        'email' => $email,
+        'password' => Hash::make('password'),
+        'status_aktif' => true,
+        'kecamatan_id' => $kec->id,   // ✔ FIX
+    ]
+);
+
                 $user->assignRole('lks');
 
                 // 🏢 Buat data LKS

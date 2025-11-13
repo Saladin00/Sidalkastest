@@ -10,7 +10,7 @@ import DashboardAdmin from "./pages/DashboardAdmin";
 import DashboardOperator from "./pages/DashboardOperator";
 import DashboardPetugas from "./pages/DashboardPetugas";
 import DashboardLKS from "./pages/DashboardLKS";
-
+import PetugasLayout from "./components/PetugasLayout";
 // 🧩 Modul LKS
 import LKSList from "./pages/admin/lks/LKSList";
 import LKSForm from "./pages/admin/lks/LKSForm";
@@ -40,8 +40,6 @@ import OperatorKlienList from "./pages/operator/klien/OperatorKlienList";
 // ✅ Modul Verifikasi Admin
 import AdminVerifikasiList from "./pages/admin/verifikasi/VerifikasiList";
 import AdminVerifikasiReview from "./pages/admin/verifikasi/VerifikasiReview";
-
-import PetugasLayout from "./components/PetugasLayout";
 
 function App() {
   return (
@@ -122,6 +120,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/lks"
           element={

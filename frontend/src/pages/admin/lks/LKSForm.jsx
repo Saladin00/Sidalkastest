@@ -110,10 +110,11 @@ const LKSForm = () => {
   const [dokumenFiles, setDokumenFiles] = useState([]);
 
   useEffect(() => {
-    API.get("/kecamatan_id")
-      .then((res) => setDaftarKecamatan(res.data?.data || []))
-      .catch(() => alert("❌ Gagal memuat daftar kecamatan"));
-  }, []);
+  API.get("/kecamatan")
+    .then((res) => setDaftarKecamatan(res.data?.data || []))
+    .catch(() => alert("❌ Gagal memuat daftar kecamatan"));
+}, []);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;

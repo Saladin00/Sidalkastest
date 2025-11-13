@@ -13,60 +13,64 @@ class AuthController extends Controller
 {
     // 🔹 REGISTER: otomatis buat akun LKS, data LKS, & verifikasi awal
     public function register(Request $request)
-    {
-        $validated = $request->validate([
-            'username' => 'required|string|unique:users',
-            'name' => 'required|string',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:6|confirmed',
-            'jenis_layanan' => 'required|string',
-            'kecamatan_id' => 'required|exists:kecamatan,id', // ✅ ubah ke ID, bukan string
-        ]);
+{
+    $validated = $request->validate([
+        'username' => 'required|string|unique:users',
+        'name' => 'required|string',
+        'email' => 'required|email|unique:users',
+        'password' => 'required|min:6|confirmed',
+        'jenis_layanan' => 'required|string',
+        'kecamatan_id' => 'required|exists:kecamatan,id',
+    ]);
 
-        // ✅ 1. Buat akun user (status pending)
-        $user = User::create([
-            'username' => $validated['username'],
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => bcrypt($validated['password']),
-            'status_aktif' => false,
-        ]);
+    // 1. Buat User
+    $user = User::create([
+        'username' => $validated['username'],
+        'name' => $validated['name'],
+        'email' => $validated['email'],
+        'password' => bcrypt($validated['password']),
+        'status_aktif' => false,
+    ]);
 
-        // ✅ 2. Beri role "lks"
-        $user->assignRole('lks');
+    // 🔥 WAJIB! TANPA INI OPERATOR TIDAK BISA FILTER
+    $user->kecamatan_id = $validated['kecamatan_id'];
+    $user->save();
 
-        // ✅ 3. Buat data LKS baru (hubungkan dengan user & kecamatan)
-        $lks = Lks::create([
-            'nama' => $validated['name'],
-            'jenis_layanan' => $validated['jenis_layanan'],
-            'kecamatan_id' => $validated['kecamatan_id'], // ✅ simpan relasi foreign key
-            'status' => 'pending',
-            'user_id' => $user->id, // pastikan tabel lks punya kolom user_id
-        ]);
+    // 2. Role
+    $user->assignRole('lks');
 
-        // ✅ 4. Hubungkan user ke LKS (via kolom lks_id di tabel users)
-        $user->lks_id = $lks->id;
-        $user->save();
+    // 3. Buat LKS
+    $lks = Lks::create([
+        'nama' => $validated['name'],
+        'jenis_layanan' => $validated['jenis_layanan'],
+        'kecamatan_id' => $validated['kecamatan_id'],
+        'status' => 'pending',
+        'user_id' => $user->id,
+    ]);
 
-        // ✅ 5. Buat verifikasi awal otomatis (langsung ke petugas pertama, atau fallback ke user)
-        $petugas = User::whereHas('roles', fn($q) => $q->where('name', 'petugas'))->first();
+    // 4. Hubungkan user ↔ lks
+    $user->lks_id = $lks->id;
+    $user->save();
 
-        Verifikasi::create([
-            'lks_id' => $lks->id,
-            'petugas_id' => $petugas?->id ?? $user->id,
-            'status' => 'menunggu',
-            'penilaian' => 'Menunggu proses verifikasi.',
-            'catatan' => 'Verifikasi otomatis dibuat saat registrasi LKS.',
-            'tanggal_verifikasi' => now(),
-        ]);
+    // 5. Verifikasi awal
+    $petugas = User::role('petugas')->first();
 
-        return response()->json([
-            'success' => true,
-            'message' => '✅ Pendaftaran berhasil. Akun Anda menunggu persetujuan Admin Dinsos.',
-            'user' => $user,
-            'lks' => $lks->load('kecamatan'), // ✅ sekalian kirim data kecamatan-nya
-        ], 201);
-    }
+    Verifikasi::create([
+        'lks_id' => $lks->id,
+        'petugas_id' => $petugas?->id ?? $user->id,
+        'status' => 'menunggu',
+        'penilaian' => 'Menunggu proses verifikasi.',
+        'catatan' => 'Verifikasi otomatis dibuat saat registrasi LKS.',
+        'tanggal_verifikasi' => now(),
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Pendaftaran berhasil. Menunggu persetujuan Admin.',
+        'lks' => $lks->load('kecamatan'),
+    ], 201);
+}
+
 
     // 🔹 LOGIN
     public function login(Request $request)

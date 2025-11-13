@@ -11,7 +11,7 @@ class OperatorSeeder extends Seeder
 {
     public function run(): void
     {
-        $kecamatanList = Kecamatan::take(5)->get(); // hanya 5 aktif
+        $kecamatanList = Kecamatan::take(5)->get();
 
         foreach ($kecamatanList as $kec) {
             $username = strtolower($kec->nama) . '_operator';
@@ -24,13 +24,13 @@ class OperatorSeeder extends Seeder
                     'email' => $email,
                     'password' => Hash::make('password'),
                     'status_aktif' => true,
-                    'kecamatan' => $kec->nama,
+                    'kecamatan_id' => $kec->id,   // ✔ FIX PENTING
                 ]
             );
 
             $operator->assignRole('operator');
         }
 
-        $this->command->info('✅ 5 Operator berhasil dibuat dan diberikan role.');
+        $this->command->info('✅ 5 Operator berhasil dibuat.');
     }
 }

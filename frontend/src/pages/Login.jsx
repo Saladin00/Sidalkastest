@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../utils/api";
-import { LogIn, RefreshCcw, UserPlus } from "lucide-react";
+import { LogIn, RefreshCcw, UserPlus, Loader2 } from "lucide-react"; // ⬅️ tambah Loader2
 
 const Login = () => {
   const navigate = useNavigate();
@@ -12,6 +12,7 @@ const Login = () => {
   const [captcha, setCaptcha] = useState("");
   const [generatedCaptcha, setGeneratedCaptcha] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [isLoading, setIsLoading] = useState(false); // ⬅️ state loading
 
   // Generate captcha
   const generateCaptcha = () => {
@@ -28,6 +29,8 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (isLoading) return; // ⬅️ kalau sudah loading, jangan proses lagi
+
     setErrorMsg("");
 
     if (captcha.toUpperCase() !== generatedCaptcha) {
@@ -37,6 +40,8 @@ const Login = () => {
     }
 
     try {
+      setIsLoading(true); // ⬅️ mulai tampilkan overlay
+
       const response = await API.post("/login", {
         email: email.trim(),
         password: password,
@@ -45,7 +50,9 @@ const Login = () => {
       const { access_token, role, user, message } = response.data;
 
       if (!access_token) {
-        setErrorMsg(message || "Login gagal. Token tidak diterima dari server.");
+        setErrorMsg(
+          message || "Login gagal. Token tidak diterima dari server."
+        );
         return;
       }
 
@@ -89,6 +96,8 @@ const Login = () => {
           error.response?.data?.message || "Login gagal, coba lagi nanti."
         );
       }
+    } finally {
+      setIsLoading(false); // ⬅️ apapun hasilnya, matikan loading
     }
   };
 
@@ -99,7 +108,11 @@ const Login = () => {
 
       <div className="relative z-10 backdrop-blur-xl bg-white/70 border border-white/40 shadow-2xl rounded-2xl p-8 w-full max-w-md">
         <div className="flex justify-center mb-6">
-          <img src="/logo.png" alt="Logo" className="h-28 w-auto drop-shadow-md object-contain" />
+          <img
+            src="/logo.png"
+            alt="Logo"
+            className="h-28 w-auto drop-shadow-md object-contain"
+          />
         </div>
 
         <h1 className="text-3xl font-bold text-center text-blue-700 tracking-wider">
@@ -117,7 +130,9 @@ const Login = () => {
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">E-mail</label>
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              E-mail
+            </label>
             <input
               type="email"
               value={email}
@@ -128,7 +143,9 @@ const Login = () => {
           </div>
 
           <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">Password</label>
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Password
+            </label>
             <input
               type={showPassword ? "text" : "password"}
               value={password}
@@ -152,7 +169,9 @@ const Login = () => {
 
           {/* Captcha */}
           <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">Captcha</label>
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Captcha
+            </label>
             <div className="flex items-center gap-2">
               <div className="px-4 py-2 font-mono text-lg tracking-widest bg-gradient-to-r from-blue-200 to-blue-100 border border-blue-300 rounded-md shadow-inner select-none">
                 {generatedCaptcha}
@@ -195,6 +214,18 @@ const Login = () => {
           © Dinas Sosial {new Date().getFullYear()}
         </div>
       </div>
+
+      {/* 🔹 FULLSCREEN LOADING OVERLAY */}
+      {isLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3 px-6 py-4 bg-white rounded-xl shadow-lg">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <p className="text-sm text-gray-700 font-medium">
+              Memproses login...
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

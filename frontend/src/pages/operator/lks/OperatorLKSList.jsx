@@ -12,16 +12,25 @@ const OperatorLKSList = () => {
   const loadLKS = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/lks", { params: { search } });
-      setLksList(res.data?.data || []);
+      const token = sessionStorage.getItem("token");
+
+      const res = await api.get("/lks", {
+        params: { search },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      console.log("HASIL API OPERATOR:", res.data);
+
+      setLksList(res.data?.data?.data ?? []);
     } catch (error) {
-      console.error("Gagal mengambil data LKS:", error);
-      alert("Terjadi kesalahan saat memuat data LKS.");
+      console.error("Gagal mengambil data LKS:", error.response?.data || error);
+      alert(error.response?.data?.message || "Gagal load LKS");
     } finally {
       setLoading(false);
     }
   };
 
+  // 🔥 AUTO LOAD DATA SAAT PAGE DIBUKA
   useEffect(() => {
     loadLKS();
   }, []);

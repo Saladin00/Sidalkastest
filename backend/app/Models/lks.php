@@ -33,6 +33,7 @@ class Lks extends Model
         'hasil_observasi',
         'tindak_lanjut',
         'dokumen',
+        'user_id'
     ];
 
     protected $casts = [
