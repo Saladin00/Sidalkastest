@@ -34,9 +34,10 @@ const ManajemenUser = () => {
     setError("");
     try {
       const token = sessionStorage.getItem("token");
-      const res = await API.get("/users", {
+      const res = await API.get("/admin/users", {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       setUsers(res.data.users || []);
     } catch (err) {
       console.error("❌ Gagal ambil data user:", err);
@@ -64,9 +65,10 @@ const ManajemenUser = () => {
     }
     try {
       const token = sessionStorage.getItem("token");
-      await API.post("/users", formData, {
+      await API.post("/admin/users", formData, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       alert("✅ Akun berhasil dibuat!");
       setShowForm(false);
       setFormData({
@@ -88,9 +90,14 @@ const ManajemenUser = () => {
     if (!window.confirm("Ubah status aktif pengguna ini?")) return;
     try {
       const token = sessionStorage.getItem("token");
-      await API.patch(`/users/${userId}/toggle-status`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await API.patch(
+        `/admin/users/${userId}/toggle-status`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
       fetchUsers();
     } catch (err) {
       console.error("❌ Gagal ubah status pengguna:", err);
@@ -112,10 +119,7 @@ const ManajemenUser = () => {
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / perPage));
   const currentPageSafe = Math.min(currentPage, totalPages);
   const startIndex = (currentPageSafe - 1) * perPage;
-  const paginatedUsers = filteredUsers.slice(
-    startIndex,
-    startIndex + perPage
-  );
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + perPage);
 
   // ===== UI =====
   return (
@@ -204,9 +208,7 @@ const ManajemenUser = () => {
                     <td className="px-4 py-3">{user.name}</td>
                     <td className="px-4 py-3">{user.email}</td>
                     <td className="px-4 py-3 capitalize">{user.role}</td>
-                    <td className="px-4 py-3">
-                      {user.kecamatan?.nama || "-"}
-                    </td>
+                    <td className="px-4 py-3">{user.kecamatan?.nama || "-"}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
@@ -239,10 +241,7 @@ const ManajemenUser = () => {
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan="8"
-                    className="text-center py-6 text-gray-500"
-                  >
+                  <td colSpan="8" className="text-center py-6 text-gray-500">
                     Tidak ada pengguna.
                   </td>
                 </tr>
@@ -256,22 +255,19 @@ const ManajemenUser = () => {
       {!loading && (
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-3 text-xs text-gray-600 gap-2">
           <div>
-            {filteredUsers.length > 0
-              ? (
-                <>
-                  Showing{" "}
-                  <span className="font-semibold">{startIndex + 1}</span> to{" "}
-                  <span className="font-semibold">
-                    {Math.min(startIndex + perPage, filteredUsers.length)}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-semibold">
-                    {filteredUsers.length}
-                  </span>{" "}
-                  entries
-                </>
-              )
-              : "Showing 0 entries"}
+            {filteredUsers.length > 0 ? (
+              <>
+                Showing <span className="font-semibold">{startIndex + 1}</span>{" "}
+                to{" "}
+                <span className="font-semibold">
+                  {Math.min(startIndex + perPage, filteredUsers.length)}
+                </span>{" "}
+                of <span className="font-semibold">{filteredUsers.length}</span>{" "}
+                entries
+              </>
+            ) : (
+              "Showing 0 entries"
+            )}
           </div>
 
           <div className="flex items-center gap-1 self-start md:self-auto">
@@ -300,9 +296,7 @@ const ManajemenUser = () => {
               </button>
             ))}
             <button
-              onClick={() =>
-                setCurrentPage((p) => Math.min(totalPages, p + 1))
-              }
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPageSafe === totalPages}
               className={`px-2 py-1.5 border rounded-md ${
                 currentPageSafe === totalPages

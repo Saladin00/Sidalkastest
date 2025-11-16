@@ -12,30 +12,29 @@ use App\Models\User;
 
 class LKSController extends Controller
 {
-    // 🔍 GET /api/lks
+    // ============================
+    // GET /api/lks
+    // ============================
     public function index(Request $request)
     {
         $user = $request->user();
         $query = Lks::with(['verifikasiTerbaru', 'kecamatan']);
 
-        // 🟢 Operator & Petugas hanya bisa lihat LKS di wilayahnya
         if ($user->hasRole('operator') || $user->hasRole('petugas')) {
             if ($user->kecamatan_id) {
                 $query->where('kecamatan_id', $user->kecamatan_id);
             } else {
                 return response()->json([
                     'success' => false,
-                    'message' => 'User belum memiliki kecamatan_id yang terdaftar.'
+                    'message' => 'User belum memiliki kecamatan_id.'
                 ], 403);
             }
         }
 
-        // 🟢 LKS hanya bisa lihat datanya sendiri
         if ($user->hasRole('lks')) {
             $query->where('user_id', $user->id);
         }
 
-        // 🔍 Filter tambahan
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
@@ -52,170 +51,188 @@ class LKSController extends Controller
             $query->where('nama', 'LIKE', '%' . $request->search . '%');
         }
 
-     $data = $query->latest()->paginate(10);
-
+        $data = $query->latest()->paginate(10);
 
         return response()->json([
             'success' => true,
-            'message' => 'Data LKS berhasil diambil',
             'data' => $data
-        ], 200);
+        ]);
     }
 
-    // ➕ POST /api/lks
+    // ============================
+    // POST /api/lks
+    // ============================
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'nama' => 'required|string|max:255',
-            'jenis_layanan' => 'required|string|max:255',
-            'kecamatan_id' => 'required|exists:kecamatan,id',
-            'status' => 'nullable|in:aktif,nonaktif,pending',
-            'alamat' => 'nullable|string',
-            'kelurahan' => 'nullable|string',
-            'npwp' => 'nullable|string',
-            'kontak_pengurus' => 'nullable|string',
-            'akta_pendirian' => 'nullable|string',
-            'izin_operasional' => 'nullable|string',
-            'legalitas' => 'nullable|string',
-            'no_akta' => 'nullable|string',
-            'status_akreditasi' => 'nullable|string',
-            'no_sertifikat' => 'nullable|string',
-            'tanggal_akreditasi' => 'nullable|date',
-            'koordinat' => 'nullable|string',
-            'jumlah_pengurus' => 'nullable|integer',
-            'sarana' => 'nullable|string',
-            'hasil_observasi' => 'nullable|string',
-            'tindak_lanjut' => 'nullable|string',
-        ]);
+{
+    $validated = $request->validate([
+        'nama' => 'required|string|max:255',
+        'jenis_layanan' => 'required|string|max:255',
+        'kecamatan_id' => 'required|exists:kecamatan,id',
 
-        $lks = Lks::create(array_merge($validated, [
-            'status' => $validated['status'] ?? 'pending',
-            'user_id' => Auth::id()
-        ]));
+        'alamat' => 'nullable|string',
+        'kelurahan' => 'nullable|string',
+        'npwp' => 'nullable|string',
+        'kontak_pengurus' => 'nullable|string',
 
-        // 📎 Upload dokumen (opsional)
-        if ($request->hasFile('dokumen')) {
-            $dokumenPaths = [];
-            foreach ($request->file('dokumen') as $file) {
-                $path = $file->store('dokumen_lks', 'public');
-                $dokumenPaths[] = [
-                    'name' => $file->getClientOriginalName(),
-                    'url'  => asset('storage/' . $path),
-                ];
-            }
-            $lks->dokumen = json_encode($dokumenPaths);
-            $lks->save();
+        'akta_pendirian' => 'nullable|string',
+        'izin_operasional' => 'nullable|string',
+        'legalitas' => 'nullable|string',
+        'no_akta' => 'nullable|string',
+
+        'status_akreditasi' => 'nullable|string',
+        'no_sertifikat' => 'nullable|string',
+        'tanggal_akreditasi' => 'nullable|date',
+
+        'koordinat' => 'nullable|string',
+        'jumlah_pengurus' => 'nullable|integer',
+        'sarana' => 'nullable|string',
+        'hasil_observasi' => 'nullable|string',
+        'tindak_lanjut' => 'nullable|string',
+
+        'status' => 'nullable|in:aktif,nonaktif,pending',
+        'dokumen.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png'
+    ]);
+
+    // Buat LKS
+    $lks = Lks::create(array_merge($validated, [
+        'user_id' => Auth::id(),
+        'status' => $validated['status'] ?? 'pending'
+    ]));
+
+    // Upload dokumen
+    if ($request->hasFile('dokumen')) {
+        $paths = [];
+        foreach ($request->file('dokumen') as $file) {
+            $path = $file->store('dokumen_lks', 'public');
+
+            $paths[] = [
+                'name' => $file->getClientOriginalName(),
+                'url'  => asset('storage/' . $path),
+            ];
         }
-
-        // 🧩 Buat verifikasi awal otomatis
-        $petugasId = User::role('petugas')->first()?->id ?? Auth::id();
-        Verifikasi::create([
-            'lks_id' => $lks->id,
-            'petugas_id' => $petugasId,
-            'status' => 'menunggu',
-            'penilaian' => 'Menunggu proses verifikasi.',
-            'catatan' => 'Verifikasi otomatis dibuat saat LKS baru dibuat.',
-            'tanggal_verifikasi' => now(),
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'LKS berhasil dibuat dan verifikasi awal ditambahkan.',
-            'data' => $lks->load(['verifikasiTerbaru', 'kecamatan'])
-        ], 201);
+        $lks->dokumen = json_encode($paths);
+        $lks->save();
     }
 
-    // 👁️ GET /api/lks/{id}
-   // 👁️ GET /api/lks/{id}
-public function show($id)
-{
-    try {
-       $lks = Lks::with([
-    'user:id,name,email',
-    'kecamatan:id,nama',
-    'verifikasiTerbaru.petugas:id,name',
-    'klien:id,lks_id,nama', // ✅ hapus jenis_kelamin & tanggal_lahir
-    'kunjungan:id,lks_id,tanggal,catatan',
-])->findOrFail($id);
+    // Buat verifikasi default
+    $petugasId = User::role('petugas')->first()?->id ?? Auth::id();
 
+    Verifikasi::create([
+        'lks_id' => $lks->id,
+        'petugas_id' => $petugasId,
+        'status' => 'menunggu',
+        'penilaian' => 'Menunggu proses verifikasi.',
+        'catatan' => 'Verifikasi otomatis dibuat saat LKS baru dibuat.',
+        'tanggal_verifikasi' => now(),
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'LKS berhasil dibuat.',
+        'data' => $lks->load(['kecamatan', 'verifikasiTerbaru'])
+    ]);
+}
+
+
+    // ============================
+    // GET /api/lks/{id}
+    // ============================
+    public function show($id)
+    {
+        $lks = Lks::with([
+            'user:id,name,email',
+            'kecamatan:id,nama',
+            'verifikasiTerbaru.petugas:id,name',
+            'klien:id,lks_id,nama',
+            'kunjungan:id,lks_id,tanggal,catatan',
+        ])->find($id);
+
+        if (!$lks) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data LKS tidak ditemukan'
+            ], 404);
+        }
 
         return response()->json([
             'success' => true,
             'data' => $lks
         ]);
-    } catch (\Throwable $e) {
-        \Log::error('Gagal ambil detail LKS', [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
-        return response()->json([
-            'success' => false,
-            'message' => 'Terjadi kesalahan server',
-        ], 500);
     }
-}
 
-
-
-    // ✏️ PUT /api/lks/{id}
+    // ============================
+    // PUT /api/lks/{id}
+    // ============================
     public function update(Request $request, $id)
-    {
-        $validated = $request->validate([
-            'nama' => 'required|string|max:255',
-            'jenis_layanan' => 'required|string|max:255',
-            'kecamatan_id' => 'required|exists:kecamatan,id',
-            'status' => 'required|in:aktif,nonaktif,pending',
-            'alamat' => 'nullable|string',
-            'kelurahan' => 'nullable|string',
-            'npwp' => 'nullable|string',
-            'kontak_pengurus' => 'nullable|string',
-            'akta_pendirian' => 'nullable|string',
-            'izin_operasional' => 'nullable|string',
-            'legalitas' => 'nullable|string',
-            'no_akta' => 'nullable|string',
-            'status_akreditasi' => 'nullable|string',
-            'no_sertifikat' => 'nullable|string',
-            'tanggal_akreditasi' => 'nullable|date',
-            'koordinat' => 'nullable|string',
-            'jumlah_pengurus' => 'nullable|integer',
-            'sarana' => 'nullable|string',
-            'hasil_observasi' => 'nullable|string',
-            'tindak_lanjut' => 'nullable|string',
-        ]);
+{
+    $validated = $request->validate([
+        'nama' => 'required|string|max:255',
+        'jenis_layanan' => 'required|string|max:255',
+        'kecamatan_id' => 'required|exists:kecamatan,id',
+        'status' => 'required|in:aktif,nonaktif,pending',
 
-        $lks = Lks::findOrFail($id);
-        $lks->update($validated);
+        'alamat' => 'nullable|string',
+        'kelurahan' => 'nullable|string',
+        'npwp' => 'nullable|string',
+        'kontak_pengurus' => 'nullable|string',
 
-        // 📎 Update dokumen jika ada
-        if ($request->hasFile('dokumen')) {
-            $existingDocs = $lks->dokumen ? json_decode($lks->dokumen, true) : [];
-            foreach ($request->file('dokumen') as $file) {
-                $path = $file->store('dokumen_lks', 'public');
-                $existingDocs[] = [
-                    'name' => $file->getClientOriginalName(),
-                    'url'  => asset('storage/' . $path),
-                ];
-            }
-            $lks->dokumen = json_encode($existingDocs);
-            $lks->save();
+        'akta_pendirian' => 'nullable|string',
+        'izin_operasional' => 'nullable|string',
+        'legalitas' => 'nullable|string',
+        'no_akta' => 'nullable|string',
+
+        'status_akreditasi' => 'nullable|string',
+        'no_sertifikat' => 'nullable|string',
+        'tanggal_akreditasi' => 'nullable|date',
+
+        'koordinat' => 'nullable|string',
+        'jumlah_pengurus' => 'nullable|integer',
+        'sarana' => 'nullable|string',
+        'hasil_observasi' => 'nullable|string',
+        'tindak_lanjut' => 'nullable|string',
+
+        'dokumen.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png'
+    ]);
+
+    $lks = Lks::findOrFail($id);
+    $lks->update($validated);
+
+    // Upload file tambahan
+    if ($request->hasFile('dokumen')) {
+        $existing = $lks->dokumen ? json_decode($lks->dokumen, true) : [];
+        $baru = [];
+
+        foreach ($request->file('dokumen') as $file) {
+            $path = $file->store('dokumen_lks', 'public');
+
+            $baru[] = [
+                'name' => $file->getClientOriginalName(),
+                'url' => asset('storage/' . $path),
+            ];
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => '✅ Data LKS berhasil diperbarui',
-            'data' => $lks->load('kecamatan')
-        ]);
+        $lks->dokumen = json_encode(array_merge($existing, $baru));
+        $lks->save();
     }
 
-    // 🗑️ DELETE /api/lks/{id}
+    return response()->json([
+        'success' => true,
+        'message' => 'Data LKS berhasil diperbarui',
+        'data' => $lks->load('kecamatan')
+    ]);
+}
+
+    // ============================
+    // DELETE /api/lks/{id}
+    // ============================
     public function destroy($id)
     {
         $lks = Lks::findOrFail($id);
 
         if ($lks->dokumen) {
             foreach (json_decode($lks->dokumen, true) as $doc) {
-                $relative = str_replace(asset('storage/'), '', $doc['url']);
-                Storage::disk('public')->delete($relative);
+                $filePath = str_replace(asset('storage/'), '', $doc['url']);
+                Storage::disk('public')->delete($filePath);
             }
         }
 
@@ -223,60 +240,202 @@ public function show($id)
 
         return response()->json([
             'success' => true,
-            'message' => '🗑️ Data LKS berhasil dihapus'
+            'message' => 'Data LKS berhasil dihapus'
         ]);
     }
 
-    // 📎 POST /api/lks/{id}/upload-dokumen
-    public function uploadDokumen(Request $request, $id)
-    {
-        $lks = Lks::findOrFail($id);
-        if ($request->hasFile('dokumen')) {
-            $dokumenBaru = [];
-            foreach ($request->file('dokumen') as $file) {
-                $path = $file->store('dokumen_lks', 'public');
-                $dokumenBaru[] = [
-                    'name' => $file->getClientOriginalName(),
-                    'url'  => asset('storage/' . $path),
-                ];
+    // ============================
+    // GET /api/lks/me
+    // ============================
+    // =============================
+// LKS: GET PROFILE OF LOGGED USER
+// =============================
+// ===============================
+// GET /api/lks/me
+// ===============================
+public function me(Request $request)
+{
+    $user = $request->user();
+
+    $lks = Lks::with(['kecamatan'])
+        ->where('user_id', $user->id)
+        ->first();
+
+    if (!$lks) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Data LKS tidak ditemukan untuk user ini.'
+        ], 404);
+    }
+
+    return response()->json([
+        'success' => true,
+        'data' => $lks
+    ], 200);
+}
+
+
+// =============================
+// LKS: UPDATE PROFILE
+// =============================
+// ===============================
+// PUT /api/lks/me/update
+// ===============================
+public function updateMe(Request $request)
+{
+    $user = $request->user();
+
+    $lks = Lks::where('user_id', $user->id)->firstOrFail();
+
+    $validated = $request->validate([
+        'nama' => 'nullable|string|max:255',
+        'jenis_layanan' => 'nullable|string|max:255',
+        'kecamatan_id' => 'nullable|exists:kecamatan,id',
+
+        'alamat' => 'nullable|string',
+        'kelurahan' => 'nullable|string',
+        'npwp' => 'nullable|string',
+        'kontak_pengurus' => 'nullable|string',
+
+        'akta_pendirian' => 'nullable|string',
+        'izin_operasional' => 'nullable|string',
+        'legalitas' => 'nullable|string',
+        'no_akta' => 'nullable|string',
+
+        'status_akreditasi' => 'nullable|string',
+        'no_sertifikat' => 'nullable|string',
+        'tanggal_akreditasi' => 'nullable|date',
+
+        'koordinat' => 'nullable|string',
+        'jumlah_pengurus' => 'nullable|integer',
+        'sarana' => 'nullable|string',
+        'hasil_observasi' => 'nullable|string',
+        'tindak_lanjut' => 'nullable|string',
+
+        'dokumen.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png'
+    ]);
+
+    $lks->update($validated);
+
+    // Upload dokumen baru
+    if ($request->hasFile('dokumen')) {
+        $existing = $lks->dokumen ? json_decode($lks->dokumen, true) : [];
+        $baru = [];
+
+        foreach ($request->file('dokumen') as $file) {
+            $path = $file->store('dokumen_lks', 'public');
+            $baru[] = [
+                'name' => $file->getClientOriginalName(),
+                'url'  => asset('storage/' . $path),
+            ];
+        }
+
+        $lks->dokumen = json_encode(array_merge($existing, $baru));
+        $lks->save();
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Profil LKS berhasil diperbarui.',
+        'data' => $lks
+    ]);
+}
+
+public function profileView(Request $request)
+{
+    $user = $request->user();
+
+    // === ROLE LKS: ambil LKS miliknya ===
+    if ($user->hasRole('lks')) {
+
+        // AUTO FIX: kalau user.lks_id ada tapi user_id di tabel lks kosong → perbaiki
+        if ($user->lks_id) {
+            $lks = Lks::find($user->lks_id);
+
+            if ($lks && !$lks->user_id) {
+                $lks->user_id = $user->id;
+                $lks->save();
             }
-            $existing = $lks->dokumen ? json_decode($lks->dokumen, true) : [];
-            $lks->dokumen = json_encode(array_merge($existing, $dokumenBaru));
-            $lks->save();
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => '📎 Dokumen berhasil diunggah',
-            'dokumen' => json_decode($lks->dokumen, true),
-        ]);
-    }
+        // Ambil ulang setelah fix
+        $lks = Lks::where('user_id', $user->id)->first();
 
-    // 🖨️ CETAK PROFIL PDF
-    public function cetakProfil($id)
-    {
-        $lks = Lks::with(['verifikasiTerbaru.petugas', 'kecamatan'])->find($id);
+        // Jika tetap tidak ada, buat baru (ANTI ERROR)
         if (!$lks) {
-            abort(404, 'Data LKS tidak ditemukan.');
+            $lks = Lks::create([
+                'user_id' => $user->id,
+                'nama' => $user->name,
+                'jenis_layanan' => '',
+                'kecamatan_id' => $user->kecamatan_id,
+                'status' => 'pending',
+            ]);
         }
-
-        $pdf = Pdf::loadView('lks_pdf', compact('lks'))
-            ->setPaper('A4', 'portrait');
-
-        return $pdf->stream('Profil_LKS_' . preg_replace('/\s+/', '_', $lks->nama) . '.pdf');    }
-
-    // 🏙️ GET /api/lks/by-kecamatan/{id}
-    public function byKecamatan($id)
-    {
-        $data = Lks::where('kecamatan_id', $id)
-            ->select('id', 'nama')
-            ->orderBy('nama')
-            ->get();
 
         return response()->json([
             'success' => true,
-            'message' => 'Daftar LKS berhasil diambil',
-            'data' => $data
+            'data' => $lks
         ]);
     }
+
+    // === ROLE ADMIN ===
+    if ($user->hasRole('admin')) {
+        $lksId = $request->query('id');
+        $lks = $lksId ? Lks::find($lksId) : Lks::first();
+        return response()->json(['success' => true, 'data' => $lks]);
+    }
+
+    // === ROLE OPERATOR / PETUGAS ===
+    if ($user->hasRole('operator') || $user->hasRole('petugas')) {
+        $lks = Lks::where('kecamatan_id', $user->kecamatan_id)->first();
+        return response()->json(['success' => true, 'data' => $lks]);
+    }
+
+    return response()->json([
+        'success' => false,
+        'message' => 'Role tidak memiliki akses'
+    ], 403);
+}
+
+// ===============================================
+// FORMAT UNTUK FE (mapping kolom DB → FE)
+// ===============================================
+private function formatLksForFE($lks)
+{
+    if (!$lks) {
+        return response()->json(['success' => true, 'data' => []]);
+    }
+
+    $data = $lks->toArray();
+
+    // Mapping agar FE tetap bekerja
+    $data['jumlah_pengurus']   = $data['pengurus'];      // DB → FE
+    $data['status_akreditasi'] = $data['akreditasi'];    // DB → FE
+
+    return response()->json([
+        'success' => true,
+        'data' => $data
+    ]);
+}
+
+
+// ===============================================
+// ROLE LKS (ambil data miliknya + mapping FE)
+// ===============================================
+private function meForFE(Request $request)
+{
+    $user = $request->user();
+
+    $lks = Lks::where('user_id', $user->id)->first();
+
+    if (!$lks) {
+        return response()->json(['success' => false, 'data' => []], 404);
+    }
+
+    return $this->formatLksForFE($lks);
+}
+
+
+
+
 }
