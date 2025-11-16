@@ -84,66 +84,31 @@ const LKSDetail = () => {
 
   const infoList = [
     { label: "Nama LKS", value: nama, icon: BuildingOffice2Icon },
-    {
-      label: "Akta Pendirian",
-      value: akta_pendirian,
-      icon: ClipboardDocumentListIcon,
-    },
-    {
-      label: "Jenis Layanan",
-      value: jenis_layanan,
-      icon: ClipboardDocumentListIcon,
-    },
+    { label: "Akta Pendirian", value: akta_pendirian, icon: ClipboardDocumentListIcon },
+    { label: "Jenis Layanan", value: jenis_layanan, icon: ClipboardDocumentListIcon },
     { label: "No Akta", value: no_akta, icon: IdentificationIcon },
     { label: "Kecamatan", value: kecamatan?.nama, icon: MapPinIcon },
-    {
-      label: "Izin Operasional",
-      value: izin_operasional,
-      icon: ClipboardDocumentListIcon,
-    },
+    { label: "Izin Operasional", value: izin_operasional, icon: ClipboardDocumentListIcon },
     { label: "Kelurahan / Desa", value: kelurahan, icon: MapPinIcon },
     { label: "Legalitas", value: legalitas, icon: ClipboardDocumentListIcon },
     { label: "Status", value: status, icon: IdentificationIcon },
-    {
-      label: "Akreditasi",
-      value: status_akreditasi,
-      icon: ClipboardDocumentListIcon,
-    },
+    { label: "Akreditasi", value: status_akreditasi, icon: ClipboardDocumentListIcon },
     { label: "Alamat", value: alamat, icon: MapPinIcon },
     { label: "No Sertifikat", value: no_sertifikat, icon: IdentificationIcon },
     { label: "Koordinat", value: koordinat, icon: MapPinIcon },
-    {
-      label: "Tanggal Akreditasi",
-      value: tanggal_akreditasi,
-      icon: ClipboardDocumentListIcon,
-    },
+    { label: "Tanggal Akreditasi", value: tanggal_akreditasi, icon: ClipboardDocumentListIcon },
     { label: "NPWP", value: npwp, icon: IdentificationIcon },
-    {
-      label: "Sarana & Fasilitas",
-      value: sarana,
-      icon: ClipboardDocumentListIcon,
-    },
+    { label: "Sarana & Fasilitas", value: sarana, icon: ClipboardDocumentListIcon },
     { label: "Kontak Pengurus", value: kontak_pengurus, icon: PhoneIcon },
-    {
-      label: "Hasil Observasi",
-      value: hasil_observasi,
-      icon: ClipboardDocumentListIcon,
-    },
-    {
-      label: "Jumlah Pengurus",
-      value: jumlah_pengurus,
-      icon: IdentificationIcon,
-    },
-    {
-      label: "Tindak Lanjut",
-      value: tindak_lanjut,
-      icon: ClipboardDocumentListIcon,
-    },
+    { label: "Hasil Observasi", value: hasil_observasi, icon: ClipboardDocumentListIcon },
+    { label: "Jumlah Pengurus", value: jumlah_pengurus, icon: IdentificationIcon },
+    { label: "Tindak Lanjut", value: tindak_lanjut, icon: ClipboardDocumentListIcon },
   ];
 
   return (
     <AdminLayout>
       <div className="max-w-5xl mx-auto bg-white shadow-lg rounded-2xl p-8 border border-gray-100">
+
         {/* Header */}
         <div className="flex justify-between items-start border-b pb-5 mb-8">
           <div className="flex items-center gap-3">
