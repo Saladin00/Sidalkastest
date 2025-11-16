@@ -22,9 +22,12 @@ import LKSList from "./pages/admin/lks/LKSList";
 import LKSForm from "./pages/admin/lks/LKSForm";
 import LKSDetail from "./pages/admin/lks/LKSDetail";
 import LKSEditForm from "./pages/admin/lks/LKSEditForm";
-import LKSProfil from "./pages/admin/lks/LKSProfil";
 import LKSKunjungan from "./pages/admin/lks/LKSKunjungan";
 import LKSUploadDokumen from "./pages/admin/lks/LKSUploadDokumen";
+
+// LKS Profile Page
+import LKSProfileEdit from "./pages/lks/LKSProfileEdit";
+import LKSProfileView from "./pages/lks/LKSProfileView";
 
 // Admin: Klien
 import KlienList from "./pages/admin/klien/KlienList";
@@ -54,7 +57,6 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-
         {/* ================= AUTH ================= */}
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -88,9 +90,7 @@ function App() {
           path="/admin/lks"
           element={
             <ProtectedRoute allowedRoles={["admin", "operator"]}>
-              <AdminLayout>
-                <LKSList />
-              </AdminLayout>
+              <LKSList />
             </ProtectedRoute>
           }
         />
@@ -98,9 +98,7 @@ function App() {
           path="/admin/lks/tambah"
           element={
             <ProtectedRoute allowedRoles={["admin", "operator"]}>
-              <AdminLayout>
-                <LKSForm />
-              </AdminLayout>
+              <LKSForm />
             </ProtectedRoute>
           }
         />
@@ -108,9 +106,7 @@ function App() {
           path="/admin/lks/detail/:id"
           element={
             <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
-              <AdminLayout>
-                <LKSDetail />
-              </AdminLayout>
+              <LKSDetail />
             </ProtectedRoute>
           }
         />
@@ -118,9 +114,7 @@ function App() {
           path="/admin/lks/edit/:id"
           element={
             <ProtectedRoute allowedRoles={["admin", "operator"]}>
-              <AdminLayout>
-                <LKSEditForm />
-              </AdminLayout>
+              <LKSEditForm />
             </ProtectedRoute>
           }
         />
@@ -194,9 +188,7 @@ function App() {
           path="/operator"
           element={
             <ProtectedRoute allowedRoles={["operator"]}>
-              <OperatorLayout>
-                <DashboardOperator />
-              </OperatorLayout>
+              <DashboardOperator />
             </ProtectedRoute>
           }
         />
@@ -223,7 +215,7 @@ function App() {
           }
         />
 
-        {/* Operator Klien */}
+        {/* OPERATOR KLIEN */}
         <Route
           path="/operator/klien"
           element={
@@ -248,18 +240,38 @@ function App() {
         />
 
         {/* ================= LKS ROLE ================= */}
+
+        {/* LKS Dashboard */}
         <Route
           path="/lks"
           element={
             <ProtectedRoute allowedRoles={["lks"]}>
-              <LKSLayout>
-                <DashboardLKS />
-              </LKSLayout>
+              <DashboardLKS />
             </ProtectedRoute>
           }
         />
 
-        {/* LKS Klien */}
+        {/* LKS PROFILE */}
+        <Route
+          path="/lks/profile"
+          element={
+            <ProtectedRoute allowedRoles={["lks", "admin"]}>
+              <LKSProfileView />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/lks/profile/edit"
+          element={
+            <ProtectedRoute allowedRoles={["lks", "admin"]}>
+              
+              <LKSProfileEdit />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* LKS KLIEN */}
         <Route
           path="/lks/klien"
           element={
@@ -300,7 +312,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
       </Routes>
     </BrowserRouter>
   );

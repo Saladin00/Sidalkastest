@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import api from "../../utils/api";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
@@ -25,12 +25,24 @@ const LKSKlienForm = () => {
     setLoading(true);
 
     try {
-      await api.post("/klien", form);
-      alert("Klien berhasil ditambahkan");
+      const lksId = sessionStorage.getItem("lks_id"); // ⬅ ambil dari login LKS
+
+      if (!lksId) {
+        alert("Gagal: lks_id tidak ditemukan. Pastikan LKS sudah login.");
+        setLoading(false);
+        return;
+      }
+
+      await api.post("/klien", {
+        ...form,
+        lks_id: lksId, // ⬅ kunci sinkronisasi dengan admin
+      });
+
+      alert("Klien berhasil ditambahkan!");
       navigate("/lks/klien");
     } catch (err) {
-      console.error(err);
-      alert("Gagal menyimpan klien");
+      console.error("Gagal menyimpan klien:", err);
+      alert("Gagal menyimpan klien, periksa kembali data.");
     } finally {
       setLoading(false);
     }
@@ -43,7 +55,7 @@ const LKSKlienForm = () => {
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-
+        {/* NIK */}
         <div>
           <label className="font-medium">NIK *</label>
           <input
@@ -56,6 +68,7 @@ const LKSKlienForm = () => {
           />
         </div>
 
+        {/* Nama */}
         <div>
           <label className="font-medium">Nama *</label>
           <input
@@ -68,6 +81,7 @@ const LKSKlienForm = () => {
           />
         </div>
 
+        {/* Alamat */}
         <div>
           <label className="font-medium">Alamat</label>
           <textarea
@@ -78,6 +92,7 @@ const LKSKlienForm = () => {
           ></textarea>
         </div>
 
+        {/* Kelurahan */}
         <div>
           <label className="font-medium">Kelurahan</label>
           <input
@@ -89,39 +104,57 @@ const LKSKlienForm = () => {
           />
         </div>
 
+        {/* Jenis Kebutuhan */}
         <div>
           <label className="font-medium">Jenis Kebutuhan</label>
-          <input
-            type="text"
+          <select
             name="jenis_kebutuhan"
             value={form.jenis_kebutuhan}
             onChange={handleChange}
             className="w-full border rounded p-2"
-          />
+          >
+            <option value="">Pilih Jenis Kebutuhan</option>
+            <option value="anak">Anak</option>
+            <option value="disabilitas">Disabilitas</option>
+            <option value="lansia">Lansia</option>
+            <option value="fakir_miskin">Fakir Miskin</option>
+            <option value="lainnya">Lainnya</option>
+          </select>
         </div>
 
+        {/* Status Bantuan */}
         <div>
           <label className="font-medium">Status Bantuan</label>
-          <input
-            type="text"
+          <select
             name="status_bantuan"
             value={form.status_bantuan}
             onChange={handleChange}
             className="w-full border rounded p-2"
-          />
+          >
+            <option value="">Pilih Status Bantuan</option>
+            <option value="BPNT">BPNT</option>
+            <option value="PKH">PKH</option>
+            <option value="BLT">BLT</option>
+            <option value="lainnya">Lainnya</option>
+          </select>
         </div>
 
+        {/* Status Pembinaan */}
         <div>
           <label className="font-medium">Status Pembinaan</label>
-          <input
-            type="text"
+          <select
             name="status_pembinaan"
             value={form.status_pembinaan}
             onChange={handleChange}
             className="w-full border rounded p-2"
-          />
+          >
+            <option value="">Pilih Status Pembinaan</option>
+            <option value="aktif">Aktif</option>
+            <option value="selesai">Selesai</option>
+          </select>
         </div>
 
+        {/* Submit */}
         <button
           type="submit"
           className="bg-sky-600 text-white px-4 py-2 rounded-md flex items-center gap-2"

@@ -9,28 +9,25 @@ use App\Models\Kecamatan;
 
 class OperatorSeeder extends Seeder
 {
-    public function run(): void
+    public function run()
     {
-        $kecamatanList = Kecamatan::take(5)->get();
+        $kecamatanList = Kecamatan::whereIn('nama', [
+            'Indramayu', 'Lohbener', 'Sindang', 'Jatibarang', 'Kandanghaur'
+        ])->get();
 
         foreach ($kecamatanList as $kec) {
-            $username = strtolower($kec->nama) . '_operator';
-            $email = strtolower($kec->nama) . '_operator@example.com';
-
-            $operator = User::firstOrCreate(
-                ['username' => $username],
+            $user = User::firstOrCreate(
+                ['email' => strtolower($kec->nama).'_operator@example.com'],
                 [
+                    'username' => strtolower($kec->nama).'_operator',
                     'name' => "Operator {$kec->nama}",
-                    'email' => $email,
                     'password' => Hash::make('password'),
+                    'kecamatan_id' => $kec->id,
                     'status_aktif' => true,
-                    'kecamatan_id' => $kec->id,   // ✔ FIX PENTING
                 ]
             );
 
-            $operator->assignRole('operator');
+            $user->assignRole('operator');
         }
-
-        $this->command->info('✅ 5 Operator berhasil dibuat.');
     }
 }

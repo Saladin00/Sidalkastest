@@ -162,6 +162,19 @@ export default function KlienForm() {
             <option value="BLT">BLT</option>
           </select>
         </div>
+        <div>
+          <label className="font-medium">Status Pembinaan</label>
+          <select
+            name="status_pembinaan"
+            value={form.status_pembinaan}
+            onChange={handleChange}
+            className="w-full border rounded p-2"
+          >
+            <option value="">Pilih Status Pembinaan</option>
+            <option value="aktif">Aktif</option>
+            <option value="selesai">Selesai</option>
+          </select>
+        </div>
 
         <button
           type="submit"

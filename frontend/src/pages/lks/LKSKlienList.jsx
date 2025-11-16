@@ -12,11 +12,25 @@ const LKSKlienList = () => {
     try {
       setLoading(true);
 
+      // Ambil lks_id dari session storage (dari data login)
+      const lksId = sessionStorage.getItem("lks_id");
+
       const res = await api.get("/klien", {
-        params: { search },
+        params: { 
+          search,
+          lks_id: lksId,   // 🔥 PENTING: Filter agar hanya ambil klien milik LKS
+        },
       });
 
-      setKlien(res.data.data.data || []);
+      // Extract list data klien
+      const data =
+        res?.data?.data?.data ||
+        res?.data?.data ||
+        res?.data ||
+        [];
+
+      setKlien(data);
+
     } catch (err) {
       console.error("Gagal memuat daftar klien:", err);
       alert("Gagal meload data klien");
@@ -112,7 +126,6 @@ const LKSKlienList = () => {
                     <td className="px-4 py-3">{item.status_bantuan || "-"}</td>
                     <td className="px-4 py-3">{item.status_pembinaan || "-"}</td>
 
-                    {/* Aksi */}
                     <td className="px-4 py-3 flex gap-2 justify-center">
                       <Link
                         to={`/lks/klien/detail/${item.id}`}
@@ -132,6 +145,7 @@ const LKSKlienList = () => {
                 ))
               )}
             </tbody>
+
           </table>
         )}
       </div>

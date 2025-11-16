@@ -10,13 +10,7 @@ class RolePermissionSeeder extends Seeder
 {
     public function run()
     {
-        // Gunakan slug nama yang sama dengan frontend
-        $roles = [
-            'admin'    => 'Admin Dinsos',
-            'operator' => 'Operator Kecamatan',
-            'petugas'  => 'Petugas Lapangan',
-            'lks'      => 'Lembaga Kesejahteraan Sosial',
-        ];
+        $roles = ['admin', 'operator', 'petugas', 'lks'];
 
         $permissions = [
             'manage users',
@@ -28,26 +22,15 @@ class RolePermissionSeeder extends Seeder
             'submit complaints',
         ];
 
-        // Buat permission dengan guard web
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate([
-                'name' => $permission,
-                'guard_name' => 'web',
-            ]);
+        foreach ($permissions as $perm) {
+            Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
         }
 
-        // Buat role dan assign permission
-       foreach ($roles as $slug => $displayName) {
-    $role = Role::firstOrCreate([
-        'name' => $slug,
-        'guard_name' => 'web',
-    ]);
-
-    // Admin dapat semua permission
-    if ($slug === 'admin') {
-        $role->syncPermissions(Permission::all());
-    }
-}
-
+        foreach ($roles as $roleName) {
+            $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
+            if ($roleName === 'admin') {
+                $role->syncPermissions(Permission::all());
+            }
+        }
     }
 }

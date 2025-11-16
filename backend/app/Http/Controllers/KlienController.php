@@ -7,29 +7,22 @@ use Illuminate\Http\Request;
 
 class KlienController extends Controller
 {
-    // ============================
-    // LIST KLIEN
-    // ============================
     public function index(Request $request)
     {
         $user = $request->user();
 
         $query = Klien::with(['lks', 'kecamatan']);
 
-        // ROLE FILTER
         if ($user->hasRole('admin')) {
-            // admin bebas, hanya ikut filter frontend
+            // full access
         } 
         elseif ($user->hasRole('operator')) {
-            // operator hanya lihat klien kecamatannya
             $query->where('kecamatan_id', $user->kecamatan_id);
         } 
         elseif ($user->hasRole('lks')) {
-            // lks hanya lihat klien lembaganya
             $query->where('lks_id', $user->lks_id);
         }
 
-        // FILTER TAMBAHAN
         if ($request->filled('kecamatan_id')) {
             $query->where('kecamatan_id', $request->kecamatan_id);
         }
@@ -46,16 +39,11 @@ class KlienController extends Controller
             $query->where('jenis_kebutuhan', $request->jenis_kebutuhan);
         }
 
-        $data = $query->orderBy('id', 'desc')->get();
-
         return response()->json([
-            'data' => $data
+            'data' => $query->orderBy('id', 'desc')->get()
         ]);
     }
 
-    // ============================
-    // CREATE
-    // ============================
     public function store(Request $request)
     {
         $user = $request->user();
@@ -65,18 +53,22 @@ class KlienController extends Controller
             'nama' => 'required|string|max:255',
             'alamat' => 'required|string',
             'kelurahan' => 'required|string',
-            'kecamatan_id' => 'required|exists:kecamatan,id',
-            'lks_id' => 'nullable|exists:lks,id',
             'jenis_kebutuhan' => 'nullable|string',
             'status_bantuan' => 'nullable|string',
             'status_pembinaan' => 'nullable|string',
         ]);
 
-        // ROLE OVERRIDE OTOMATIS
+        // HAPUS apapun yg dikirim frontend
+        unset($validated['kecamatan_id'], $validated['lks_id']);
+
+        // OVERRIDE UNTUK LKS
         if ($user->hasRole('lks')) {
             $validated['lks_id'] = $user->lks_id;
             $validated['kecamatan_id'] = $user->lks->kecamatan_id;
-        } elseif ($user->hasRole('operator')) {
+        }
+
+        // OVERRIDE UNTUK OPERATOR
+        if ($user->hasRole('operator')) {
             $validated['kecamatan_id'] = $user->kecamatan_id;
         }
 
@@ -88,27 +80,17 @@ class KlienController extends Controller
         ], 201);
     }
 
-    // ============================
-    // DETAIL
-    // ============================
     public function show($id)
     {
         $klien = Klien::with(['lks', 'kecamatan'])->find($id);
 
         if (!$klien) {
-            return response()->json([
-                'message' => 'Klien tidak ditemukan'
-            ], 404);
+            return response()->json(['message' => 'Klien tidak ditemukan'], 404);
         }
 
-        return response()->json([
-            'data' => $klien
-        ]);
+        return response()->json(['data' => $klien]);
     }
 
-    // ============================
-    // UPDATE
-    // ============================
     public function update(Request $request, $id)
     {
         $klien = Klien::find($id);
@@ -122,24 +104,27 @@ class KlienController extends Controller
             'nama' => 'required|string|max:255',
             'alamat' => 'nullable|string',
             'kelurahan' => 'nullable|string',
-            'kecamatan_id' => 'nullable|exists:kecamatan,id',
-            'lks_id' => 'nullable|exists:lks,id',
             'jenis_kebutuhan' => 'nullable|string',
             'status_bantuan' => 'nullable|string',
             'status_pembinaan' => 'nullable|string',
         ]);
 
+        // ROLE LKS tidak boleh pindah kecamatan atau lks_id
+        unset($validated['kecamatan_id'], $validated['lks_id']);
+
+        if ($request->user()->hasRole('lks')) {
+            $validated['lks_id'] = $request->user()->lks_id;
+            $validated['kecamatan_id'] = $request->user()->lks->kecamatan_id;
+        }
+
         $klien->update($validated);
 
         return response()->json([
             'message' => 'Data klien diperbarui',
-            'data' => $klien->load(['lks', 'kecamatan'])
+            'data' => $klien->load(['lks', 'kecamatan']),
         ]);
     }
 
-    // ============================
-    // DELETE
-    // ============================
     public function destroy($id)
     {
         $klien = Klien::find($id);
@@ -150,8 +135,6 @@ class KlienController extends Controller
 
         $klien->delete();
 
-        return response()->json([
-            'message' => 'Klien berhasil dihapus'
-        ]);
+        return response()->json(['message' => 'Klien berhasil dihapus']);
     }
 }

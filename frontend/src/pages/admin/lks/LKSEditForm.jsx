@@ -115,58 +115,63 @@ const LKSEditForm = () => {
   const [existingDocs, setExistingDocs] = useState([]);
 
   // Ambil data LKS & kecamatan
-useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const [resLks, resKec] = await Promise.all([
-        API.get(`/lks/${id}`),
-        API.get("/kecamatan"),
-      ]);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [resLks, resKec] = await Promise.all([
+          API.get(`/lks/${id}`),
+          API.get("/kecamatan"),
+        ]);
 
-      console.log("RAW RESPONSE:", resLks.data);
+        console.log("RAW RESPONSE:", resLks.data);
 
-      const lks = resLks.data.data ?? resLks.data;
+        const lks = resLks.data.data ?? resLks.data;
 
-      setFormData({
-        nama: lks.nama ?? "",
-        alamat: lks.alamat ?? "",
-        jenis_layanan: lks.jenis_layanan ?? "",
-        npwp: lks.npwp ?? "",
-        kecamatan_id: lks.kecamatan?.id ?? "",
-        kelurahan: lks.kelurahan ?? "",
-        akta_pendirian: lks.akta_pendirian ?? "",
-        izin_operasional: lks.izin_operasional ?? "",
-        kontak_pengurus: lks.kontak_pengurus ?? "",
-        status: lks.status ?? "aktif",
-        legalitas: lks.legalitas ?? "",
-        no_akta: lks.no_akta ?? "",
-        status_akreditasi: lks.status_akreditasi ?? "",
-        no_sertifikat: lks.no_sertifikat ?? "",
-        tanggal_akreditasi: lks.tanggal_akreditasi ?? "",
-        koordinat: lks.koordinat ?? "",
-        jumlah_pengurus: lks.jumlah_pengurus ?? "",
-        sarana: lks.sarana ?? "",
-        hasil_observasi: lks.hasil_observasi ?? "",
-        tindak_lanjut: lks.tindak_lanjut ?? "",
-      });
+        setFormData({
+          nama: lks.nama ?? "",
+          alamat: lks.alamat ?? "",
+          jenis_layanan: lks.jenis_layanan ?? "",
+          npwp: lks.npwp ?? "",
+          kecamatan_id: lks.kecamatan?.id ?? "",
+          kelurahan: lks.kelurahan ?? "",
+          akta_pendirian: lks.akta_pendirian ?? "",
+          izin_operasional: lks.izin_operasional ?? "",
+          kontak_pengurus: lks.kontak_pengurus ?? "",
+          status: lks.status ?? "aktif",
+          legalitas: lks.legalitas ?? "",
+          no_akta: lks.no_akta ?? "",
+          status_akreditasi: lks.status_akreditasi ?? "",
+          no_sertifikat: lks.no_sertifikat ?? "",
+          tanggal_akreditasi: lks.tanggal_akreditasi ?? "",
+          koordinat: lks.koordinat ?? "",
+          jumlah_pengurus: lks.jumlah_pengurus ?? "",
+          sarana: lks.sarana ?? "",
+          hasil_observasi: lks.hasil_observasi ?? "",
+          tindak_lanjut: lks.tindak_lanjut ?? "",
+        });
 
-      if (lks.koordinat) {
-        const [lat, lng] = lks.koordinat.split(",").map(Number);
-        if (!isNaN(lat) && !isNaN(lng)) {
-          setPosition([lat, lng]);
+        if (lks.koordinat) {
+          const [lat, lng] = lks.koordinat.split(",").map(Number);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            setPosition([lat, lng]);
+          }
         }
+
+        setExistingDocs(
+          lks.dokumen
+            ? Array.isArray(lks.dokumen)
+              ? lks.dokumen
+              : JSON.parse(lks.dokumen)
+            : []
+        );
+        setDaftarKecamatan(resKec.data?.data || []);
+      } catch (err) {
+        console.error("❌ Gagal ambil data:", err);
+        alert("Gagal memuat data LKS!");
       }
-
-      setExistingDocs(lks.dokumen ? (Array.isArray(lks.dokumen) ? lks.dokumen : JSON.parse(lks.dokumen)) : []);
-      setDaftarKecamatan(resKec.data?.data || []);
-    } catch (err) {
-      console.error("❌ Gagal ambil data:", err);
-      alert("Gagal memuat data LKS!");
-    }
-  };
-  fetchData();
-}, [id]);
-
+    };
+    fetchData();
+  }, [id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -236,36 +241,39 @@ useEffect(() => {
             title="Profil Umum"
             color="blue"
           />
+
           <div className="grid md:grid-cols-2 gap-6">
             <Field
-              label="Nama LKS *"
+              label="Nama LKS"
               name="nama"
               value={formData.nama}
               onChange={handleChange}
             />
+
             <Field
-              label="Jenis Layanan *"
+              label="Jenis Layanan"
               name="jenis_layanan"
               value={formData.jenis_layanan}
               onChange={handleChange}
             />
+
             <AutoResizeTextarea
-              label="Alamat Lengkap *"
+              label="Alamat Lengkap"
               name="alamat"
               value={formData.alamat}
               onChange={handleChange}
             />
 
+            {/* Kecamatan */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Kecamatan *
+              <label className="block mb-1 text-sm font-medium">
+                Kecamatan
               </label>
               <select
                 name="kecamatan_id"
                 value={formData.kecamatan_id}
                 onChange={handleChange}
-                className="border border-gray-300 p-2 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none"
-                required
+                className="border rounded p-2 w-full"
               >
                 <option value="">Pilih Kecamatan</option>
                 {daftarKecamatan.map((kec) => (
@@ -277,7 +285,7 @@ useEffect(() => {
             </div>
 
             <Field
-              label="Kelurahan / Desa *"
+              label="Kelurahan / Desa"
               name="kelurahan"
               value={formData.kelurahan}
               onChange={handleChange}
@@ -294,6 +302,34 @@ useEffect(() => {
               value={formData.kontak_pengurus}
               onChange={handleChange}
             />
+
+            <Field
+              label="Legalitas"
+              name="legalitas"
+              value={formData.legalitas}
+              onChange={handleChange}
+            />
+
+            <Field
+              label="Status Akreditasi"
+              name="status_akreditasi"
+              value={formData.status_akreditasi}
+              onChange={handleChange}
+            />
+            <Field
+              label="No Sertifikat"
+              name="no_sertifikat"
+              value={formData.no_sertifikat}
+              onChange={handleChange}
+            />
+            <Field
+              type="date"
+              label="Tanggal Akreditasi"
+              name="tanggal_akreditasi"
+              value={formData.tanggal_akreditasi}
+              onChange={handleChange}
+            />
+
             <Field
               label="Akta Pendirian"
               name="akta_pendirian"

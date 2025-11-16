@@ -18,6 +18,7 @@ const KlienEdit = () => {
     jenis_kebutuhan: "",
     status_bantuan: "",
     status_pembinaan: "",
+    lks_id: "",
   });
 
   // 📌 Ambil detail klien + kecamatan
@@ -148,35 +149,49 @@ const KlienEdit = () => {
 
         <div>
           <label className="block text-sm font-medium">Jenis Kebutuhan</label>
-          <input
-            type="text"
+          <select
             name="jenis_kebutuhan"
+            className="input"
             value={form.jenis_kebutuhan}
             onChange={handleChange}
-            className="input"
-          />
+          >
+            <option value="">Pilih Jenis Kebutuhan</option>
+            <option value="anak">Anak</option>
+            <option value="disabilitas">Disabilitas</option>
+            <option value="lansia">Lansia</option>
+            <option value="fakir_miskin">Fakir Miskin</option>
+            <option value="lainnya">Lainnya</option>
+          </select>
         </div>
 
         <div>
           <label className="block text-sm font-medium">Status Bantuan</label>
-          <input
-            type="text"
+          <select
             name="status_bantuan"
+            className="input"
             value={form.status_bantuan}
             onChange={handleChange}
-            className="input"
-          />
+          >
+            <option value="">Pilih Status Bantuan</option>
+            <option value="BPNT">BPNT</option>
+            <option value="PKH">PKH</option>
+            <option value="BLT">BLT</option>
+            <option value="lainnya">Lainnya</option>
+          </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Status Pembinaan</label>
-          <input
-            type="text"
+          <label className="font-medium">Status Pembinaan</label>
+          <select
             name="status_pembinaan"
             value={form.status_pembinaan}
             onChange={handleChange}
-            className="input"
-          />
+            className="w-full border rounded p-2"
+          >
+            <option value="">Pilih Status Pembinaan</option>
+            <option value="aktif">Aktif</option>
+            <option value="selesai">Selesai</option>
+          </select>
         </div>
 
         {/* BUTTONS */}

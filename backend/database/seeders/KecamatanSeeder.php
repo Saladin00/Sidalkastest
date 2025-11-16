@@ -7,17 +7,19 @@ use App\Models\Kecamatan;
 
 class KecamatanSeeder extends Seeder
 {
-    public function run(): void
+    public function run()
     {
-        $list = [
+        $kecamatanList = [
             'Indramayu', 'Lohbener', 'Sindang', 'Jatibarang', 'Kandanghaur',
             'Balongan', 'Losarang', 'Anjatan', 'Krangkeng', 'Lelea',
+            'Sukagumiwang', 'Gabuswetan', 'Sliyeg', 'Juntinyuat', 'Kroya',
+            'Widasari', 'Cantigi', 'Bongas', 'Gantar', 'Haurgeulis',
+            'Terisi', 'Bangodua', 'Karangampel', 'Kedokan Bunder',
+            'Pasekan', 'Patrol'
         ];
 
-        foreach ($list as $nama) {
+        foreach ($kecamatanList as $nama) {
             Kecamatan::firstOrCreate(['nama' => $nama]);
         }
-
-        $this->command->info('✅ KecamatanSeeder: 10 kecamatan berhasil dimasukkan.');
     }
 }

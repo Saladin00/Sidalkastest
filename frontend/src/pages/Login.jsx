@@ -60,6 +60,7 @@ const Login = () => {
       sessionStorage.setItem("token", access_token);
       sessionStorage.setItem("role", role);
       sessionStorage.setItem("user", JSON.stringify(user));
+      sessionStorage.setItem("lks_id", user.lks_id); 
 
       // 🔹 Arahkan sesuai role
       switch (role) {

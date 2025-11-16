@@ -8,26 +8,26 @@ use App\Models\Lks;
 
 class KlienSeeder extends Seeder
 {
-    public function run(): void
+    public function run()
     {
-        $jenisKebutuhan = ['Anak', 'Lansia', 'Disabilitas', 'fakir_miskin', 'lainnya'];
+        $jenisKebutuhan = ['anak', 'disabilitas', 'lansia', 'fakir_miskin', 'lainnya'];
         $statusBantuan = ['PKH', 'BPNT', 'BLT', 'lainnya'];
 
-        // ✅ Ambil hanya LKS yang punya kecamatan_id valid
-        $lksList = Lks::whereNotNull('kecamatan_id')->with('kecamatan')->get();
+        $lksList = Lks::all();
 
         foreach ($lksList as $lks) {
-            for ($i = 1; $i <= 10; $i++) {
+            for ($i = 1; $i <= 5; $i++) {
+
                 Klien::create([
                     'nik' => fake()->numerify('3209##########'),
                     'nama' => "Klien {$i} - {$lks->nama}",
-                    'alamat' => "Jl. Melati No. {$i}, " . (optional($lks->kecamatan)->nama ?? 'Tidak diketahui'),
+                    'alamat' => "Jl. Melati No. {$i}",
                     'kelurahan' => "Kelurahan {$i}",
                     'kecamatan_id' => $lks->kecamatan_id,
                     'lks_id' => $lks->id,
                     'jenis_kebutuhan' => $jenisKebutuhan[array_rand($jenisKebutuhan)],
                     'status_bantuan' => $statusBantuan[array_rand($statusBantuan)],
-                    'status_pembinaan' => 'Aktif',
+                    'status_pembinaan' => 'aktif',
                 ]);
             }
         }
