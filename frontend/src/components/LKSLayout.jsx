@@ -3,11 +3,12 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   FileText,
-  Users,
+  User,
   LogOut,
   UploadCloud,
   ChevronLeft,
   ChevronRight,
+  Users,
 } from "lucide-react";
 
 const LKSLayout = ({ children }) => {
@@ -23,9 +24,12 @@ const LKSLayout = ({ children }) => {
   // ==== NAV ITEMS ====
   const navItems = [
     { label: "Dashboard", to: "/lks", icon: LayoutDashboard, exact: true },
+
     { label: "Data Klien", to: "/lks/klien", icon: Users },
     { label: "Dokumen Pendukung", to: "/lks/dokumen", icon: UploadCloud },
     { label: "Laporan Kegiatan", to: "/lks/laporan", icon: FileText },
+    { label: "Profil Saya", to: "/lks/profile", icon: User },
+
   ];
 
   const isActive = (path, exact = false) =>
@@ -58,6 +62,12 @@ const LKSLayout = ({ children }) => {
       return {
         breadcrumb: ["LKS", "Laporan Kegiatan"],
         title: "Laporan Kegiatan",
+      };
+    }
+    if (path.startsWith("/lks/profile")) {
+      return {
+        breadcrumb: ["LKS", "Profil"],
+        title: "Profil Akun",
       };
     }
 
@@ -187,9 +197,7 @@ const LKSLayout = ({ children }) => {
               <div className="flex items-center gap-1 text-xs md:text-sm text-slate-500">
                 {pageMeta.breadcrumb.map((item, idx) => (
                   <span key={idx} className="flex items-center gap-1">
-                    {idx > 0 && (
-                      <span className="text-slate-400">›</span>
-                    )}
+                    {idx > 0 && <span className="text-slate-400">›</span>}
                     <span
                       className={
                         idx === pageMeta.breadcrumb.length - 1
@@ -213,9 +221,7 @@ const LKSLayout = ({ children }) => {
             <div className="hidden md:flex items-center gap-3">
               <div className="text-right">
                 <p className="text-[11px] text-slate-400">Peran aktif</p>
-                <p className="text-sm font-medium text-slate-700">
-                  LKS
-                </p>
+                <p className="text-sm font-medium text-slate-700">LKS</p>
               </div>
               <div className="w-9 h-9 rounded-full bg-sky-100 flex items-center justify-center text-sky-700 text-xs font-semibold">
                 LK

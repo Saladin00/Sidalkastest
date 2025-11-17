@@ -34,45 +34,51 @@ const LocationMarker = ({ position, setPosition, setFormData }) => {
 };
 
 // ✏️ Input umum
-const Field = memo(({ label, name, value, onChange, placeholder, type = "text" }) => (
-  <div className="space-y-1">
-    <label className="block text-sm font-medium text-gray-700">{label}</label>
-    <input
-      type={type}
-      name={name}
-      value={value || ""}
-      onChange={onChange}
-      placeholder={placeholder}
-      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm"
-    />
-  </div>
-));
-Field.displayName = "Field";
-
-// 🧾 Textarea otomatis
-const AutoResizeTextarea = memo(({ label, name, value, onChange, placeholder }) => {
-  const ref = useRef(null);
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.style.height = "auto";
-      ref.current.style.height = ref.current.scrollHeight + "px";
-    }
-  }, [value]);
-  return (
+const Field = memo(
+  ({ label, name, value, onChange, placeholder, type = "text" }) => (
     <div className="space-y-1">
       <label className="block text-sm font-medium text-gray-700">{label}</label>
-      <textarea
-        ref={ref}
+      <input
+        type={type}
         name={name}
         value={value || ""}
         onChange={onChange}
         placeholder={placeholder}
-        rows={2}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none shadow-sm"
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm"
       />
     </div>
-  );
-});
+  )
+);
+Field.displayName = "Field";
+
+// 🧾 Textarea otomatis
+const AutoResizeTextarea = memo(
+  ({ label, name, value, onChange, placeholder }) => {
+    const ref = useRef(null);
+    useEffect(() => {
+      if (ref.current) {
+        ref.current.style.height = "auto";
+        ref.current.style.height = ref.current.scrollHeight + "px";
+      }
+    }, [value]);
+    return (
+      <div className="space-y-1">
+        <label className="block text-sm font-medium text-gray-700">
+          {label}
+        </label>
+        <textarea
+          ref={ref}
+          name={name}
+          value={value || ""}
+          onChange={onChange}
+          placeholder={placeholder}
+          rows={2}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none shadow-sm"
+        />
+      </div>
+    );
+  }
+);
 AutoResizeTextarea.displayName = "AutoResizeTextarea";
 
 const LKSEditForm = () => {
@@ -117,26 +123,47 @@ const LKSEditForm = () => {
           API.get("/kecamatan"),
         ]);
 
-        const lks = resLks.data;
-        setFormData((prev) => ({
-          ...prev,
-          ...lks,
-          kecamatan_id: lks.kecamatan_id || "",
-          status: lks.status || "aktif",
-        }));
+        console.log("RAW RESPONSE:", resLks.data);
+
+        const lks = resLks.data.data ?? resLks.data;
+
+        setFormData({
+          nama: lks.nama ?? "",
+          alamat: lks.alamat ?? "",
+          jenis_layanan: lks.jenis_layanan ?? "",
+          npwp: lks.npwp ?? "",
+          kecamatan_id: lks.kecamatan?.id ?? "",
+          kelurahan: lks.kelurahan ?? "",
+          akta_pendirian: lks.akta_pendirian ?? "",
+          izin_operasional: lks.izin_operasional ?? "",
+          kontak_pengurus: lks.kontak_pengurus ?? "",
+          status: lks.status ?? "aktif",
+          legalitas: lks.legalitas ?? "",
+          no_akta: lks.no_akta ?? "",
+          status_akreditasi: lks.status_akreditasi ?? "",
+          no_sertifikat: lks.no_sertifikat ?? "",
+          tanggal_akreditasi: lks.tanggal_akreditasi ?? "",
+          koordinat: lks.koordinat ?? "",
+          jumlah_pengurus: lks.jumlah_pengurus ?? "",
+          sarana: lks.sarana ?? "",
+          hasil_observasi: lks.hasil_observasi ?? "",
+          tindak_lanjut: lks.tindak_lanjut ?? "",
+        });
 
         if (lks.koordinat) {
           const [lat, lng] = lks.koordinat.split(",").map(Number);
-          setPosition([lat, lng]);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            setPosition([lat, lng]);
+          }
         }
 
-        if (lks.dokumen) {
-          const parsed = Array.isArray(lks.dokumen)
-            ? lks.dokumen
-            : JSON.parse(lks.dokumen);
-          setExistingDocs(parsed);
-        }
-
+        setExistingDocs(
+          lks.dokumen
+            ? Array.isArray(lks.dokumen)
+              ? lks.dokumen
+              : JSON.parse(lks.dokumen)
+            : []
+        );
         setDaftarKecamatan(resKec.data?.data || []);
       } catch (err) {
         console.error("❌ Gagal ambil data:", err);
@@ -209,20 +236,44 @@ const LKSEditForm = () => {
 
         {/* 🏢 Profil Umum */}
         <section>
-          <SectionHeader icon={BuildingOfficeIcon} title="Profil Umum" color="blue" />
+          <SectionHeader
+            icon={BuildingOfficeIcon}
+            title="Profil Umum"
+            color="blue"
+          />
+
           <div className="grid md:grid-cols-2 gap-6">
-            <Field label="Nama LKS *" name="nama" value={formData.nama} onChange={handleChange} />
-            <Field label="Jenis Layanan *" name="jenis_layanan" value={formData.jenis_layanan} onChange={handleChange} />
-            <AutoResizeTextarea label="Alamat Lengkap *" name="alamat" value={formData.alamat} onChange={handleChange} />
-            
+            <Field
+              label="Nama LKS"
+              name="nama"
+              value={formData.nama}
+              onChange={handleChange}
+            />
+
+            <Field
+              label="Jenis Layanan"
+              name="jenis_layanan"
+              value={formData.jenis_layanan}
+              onChange={handleChange}
+            />
+
+            <AutoResizeTextarea
+              label="Alamat Lengkap"
+              name="alamat"
+              value={formData.alamat}
+              onChange={handleChange}
+            />
+
+            {/* Kecamatan */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Kecamatan *</label>
+              <label className="block mb-1 text-sm font-medium">
+                Kecamatan
+              </label>
               <select
                 name="kecamatan_id"
                 value={formData.kecamatan_id}
                 onChange={handleChange}
-                className="border border-gray-300 p-2 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none"
-                required
+                className="border rounded p-2 w-full"
               >
                 <option value="">Pilih Kecamatan</option>
                 {daftarKecamatan.map((kec) => (
@@ -233,20 +284,81 @@ const LKSEditForm = () => {
               </select>
             </div>
 
-            <Field label="Kelurahan / Desa *" name="kelurahan" value={formData.kelurahan} onChange={handleChange} />
-            <Field label="NPWP" name="npwp" value={formData.npwp} onChange={handleChange} />
-            <Field label="Kontak Pengurus" name="kontak_pengurus" value={formData.kontak_pengurus} onChange={handleChange} />
-            <Field label="Akta Pendirian" name="akta_pendirian" value={formData.akta_pendirian} onChange={handleChange} />
-            <Field label="Izin Operasional" name="izin_operasional" value={formData.izin_operasional} onChange={handleChange} />
+            <Field
+              label="Kelurahan / Desa"
+              name="kelurahan"
+              value={formData.kelurahan}
+              onChange={handleChange}
+            />
+            <Field
+              label="NPWP"
+              name="npwp"
+              value={formData.npwp}
+              onChange={handleChange}
+            />
+            <Field
+              label="Kontak Pengurus"
+              name="kontak_pengurus"
+              value={formData.kontak_pengurus}
+              onChange={handleChange}
+            />
+
+            <Field
+              label="Legalitas"
+              name="legalitas"
+              value={formData.legalitas}
+              onChange={handleChange}
+            />
+
+            <Field
+              label="Status Akreditasi"
+              name="status_akreditasi"
+              value={formData.status_akreditasi}
+              onChange={handleChange}
+            />
+            <Field
+              label="No Sertifikat"
+              name="no_sertifikat"
+              value={formData.no_sertifikat}
+              onChange={handleChange}
+            />
+            <Field
+              type="date"
+              label="Tanggal Akreditasi"
+              name="tanggal_akreditasi"
+              value={formData.tanggal_akreditasi}
+              onChange={handleChange}
+            />
+
+            <Field
+              label="Akta Pendirian"
+              name="akta_pendirian"
+              value={formData.akta_pendirian}
+              onChange={handleChange}
+            />
+            <Field
+              label="Izin Operasional"
+              name="izin_operasional"
+              value={formData.izin_operasional}
+              onChange={handleChange}
+            />
           </div>
         </section>
 
         {/* 📍 Lokasi */}
         <section>
           <SectionHeader icon={MapPinIcon} title="Lokasi LKS" color="red" />
-          <MapContainer center={position} zoom={13} className="h-72 rounded-lg border shadow-sm z-0">
+          <MapContainer
+            center={position}
+            zoom={13}
+            className="h-72 rounded-lg border shadow-sm z-0"
+          >
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            <LocationMarker position={position} setPosition={setPosition} setFormData={setFormData} />
+            <LocationMarker
+              position={position}
+              setPosition={setPosition}
+              setFormData={setFormData}
+            />
           </MapContainer>
           <p className="text-sm text-gray-500 mt-2">
             Klik di peta untuk memperbarui lokasi. Koordinat:{" "}
@@ -256,7 +368,9 @@ const LKSEditForm = () => {
 
         {/* Status */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Status *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Status *
+          </label>
           <select
             name="status"
             value={formData.status}
@@ -273,30 +387,64 @@ const LKSEditForm = () => {
         {/* 👥 Pengurus */}
         <section>
           <SectionHeader icon={UsersIcon} title="Pengurus" color="purple" />
-          <Field label="Jumlah Pengurus" name="jumlah_pengurus" type="number" value={formData.jumlah_pengurus} onChange={handleChange} />
+          <Field
+            label="Jumlah Pengurus"
+            name="jumlah_pengurus"
+            type="number"
+            value={formData.jumlah_pengurus}
+            onChange={handleChange}
+          />
         </section>
 
         {/* 🏗️ Sarana */}
         <section>
-          <SectionHeader icon={WrenchIcon} title="Sarana & Prasarana" color="green" />
-          <AutoResizeTextarea label="Sarana & Fasilitas" name="sarana" value={formData.sarana} onChange={handleChange} />
+          <SectionHeader
+            icon={WrenchIcon}
+            title="Sarana & Prasarana"
+            color="green"
+          />
+          <AutoResizeTextarea
+            label="Sarana & Fasilitas"
+            name="sarana"
+            value={formData.sarana}
+            onChange={handleChange}
+          />
         </section>
 
         {/* 📝 Monitoring */}
         <section>
           <SectionHeader icon={ChartBarIcon} title="Monitoring" color="pink" />
-          <AutoResizeTextarea label="Hasil Observasi" name="hasil_observasi" value={formData.hasil_observasi} onChange={handleChange} />
-          <AutoResizeTextarea label="Tindak Lanjut" name="tindak_lanjut" value={formData.tindak_lanjut} onChange={handleChange} />
+          <AutoResizeTextarea
+            label="Hasil Observasi"
+            name="hasil_observasi"
+            value={formData.hasil_observasi}
+            onChange={handleChange}
+          />
+          <AutoResizeTextarea
+            label="Tindak Lanjut"
+            name="tindak_lanjut"
+            value={formData.tindak_lanjut}
+            onChange={handleChange}
+          />
         </section>
 
         {/* 📎 Dokumen */}
         <section>
-          <SectionHeader icon={PaperClipIcon} title="Dokumen Pendukung" color="gray" />
+          <SectionHeader
+            icon={PaperClipIcon}
+            title="Dokumen Pendukung"
+            color="gray"
+          />
           {existingDocs?.length > 0 && (
             <ul className="list-disc pl-5 text-sm text-gray-600 mb-3">
               {existingDocs.map((file, idx) => (
                 <li key={idx}>
-                  <a href={file.url || file} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                  <a
+                    href={file.url || file}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
                     {file.name || `Dokumen ${idx + 1}`}
                   </a>
                 </li>
@@ -317,7 +465,9 @@ const LKSEditForm = () => {
             type="submit"
             disabled={loading}
             className={`px-8 py-2.5 rounded-md font-semibold text-white shadow-md transition-all ${
-              loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+              loading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
             }`}
           >
             {loading ? "Menyimpan..." : "Simpan Perubahan"}

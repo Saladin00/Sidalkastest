@@ -31,7 +31,7 @@ const LKSDetail = () => {
     const fetchData = async () => {
       try {
         const res = await API.get(`/lks/${id}`);
-        setLks(res.data);
+        setLks(res.data.data);
       } catch (err) {
         console.error("Gagal Mengambil data", err);
         alert("Gagal mengambil data");
@@ -75,6 +75,7 @@ const LKSDetail = () => {
   } = lks;
 
   const verif = lks.verifikasi_terbaru;
+
   let position = null;
   if (koordinat && koordinat.includes(",")) {
     const [lat, lng] = koordinat.split(",").map(Number);
@@ -86,7 +87,7 @@ const LKSDetail = () => {
     { label: "Akta Pendirian", value: akta_pendirian, icon: ClipboardDocumentListIcon },
     { label: "Jenis Layanan", value: jenis_layanan, icon: ClipboardDocumentListIcon },
     { label: "No Akta", value: no_akta, icon: IdentificationIcon },
-    { label: "Kecamatan", value: kecamatan, icon: MapPinIcon },
+    { label: "Kecamatan", value: kecamatan?.nama, icon: MapPinIcon },
     { label: "Izin Operasional", value: izin_operasional, icon: ClipboardDocumentListIcon },
     { label: "Kelurahan / Desa", value: kelurahan, icon: MapPinIcon },
     { label: "Legalitas", value: legalitas, icon: ClipboardDocumentListIcon },
@@ -107,6 +108,7 @@ const LKSDetail = () => {
   return (
     <AdminLayout>
       <div className="max-w-5xl mx-auto bg-white shadow-lg rounded-2xl p-8 border border-gray-100">
+
         {/* Header */}
         <div className="flex justify-between items-start border-b pb-5 mb-8">
           <div className="flex items-center gap-3">
@@ -118,6 +120,7 @@ const LKSDetail = () => {
               <p className="text-sm text-gray-500 mt-1">
                 Data hasil inputan SIDALEKAS
               </p>
+
               {verif && (
                 <div className="mt-2">
                   <span className="text-xs mr-2 text-gray-500">
@@ -128,6 +131,7 @@ const LKSDetail = () => {
               )}
             </div>
           </div>
+
           <div className="hidden print:block text-sm text-gray-400">
             Dicetak: {new Date().toLocaleDateString("id-ID")}
           </div>
@@ -143,7 +147,9 @@ const LKSDetail = () => {
               <span className="text-sm font-semibold text-gray-400 w-6 shrink-0">
                 {index + 1}.
               </span>
+
               <item.icon className="h-5 w-5 text-blue-600 mt-0.5" />
+
               <div>
                 <p className="text-xs uppercase text-gray-500 tracking-wide">
                   {item.label}
@@ -163,6 +169,7 @@ const LKSDetail = () => {
               <MapPinIcon className="h-5 w-5 text-blue-700" />
               Lokasi LKS
             </h2>
+
             <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm">
               <MapContainer
                 center={position}
@@ -201,6 +208,7 @@ const LKSDetail = () => {
                 Belum ada data verifikasi.
               </p>
             )}
+
             <button
               onClick={printPDF}
               className="flex items-center gap-2 px-5 py-2.5 text-sm text-white bg-green-600 hover:bg-green-700 rounded-lg transition"

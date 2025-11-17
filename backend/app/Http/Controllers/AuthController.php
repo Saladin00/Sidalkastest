@@ -93,13 +93,21 @@ class AuthController extends Controller
         $user->tokens()->delete();
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
-            'message' => 'Login berhasil',
-            'user' => $user,
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'role' => $user->getRoleNames()->first(),
-        ]);
+       return response()->json([
+    'message' => 'Login berhasil',
+    'user' => [
+        'id' => $user->id,
+        'name' => $user->name,
+        'email' => $user->email,
+        'kecamatan_id' => $user->kecamatan_id,
+        'lks_id' => $user->lks_id,
+        'role' => $user->getRoleNames()->first(), // ⬅ tetap dalam user
+    ],
+    'access_token' => $token,
+    'token_type' => 'Bearer',
+    'role' => $user->getRoleNames()->first(), // ⬅ WAJIB ADA DI SINI JUGA
+]);
+
     }
 
     // 🔹 LOGOUT

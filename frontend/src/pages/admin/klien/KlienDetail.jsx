@@ -1,46 +1,37 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import api from "../../../utils/api";
 
 export default function KlienDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [klien, setKlien] = useState(null);
 
   useEffect(() => {
-    api.get(`/klien/${id}`).then((res) => setKlien(res.data.data));
+    api
+      .get(`/klien/${id}`)
+      .then((res) => setKlien(res.data.data))
+      .catch(() => navigate("/admin/klien"));
   }, [id]);
 
-  if (!klien) return <p className="p-6">Memuat data...</p>;
+  if (!klien) return <p className="p-6">Memuat...</p>;
 
   return (
     <div className="p-6">
-      <h1 className="text-xl font-bold mb-2">{klien.nama}</h1>
-      <p>
-        <strong>NIK:</strong> {klien.nik}
-      </p>
-      <p>
-        <strong>Alamat:</strong> {klien.alamat}
-      </p>
-      <p>
-        <strong>Kelurahan:</strong> {klien.kelurahan}
-      </p>
+      <h1 className="text-xl font-bold mb-2">Detail Klien</h1>
 
-     <p><strong>LKS:</strong> {klien.lks?.nama || "-"}</p>
-
-
-      <p>
-        <strong>Status Pembinaan:</strong> {klien.status_pembinaan || "-"}
-      </p>
-      <p>
-        <strong>Status Bantuan:</strong> {klien.status_bantuan || "-"}
-      </p>
-      <p>
-        <strong>LKS:</strong> {klien.lks?.nama || "-"}
-      </p>
+      <p><strong>NIK:</strong> {klien.nik}</p>
+      <p><strong>Nama:</strong> {klien.nama}</p>
+      <p><strong>Alamat:</strong> {klien.alamat}</p>
+      <p><strong>Kelurahan:</strong> {klien.kelurahan}</p>
+      <p><strong>Kecamatan:</strong> {klien.kecamatan?.nama}</p>
+      <p><strong>LKS:</strong> {klien.lks?.nama}</p>
+      <p><strong>Kebutuhan:</strong> {klien.jenis_kebutuhan}</p>
+      <p><strong>Bantuan:</strong> {klien.status_bantuan}</p>
 
       <button
-        className="bg-gray-500 text-white px-4 py-2 rounded mt-4"
-        onClick={() => (window.location.href = "/admin/klien")}
+        className="mt-4 px-4 py-2 bg-gray-600 text-white rounded"
+        onClick={() => navigate("/admin/klien")}
       >
         Kembali
       </button>

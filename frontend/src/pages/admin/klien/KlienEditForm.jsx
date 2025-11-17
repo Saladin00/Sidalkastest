@@ -26,11 +26,11 @@ export default function KlienEditForm() {
   useEffect(() => {
     api
       .get("/kecamatan")
-      .then((res) => setKecamatanList(res.data?.data || []))
+      .then((res) => setKecamatanList(res.data.data || []))
       .catch((err) => console.error("Gagal ambil kecamatan:", err));
   }, []);
 
-  // 👤 Ambil data klien saat halaman dibuka
+  // 👤 Ambil data awal klien
   useEffect(() => {
     const load = async () => {
       try {
@@ -50,13 +50,13 @@ export default function KlienEditForm() {
           status_bantuan: k.status_bantuan || "",
         });
 
-        // muat LKS untuk kecamatan awal
+        // Ambil LKS sesuai kecamatan awal
         if (kecId) {
           const lksRes = await api.get(`/lks/by-kecamatan/${kecId}`);
-          setLksList(lksRes.data?.data || []);
+          setLksList(lksRes.data.data || []);
         }
       } catch (error) {
-        console.error("Gagal mengambil data klien:", error);
+        console.error("Gagal mengambil klien:", error);
         alert("Data klien tidak ditemukan");
         navigate("/admin/klien");
       }
@@ -64,9 +64,9 @@ export default function KlienEditForm() {
     load();
   }, [id, navigate]);
 
-  // 🔁 kalau kecamatan diganti, ambil ulang daftar LKS
+  // 🔄 Ambil LKS ulang jika kecamatan berubah
   useEffect(() => {
-    const loadLks = async () => {
+    const loadLKS = async () => {
       if (!form.kecamatan_id) {
         setLksList([]);
         setForm((f) => ({ ...f, lks_id: "" }));
@@ -74,14 +74,16 @@ export default function KlienEditForm() {
       }
       try {
         const res = await api.get(`/lks/by-kecamatan/${form.kecamatan_id}`);
-        setLksList(res.data?.data || []);
+        setLksList(res.data.data || []);
+
+        // Reset lks_id agar tidak tertinggal
         setForm((f) => ({ ...f, lks_id: "" }));
-      } catch (error) {
-        console.error("Gagal ambil LKS:", error);
+      } catch (err) {
+        console.error("Gagal ambil LKS:", err);
         setLksList([]);
       }
     };
-    loadLks();
+    loadLKS();
   }, [form.kecamatan_id]);
 
   const handleChange = (e) =>
@@ -91,13 +93,14 @@ export default function KlienEditForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
     try {
       await api.put(`/klien/${id}`, form);
-      alert("✅ Data klien berhasil diperbarui!");
+      alert("Data klien berhasil diperbarui!");
       navigate("/admin/klien");
     } catch (error) {
+      alert("Gagal memperbarui klien");
       console.error(error);
-      alert("❌ Gagal memperbarui data klien.");
     } finally {
       setLoading(false);
     }
@@ -106,199 +109,154 @@ export default function KlienEditForm() {
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6">
       <div className="max-w-3xl mx-auto">
-        {/* Header */}
-        <div className="mb-4 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
-          >
-            <ArrowLeft size={14} />
-            Kembali
-          </button>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Edit Data Klien
-          </h1>
-        </div>
+        <button
+          onClick={() => navigate(-1)}
+          className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-white"
+        >
+          <ArrowLeft size={14} /> Kembali
+        </button>
 
-        {/* Card */}
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* NIK & Nama */}
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-700">
-                  NIK <span className="text-red-500">*</span>
-                </label>
-                <input
-                  name="nik"
-                  value={form.nik}
-                  disabled
-                  className="w-full cursor-not-allowed rounded-lg border border-slate-300 bg-gray-100 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                />
-                <p className="text-[11px] text-slate-400">
-                  NIK tidak dapat diubah.
-                </p>
-              </div>
+        <div className="rounded-xl border bg-white p-6 shadow-sm">
+          <h1 className="text-2xl font-semibold mb-4">Edit Data Klien</h1>
 
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-700">
-                  Nama Lengkap <span className="text-red-500">*</span>
-                </label>
-                <input
-                  name="nama"
-                  placeholder="Masukkan nama lengkap"
-                  value={form.nama}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  required
-                />
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* NIK */}
+            <div>
+              <label className="text-sm font-medium">NIK</label>
+              <input
+                name="nik"
+                value={form.nik}
+                disabled
+                className="w-full p-2 border rounded bg-gray-100"
+              />
+            </div>
+
+            {/* Nama */}
+            <div>
+              <label className="text-sm font-medium">Nama</label>
+              <input
+                name="nama"
+                value={form.nama}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+                required
+              />
             </div>
 
             {/* Alamat */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">
-                Alamat <span className="text-red-500">*</span>
-              </label>
+            <div>
+              <label className="text-sm font-medium">Alamat</label>
               <textarea
                 name="alamat"
-                placeholder="Tulis alamat lengkap klien"
                 value={form.alamat}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className="w-full p-2 border rounded"
                 rows={3}
-                required
-              ></textarea>
+              />
             </div>
 
-            {/* Kelurahan & Kecamatan */}
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-700">
-                  Kelurahan <span className="text-red-500">*</span>
-                </label>
-                <input
-                  name="kelurahan"
-                  placeholder="Masukkan kelurahan"
-                  value={form.kelurahan}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-700">
-                  Kecamatan <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="kecamatan_id"
-                  value={form.kecamatan_id}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  required
-                >
-                  <option value="">Pilih kecamatan</option>
-                  {kecamatanList.map((kec) => (
-                    <option key={kec.id} value={kec.id}>
-                      {kec.nama}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {/* Kelurahan */}
+            <div>
+              <label className="text-sm font-medium">Kelurahan</label>
+              <input
+                name="kelurahan"
+                value={form.kelurahan}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+              />
             </div>
 
-            {/* LKS & Jenis Kebutuhan */}
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-700">
-                  Lembaga (LKS)
-                </label>
-                <select
-                  name="lks_id"
-                  value={form.lks_id}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  disabled={!form.kecamatan_id || lksList.length === 0}
-                >
-                  {!form.kecamatan_id && (
-                    <option value="">
-                      Pilih kecamatan terlebih dahulu
-                    </option>
-                  )}
-                  {form.kecamatan_id && lksList.length === 0 && (
-                    <option value="">Tidak ada LKS di kecamatan ini</option>
-                  )}
-                  {form.kecamatan_id &&
-                    lksList.length > 0 && (
-                      <>
-                        <option value="">Pilih Lembaga (LKS)</option>
-                        {lksList.map((lks) => (
-                          <option key={lks.id} value={lks.id}>
-                            {lks.nama}
-                          </option>
-                        ))}
-                      </>
-                    )}
-                </select>
-              </div>
+            {/* Kecamatan */}
+            <div>
+              <label className="text-sm font-medium">Kecamatan</label>
+              <select
+                name="kecamatan_id"
+                value={form.kecamatan_id}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+              >
+                <option value="">Pilih Kecamatan</option>
+                {kecamatanList.map((k) => (
+                  <option key={k.id} value={k.id}>
+                    {k.nama}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-700">
-                  Jenis Kebutuhan
-                </label>
-                <select
-                  name="jenis_kebutuhan"
-                  value={form.jenis_kebutuhan}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                >
-                  <option value="">Pilih jenis kebutuhan</option>
-                  <option value="anak">Anak</option>
-                  <option value="disabilitas">Disabilitas</option>
-                  <option value="lansia">Lansia</option>
-                  <option value="fakir_miskin">Fakir Miskin</option>
-                </select>
-              </div>
+            {/* LKS */}
+            <div>
+              <label className="text-sm font-medium">LKS</label>
+              <select
+                name="lks_id"
+                value={form.lks_id}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+                disabled={!form.kecamatan_id}
+              >
+                <option value="">Pilih LKS</option>
+                {lksList.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.nama}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Jenis Kebutuhan */}
+            <div>
+              <label className="text-sm font-medium">Jenis Kebutuhan</label>
+              <select
+                name="jenis_kebutuhan"
+                value={form.jenis_kebutuhan}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+              >
+                <option value="">Pilih Jenis Kebutuhan</option>
+                <option value="anak">Anak</option>
+                <option value="disabilitas">Disabilitas</option>
+                <option value="lansia">Lansia</option>
+                <option value="fakir_miskin">Fakir Miskin</option>
+              </select>
             </div>
 
             {/* Status Bantuan */}
-            <div className="w-full md:w-1/2 space-y-1">
-              <label className="text-xs font-medium text-slate-700">
-                Status Bantuan
-              </label>
+            <div>
+              <label className="text-sm font-medium">Status Bantuan</label>
               <select
                 name="status_bantuan"
                 value={form.status_bantuan}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className="w-full p-2 border rounded"
               >
-                <option value="">Pilih bantuan</option>
+                <option value="">Pilih Bantuan</option>
                 <option value="PKH">PKH</option>
                 <option value="BPNT">BPNT</option>
                 <option value="BLT">BLT</option>
               </select>
             </div>
-
-            {/* Actions */}
-            <div className="pt-3 flex items-center gap-3">
-              <button
-                type="submit"
-                disabled={loading}
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+            <div>
+              <label className="font-medium">Status Pembinaan</label>
+              <select
+                name="status_pembinaan"
+                value={form.status_pembinaan}
+                onChange={handleChange}
+                className="w-full border rounded p-2"
               >
-                <Save size={16} />
-                {loading ? "Menyimpan..." : "Simpan Perubahan"}
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate("/admin/klien")}
-                className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
-              >
-                Batal
-              </button>
+                <option value="">Pilih Status Pembinaan</option>
+                <option value="aktif">Aktif</option>
+                <option value="selesai">Selesai</option>
+              </select>
             </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-5 py-2 bg-emerald-600 text-white rounded shadow"
+            >
+              {loading ? "Menyimpan..." : "Simpan Perubahan"}
+            </button>
           </form>
         </div>
       </div>
