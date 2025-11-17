@@ -11,17 +11,17 @@ class OperatorSeeder extends Seeder
 {
     public function run()
     {
-        $kecamatanList = Kecamatan::whereIn('nama', [
-            'Indramayu', 'Lohbener', 'Sindang', 'Jatibarang', 'Kandanghaur'
-        ])->get();
+        $targetKecamatan = ['Indramayu', 'Lohbener', 'Sindang', 'Jatibarang', 'Kandanghaur'];
+
+        $kecamatanList = Kecamatan::whereIn('nama', $targetKecamatan)->get();
 
         foreach ($kecamatanList as $kec) {
             $user = User::firstOrCreate(
-                ['email' => strtolower($kec->nama).'_operator@example.com'],
+                ['email' => strtolower($kec->nama).'_operator@sidalekas.go.id'],
                 [
                     'username' => strtolower($kec->nama).'_operator',
                     'name' => "Operator {$kec->nama}",
-                    'password' => Hash::make('password'),
+                    'password' => Hash::make('operator123'),
                     'kecamatan_id' => $kec->id,
                     'status_aktif' => true,
                 ]

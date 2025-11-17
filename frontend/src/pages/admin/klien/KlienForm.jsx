@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowDownTrayIcon, ArrowLeftIcon } from "@heroicons/react/24/solid";
 import api from "../../../utils/api";
 
 export default function KlienForm() {
   const navigate = useNavigate();
 
+  // tambahkan ini dari branch satunya
   const role = sessionStorage.getItem("role");
   const loggedLKS = sessionStorage.getItem("lks_id");
 
@@ -24,18 +26,14 @@ export default function KlienForm() {
   const [lksList, setLksList] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // ===========================
-  // GET LIST KECAMATAN
-  // ===========================
+  // === GET KECAMATAN ===
   useEffect(() => {
     api.get("/kecamatan").then((res) => {
       setKecamatanList(res.data.data || []);
     });
   }, []);
 
-  // ===========================
-  // ADMIN → dapat semua LKS
-  // ===========================
+  // === ADMIN: Dapat semua LKS ===
   useEffect(() => {
     if (role === "admin") {
       api.get("/lks").then((res) => {
@@ -44,11 +42,9 @@ export default function KlienForm() {
     }
   }, [role]);
 
-  // ===========================
-  // ON CHANGE KECAMATAN (ADMIN ONLY)
-  // ===========================
+  // === Filter LKS by Kecamatan (ADMIN ONLY) ===
   useEffect(() => {
-    if (role !== "admin") return; // LKS tidak perlu filter
+    if (role !== "admin") return;
 
     if (form.kecamatan_id) {
       api
@@ -58,15 +54,9 @@ export default function KlienForm() {
     }
   }, [form.kecamatan_id, role]);
 
-  // ===========================
-  // Handle Change Input
-  // ===========================
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  // ===========================
-  // Submit Form
-  // ===========================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -74,7 +64,6 @@ export default function KlienForm() {
     try {
       await api.post("/klien", form);
       alert("Klien berhasil ditambahkan!");
-
       if (role === "admin") navigate("/admin/klien");
       else navigate("/lks/klien");
     } catch (err) {
@@ -84,161 +73,185 @@ export default function KlienForm() {
     }
   };
 
+  const inputStyle =
+    "w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 transition placeholder-gray-400 text-sm";
+  const labelStyle = "block font-medium text-sm text-gray-700 mb-1";
+  const sectionStyle = "grid md:grid-cols-2 gap-6";
+
+  const fields = [
+    { label: "1. NIK", name: "nik", placeholder: "Masukkan NIK (16 digit)", type: "text", maxLength: 16 },
+    { label: "2. Nama", name: "nama", placeholder: "Masukkan nama lengkap", type: "text" },
+    { label: "3. Kelurahan", name: "kelurahan", placeholder: "Contoh: Sukamaju", type: "text" },
+    { label: "4. Alamat", name: "alamat", placeholder: "Alamat lengkap", type: "textarea" },
+  ];
+
   return (
-    <div className="p-6 max-w-3xl mx-auto bg-white shadow rounded-xl">
-      <h1 className="text-xl font-bold mb-4">Tambah Klien Baru</h1>
+    <div className="max-w-5xl mx-auto p-6 bg-white rounded-lg shadow-lg mt-10">
+      <h1 className="text-2xl font-semibold text-emerald-700 mb-6">
+        Tambah Data Klien
+      </h1>
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        {/* NIK */}
-        <div>
-          <label>NIK</label>
-          <input
-            className="w-full border p-2 rounded"
-            name="nik"
-            required
-            onChange={handleChange}
-          />
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* === Basic Fields === */}
+        <div className={sectionStyle}>
+          {fields.map((field) => (
+            <div key={field.name}>
+              <label htmlFor={field.name} className={labelStyle}>
+                {field.label}
+              </label>
+              {field.type === "textarea" ? (
+                <textarea
+                  id={field.name}
+                  name={field.name}
+                  rows={3}
+                  placeholder={field.placeholder}
+                  className={inputStyle}
+                  required
+                  onChange={handleChange}
+                />
+              ) : (
+                <input
+                  id={field.name}
+                  name={field.name}
+                  type={field.type}
+                  placeholder={field.placeholder}
+                  maxLength={field.maxLength}
+                  className={inputStyle}
+                  required
+                  onChange={handleChange}
+                />
+              )}
+            </div>
+          ))}
         </div>
 
-        {/* Nama */}
-        <div>
-          <label>Nama</label>
-          <input
-            className="w-full border p-2 rounded"
-            name="nama"
-            required
-            onChange={handleChange}
-          />
-        </div>
-
-        {/* Alamat */}
-        <div>
-          <label>Alamat</label>
-          <textarea
-            className="w-full border p-2 rounded"
-            name="alamat"
-            required
-            onChange={handleChange}
-          />
-        </div>
-
-        {/* Kelurahan */}
-        <div>
-          <label>Kelurahan</label>
-          <input
-            className="w-full border p-2 rounded"
-            name="kelurahan"
-            required
-            onChange={handleChange}
-          />
-        </div>
-
-        {/* Kecamatan */}
-        <div>
-          <label>Kecamatan</label>
-          <select
-            name="kecamatan_id"
-            className="w-full border p-2 rounded"
-            required
-            value={form.kecamatan_id}
-            onChange={handleChange}
-          >
-            <option value="">Pilih Kecamatan</option>
-            {kecamatanList.map((k) => (
-              <option key={k.id} value={k.id}>
-                {k.nama}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* ===========================
-             ADMIN: bisa pilih LKS
-        =========================== */}
-        {role === "admin" && (
+        {/* === Select Fields === */}
+        <div className={sectionStyle}>
           <div>
-            <label>LKS</label>
+            <label htmlFor="kecamatan_id" className={labelStyle}>
+              5. Kecamatan
+            </label>
             <select
-              name="lks_id"
-              className="w-full border p-2 rounded"
+              name="kecamatan_id"
+              id="kecamatan_id"
+              className={inputStyle}
               required
-              value={form.lks_id}
+              value={form.kecamatan_id}
               onChange={handleChange}
             >
-              <option value="">Pilih LKS</option>
-              {lksList.map((lks) => (
-                <option key={lks.id} value={lks.id}>
-                  {lks.nama}
+              <option value="">Pilih Kecamatan</option>
+              {kecamatanList.map((kec) => (
+                <option key={kec.id} value={kec.id}>
+                  {kec.nama}
                 </option>
               ))}
             </select>
           </div>
-        )}
 
-        {/* ===========================
-             LKS: otomatis pakai lks_id sendiri
-        =========================== */}
-        {role === "lks" && (
-          <input type="hidden" name="lks_id" value={loggedLKS} />
-        )}
+          {role === "admin" && (
+            <div>
+              <label htmlFor="lks_id" className={labelStyle}>
+                6. LKS
+              </label>
+              <select
+                name="lks_id"
+                id="lks_id"
+                className={inputStyle}
+                required
+                value={form.lks_id}
+                onChange={handleChange}
+              >
+                <option value="">Pilih LKS</option>
+                {lksList.map((lks) => (
+                  <option key={lks.id} value={lks.id}>
+                    {lks.nama}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-        {/* Jenis Kebutuhan */}
-        <div>
-          <label>Jenis Kebutuhan</label>
-          <select
-            name="jenis_kebutuhan"
-            className="w-full border p-2 rounded"
-            required
-            onChange={handleChange}
-          >
-            <option value="">Pilih</option>
-            <option value="anak">Anak</option>
-            <option value="disabilitas">Disabilitas</option>
-            <option value="lansia">Lansia</option>
-            <option value="fakir_miskin">Fakir Miskin</option>
-          </select>
+          <div>
+            <label htmlFor="jenis_kebutuhan" className={labelStyle}>
+              7. Jenis Kebutuhan
+            </label>
+            <select
+              name="jenis_kebutuhan"
+              id="jenis_kebutuhan"
+              className={inputStyle}
+              value={form.jenis_kebutuhan}
+              onChange={handleChange}
+            >
+              <option value="">Pilih Jenis</option>
+              <option value="anak">Anak</option>
+              <option value="disabilitas">Disabilitas</option>
+              <option value="lansia">Lansia</option>
+              <option value="fakir_miskin">Fakir Miskin</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="status_bantuan" className={labelStyle}>
+              8. Status Bantuan
+            </label>
+            <select
+              name="status_bantuan"
+              id="status_bantuan"
+              className={inputStyle}
+              value={form.status_bantuan}
+              onChange={handleChange}
+            >
+              <option value="">Pilih Bantuan</option>
+              <option value="PKH">PKH</option>
+              <option value="BPNT">BPNT</option>
+              <option value="BLT">BLT</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="status_pembinaan" className={labelStyle}>
+              9. Status Pembinaan
+            </label>
+            <select
+              name="status_pembinaan"
+              id="status_pembinaan"
+              className={inputStyle}
+              value={form.status_pembinaan}
+              onChange={handleChange}
+            >
+              <option value="">Pilih Status</option>
+              <option value="aktif">Aktif</option>
+              <option value="selesai">Selesai</option>
+            </select>
+          </div>
         </div>
 
-        {/* Status Bantuan */}
-        <div>
-          <label>Status Bantuan</label>
-          <select
-            name="status_bantuan"
-            className="w-full border p-2 rounded"
-            required
-            onChange={handleChange}
+        {/* === BUTTONS === */}
+        <div className="flex justify-between items-center pt-4">
+          <button
+            type="button"
+            onClick={() =>
+              navigate(role === "admin" ? "/admin/klien" : "/lks/klien")
+            }
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100 transition"
           >
-            <option value="">Pilih</option>
-            <option value="PKH">PKH</option>
-            <option value="BPNT">BPNT</option>
-            <option value="BLT">BLT</option>
-          </select>
-        </div>
+            <ArrowLeftIcon className="h-5 w-5" />
+            Kembali
+          </button>
 
-        {/* Status Pembinaan */}
-        <div>
-          <label>Status Pembinaan</label>
-          <select
-            name="status_pembinaan"
-            value={form.status_pembinaan}
-            onChange={handleChange}
-            className="w-full border rounded p-2"
-            required
+          <button
+            type="submit"
+            disabled={loading}
+            className={`inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-md text-white shadow transition ${
+              loading
+                ? "bg-emerald-300 cursor-not-allowed"
+                : "bg-emerald-600 hover:bg-emerald-700"
+            }`}
           >
-            <option value="">Pilih Status Pembinaan</option>
-            <option value="aktif">Aktif</option>
-            <option value="selesai">Selesai</option>
-          </select>
+            <ArrowDownTrayIcon className="h-5 w-5" />
+            {loading ? "Menyimpan..." : "Simpan"}
+          </button>
         </div>
-
-        {/* SUBMIT */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-4 py-2 bg-emerald-600 text-white rounded"
-        >
-          {loading ? "Menyimpan..." : "Simpan"}
-        </button>
       </form>
     </div>
   );

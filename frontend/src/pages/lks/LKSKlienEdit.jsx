@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../utils/api";
+import { Loader2, ArrowLeft, Save } from "lucide-react";
 
 const KlienEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [kecamatan, setKecamatan] = useState([]);
 
   const [form, setForm] = useState({
@@ -18,10 +20,9 @@ const KlienEdit = () => {
     jenis_kebutuhan: "",
     status_bantuan: "",
     status_pembinaan: "",
-    lks_id: "",
   });
 
-  // 📌 Ambil detail klien + kecamatan
+  // 🔁 Ambil data klien + kecamatan
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -30,18 +31,20 @@ const KlienEdit = () => {
           api.get(`/kecamatan`),
         ]);
 
+        const data = resKlien.data.data;
+
         setForm({
-          nik: resKlien.data.data.nik || "",
-          nama: resKlien.data.data.nama || "",
-          alamat: resKlien.data.data.alamat || "",
-          kelurahan: resKlien.data.data.kelurahan || "",
-          kecamatan_id: resKlien.data.data.kecamatan_id || "",
-          jenis_kebutuhan: resKlien.data.data.jenis_kebutuhan || "",
-          status_bantuan: resKlien.data.data.status_bantuan || "",
-          status_pembinaan: resKlien.data.data.status_pembinaan || "",
+          nik: data.nik || "",
+          nama: data.nama || "",
+          alamat: data.alamat || "",
+          kelurahan: data.kelurahan || "",
+          kecamatan_id: data.kecamatan_id || "",
+          jenis_kebutuhan: data.jenis_kebutuhan || "",
+          status_bantuan: data.status_bantuan || "",
+          status_pembinaan: data.status_pembinaan || "",
         });
 
-        setKecamatan(resKec.data.data);
+        setKecamatan(resKec.data.data || []);
       } catch (err) {
         console.error("❌ Gagal memuat data:", err);
         alert("Gagal memuat data klien.");
@@ -53,14 +56,13 @@ const KlienEdit = () => {
     fetchData();
   }, [id]);
 
-  // 🔄 Handler Form
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // 💾 Submit Update
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
       await api.put(`/klien/${id}`, form);
       alert("✅ Klien berhasil diperbarui!");
@@ -68,75 +70,101 @@ const KlienEdit = () => {
     } catch (err) {
       console.error("❌ Error update klien:", err);
       alert("Gagal memperbarui klien.");
+    } finally {
+      setSaving(false);
     }
   };
 
   if (loading)
-    return <div className="p-4 text-center text-gray-500">Memuat data...</div>;
+    return (
+      <div className="flex justify-center items-center py-20 text-gray-500">
+        <Loader2 className="animate-spin mr-2" /> Memuat data klien...
+      </div>
+    );
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white shadow rounded-lg">
-      <h2 className="text-xl font-semibold mb-4 text-slate-700">
+    <div className="max-w-5xl mx-auto bg-white shadow-xl rounded-2xl border border-gray-100 p-8 mt-4">
+      {/* Header */}
+      <h1 className="text-2xl font-bold text-emerald-700 mb-2">
         Edit Data Klien
-      </h2>
+      </h1>
+      <p className="text-gray-500 mb-6">
+        Perbarui data klien sesuai kebutuhan di bawah ini.
+      </p>
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* NIK */}
         <div>
-          <label className="block text-sm font-medium">NIK *</label>
+          <label className="block font-semibold text-gray-700 mb-1">
+            1. NIK <span className="text-red-500">*</span>
+          </label>
           <input
             type="text"
             name="nik"
             value={form.nik}
             onChange={handleChange}
-            className="input"
+            placeholder="Masukkan NIK (16 digit)"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
             required
           />
         </div>
 
+        {/* Nama */}
         <div>
-          <label className="block text-sm font-medium">Nama *</label>
+          <label className="block font-semibold text-gray-700 mb-1">
+            2. Nama <span className="text-red-500">*</span>
+          </label>
           <input
             type="text"
             name="nama"
             value={form.nama}
             onChange={handleChange}
-            className="input"
+            placeholder="Masukkan nama lengkap"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
             required
           />
         </div>
 
+        {/* Kelurahan */}
         <div>
-          <label className="block text-sm font-medium">Alamat *</label>
-          <textarea
-            name="alamat"
-            value={form.alamat}
-            onChange={handleChange}
-            className="input"
-            required
-          ></textarea>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Kelurahan *</label>
+          <label className="block font-semibold text-gray-700 mb-1">
+            3. Kelurahan
+          </label>
           <input
             type="text"
             name="kelurahan"
             value={form.kelurahan}
             onChange={handleChange}
-            className="input"
-            required
+            placeholder="Contoh: Sukamaju"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+          />
+        </div>
+
+        {/* Alamat */}
+        <div>
+          <label className="block font-semibold text-gray-700 mb-1">
+            4. Alamat
+          </label>
+          <textarea
+            name="alamat"
+            value={form.alamat}
+            onChange={handleChange}
+            placeholder="Alamat lengkap"
+            rows={3}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none resize-none"
           />
         </div>
 
         {/* Kecamatan */}
         <div>
-          <label className="block text-sm font-medium">Kecamatan *</label>
+          <label className="block font-semibold text-gray-700 mb-1">
+            5. Kecamatan
+          </label>
           <select
             name="kecamatan_id"
-            className="input"
             value={form.kecamatan_id}
             onChange={handleChange}
-            required
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
           >
             <option value="">Pilih Kecamatan</option>
             {kecamatan.map((kec) => (
@@ -147,71 +175,87 @@ const KlienEdit = () => {
           </select>
         </div>
 
+        {/* Jenis Kebutuhan */}
         <div>
-          <label className="block text-sm font-medium">Jenis Kebutuhan</label>
+          <label className="block font-semibold text-gray-700 mb-1">
+            6. Jenis Kebutuhan
+          </label>
           <select
             name="jenis_kebutuhan"
-            className="input"
             value={form.jenis_kebutuhan}
             onChange={handleChange}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
           >
-            <option value="">Pilih Jenis Kebutuhan</option>
+            <option value="">Pilih Jenis</option>
             <option value="anak">Anak</option>
-            <option value="disabilitas">Disabilitas</option>
             <option value="lansia">Lansia</option>
+            <option value="disabilitas">Disabilitas</option>
             <option value="fakir_miskin">Fakir Miskin</option>
-            <option value="lainnya">Lainnya</option>
           </select>
         </div>
 
+        {/* Status Bantuan */}
         <div>
-          <label className="block text-sm font-medium">Status Bantuan</label>
+          <label className="block font-semibold text-gray-700 mb-1">
+            7. Status Bantuan
+          </label>
           <select
             name="status_bantuan"
-            className="input"
             value={form.status_bantuan}
             onChange={handleChange}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
           >
-            <option value="">Pilih Status Bantuan</option>
+            <option value="">Pilih Bantuan</option>
             <option value="BPNT">BPNT</option>
             <option value="PKH">PKH</option>
             <option value="BLT">BLT</option>
-            <option value="lainnya">Lainnya</option>
           </select>
         </div>
 
+        {/* Status Pembinaan */}
         <div>
-          <label className="font-medium">Status Pembinaan</label>
+          <label className="block font-semibold text-gray-700 mb-1">
+            8. Status Pembinaan
+          </label>
           <select
             name="status_pembinaan"
             value={form.status_pembinaan}
             onChange={handleChange}
-            className="w-full border rounded p-2"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
           >
-            <option value="">Pilih Status Pembinaan</option>
+            <option value="">Pilih Status</option>
             <option value="aktif">Aktif</option>
-            <option value="selesai">Selesai</option>
+            <option value="nonaktif">Nonaktif</option>
           </select>
         </div>
-
-        {/* BUTTONS */}
-        <div className="flex justify-between pt-4">
-          <button
-            type="button"
-            onClick={() => navigate("/lks/klien")}
-            className="px-4 py-2 bg-gray-100 rounded-md hover:bg-gray-200"
-          >
-            Kembali
-          </button>
-
-          <button
-            type="submit"
-            className="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700"
-          >
-            Simpan Perubahan
-          </button>
-        </div>
       </form>
+
+      {/* Tombol Aksi */}
+      <div className="flex justify-between mt-10">
+        <button
+          type="button"
+          onClick={() => navigate("/lks/klien")}
+          className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 text-sm font-medium transition"
+        >
+          <ArrowLeft size={16} /> Kembali
+        </button>
+
+        <button
+          onClick={handleSubmit}
+          disabled={saving}
+          className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-white text-sm font-medium transition disabled:opacity-60"
+        >
+          {saving ? (
+            <>
+              <Loader2 className="animate-spin" size={16} /> Menyimpan...
+            </>
+          ) : (
+            <>
+              <Save size={16} /> Simpan Perubahan
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 };

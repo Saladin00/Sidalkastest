@@ -1,5 +1,5 @@
 // src/pages/Login.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../utils/api";
 import {
@@ -25,18 +25,67 @@ const Login = () => {
   const [errorMsg, setErrorMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // ref untuk canvas captcha
+  const captchaCanvasRef = useRef(null);
+
+  // fungsi gambar captcha di canvas (mirip contoh yang kamu kirim)
+  const drawCaptcha = (text) => {
+    const canvas = captchaCanvasRef.current;
+    if (!canvas) return;
+
+    const width = 130;
+    const height = 40;
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext("2d");
+
+    // background putih
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, width, height);
+
+    // garis-garis acak
+    for (let i = 0; i < 6; i++) {
+      ctx.strokeStyle = `rgba(0,0,0,${0.3 + Math.random() * 0.4})`;
+      ctx.lineWidth = 1 + Math.random();
+      ctx.beginPath();
+      ctx.moveTo(Math.random() * width, Math.random() * height);
+      ctx.lineTo(Math.random() * width, Math.random() * height);
+      ctx.stroke();
+    }
+
+    // tulisan captcha
+    ctx.font = "bold 24px Arial";
+    ctx.fillStyle = "#111827"; // hampir hitam
+    ctx.textBaseline = "middle";
+
+    // kasih sedikit distort / miring
+    const skewX = (Math.random() - 0.5) * 0.6;
+    const skewY = (Math.random() - 0.5) * 0.6;
+    ctx.setTransform(1, skewY, skewX, 1, 0, 0);
+
+    const x = 12;
+    const y = height / 2 + 2;
+    ctx.fillText(text, x, y);
+
+    // reset transform
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+  };
+
   const generateCaptcha = () => {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let text = "";
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       text += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     setGeneratedCaptcha(text);
     setCaptcha("");
+    drawCaptcha(text);
   };
 
   useEffect(() => {
     generateCaptcha();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleLogin = async (e) => {
@@ -71,7 +120,7 @@ const Login = () => {
       sessionStorage.setItem("token", access_token);
       sessionStorage.setItem("role", role);
       sessionStorage.setItem("user", JSON.stringify(user));
-      sessionStorage.setItem("lks_id", user.lks_id); 
+      sessionStorage.setItem("lks_id", user.lks_id);
 
       switch (role) {
         case "admin":
@@ -113,14 +162,14 @@ const Login = () => {
   };
 
   return (
-  <div className="min-h-screen flex justify-center bg-gradient-to-br from-blue-100 via-blue-200 to-blue-100 relative overflow-hidden">
-    {/* efek background bulat-bulat */}
-    <div className="absolute w-72 h-72 bg-blue-400 rounded-full blur-3xl opacity-20 top-10 left-10 animate-pulse" />
-    <div className="absolute w-80 h-80 bg-indigo-400 rounded-full blur-3xl opacity-20 bottom-10 right-10 animate-pulse" />
+    <div className="min-h-screen flex justify-center bg-gradient-to-br from-blue-100 via-blue-200 to-blue-100 relative overflow-hidden">
+      {/* efek background bulat-bulat */}
+      <div className="absolute w-72 h-72 bg-blue-400 rounded-full blur-3xl opacity-20 top-10 left-10 animate-pulse" />
+      <div className="absolute w-80 h-80 bg-indigo-400 rounded-full blur-3xl opacity-20 bottom-10 right-10 animate-pulse" />
 
-      {/* ⬇️ ditambah padding atas/bawah supaya nggak nempel ke atas */}
-<div className="relative z-10 w-full max-w-5xl px-4 py-12 md:py-12 lg:py-14"> 
-      <div className="grid gap-8 md:grid-cols-2 items-stretch">
+      <div className="relative z-10 w-full max-w-6xl px-4 py-10 md:py-12 lg:py-14">
+        {/* grid responsif: 1 kolom di mobile, 2 kolom di lg ke atas */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
           {/* PANEL KIRI – CARD LOGIN */}
           <div className="backdrop-blur-xl bg-gradient-to-b from-sky-100/95 via-sky-50/95 to-blue-50/95 border border-white/70 shadow-2xl rounded-2xl px-7 py-7 flex flex-col justify-between">
             <div>
@@ -187,27 +236,35 @@ const Login = () => {
                 {/* Captcha */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-slate-700">
-                    Captcha
+                    Kode Captcha
                   </label>
-                  <div className="flex items-center gap-2">
-                    <div className="px-4 py-2 font-mono text-lg tracking-[0.4em] bg-gradient-to-r from-blue-200 to-blue-100 border border-blue-300 rounded-lg shadow-inner select-none min-w-[110px] text-center">
-                      {generatedCaptcha}
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Masukkan captcha"
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm"
-                      value={captcha}
-                      onChange={(e) => setCaptcha(e.target.value)}
-                      required
+
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    {/* gambar captcha */}
+                    <canvas
+                      ref={captchaCanvasRef}
+                      className="h-12 w-32 border border-gray-300 rounded bg-white"
                     />
-                    <button
-                      type="button"
-                      onClick={generateCaptcha}
-                      className="p-2 rounded-full bg-blue-100 hover:bg-blue-200 border border-blue-300 transition"
-                    >
-                      <RefreshCcw size={18} className="text-blue-500" />
-                    </button>
+
+                    {/* input + refresh */}
+                    <div className="flex-1 flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Masukkan kode Captcha"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm"
+                        value={captcha}
+                        onChange={(e) => setCaptcha(e.target.value)}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={generateCaptcha}
+                        className="p-2 rounded-full bg-blue-100 hover:bg-blue-200 border border-blue-300 transition shrink-0"
+                        title="Muat ulang captcha"
+                      >
+                        <RefreshCcw size={18} className="text-blue-500" />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -217,7 +274,7 @@ const Login = () => {
                   className="mt-2 w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg shadow-md hover:opacity-95 transition font-semibold text-sm"
                 >
                   <LogIn size={18} />
-                  Login
+                  {isLoading ? "Memproses..." : "Login"}
                 </button>
 
                 {/* Tombol daftar */}
@@ -233,29 +290,29 @@ const Login = () => {
             </div>
 
             <div className="mt-6 text-[11px] text-center text-gray-500">
-              © Dinas Sosial {new Date().getFullYear()}
+              © Dinas Sosial Kabupaten Indramayu {new Date().getFullYear()}
             </div>
           </div>
 
           {/* PANEL KANAN – ALUR PROSES */}
-          <div className="hidden md:flex h-full">
-            <div className="flex flex-col justify-start py-7 pl-6 pr-2 text-left text-gray-800 w-full">
+          {/* muncul di bawah login pada mobile, di kanan saat lg ke atas */}
+          <div className="flex h-full order-last lg:order-none mt-6 lg:mt-0">
+            <div className="flex flex-col justify-start py-7 pl-2 pr-2 md:pl-6 md:pr-2 text-left text-gray-800 w-full">
               <div>
-                <h2 className="text-3xl font-semibold mb-3 leading-snug text-slate-900">
+                <h2 className="text-2xl md:text-3xl font-semibold mb-3 leading-snug text-slate-900">
                   Alur Proses Pendaftaran Lembaga
                   <br />
                   Kesejahteraan Sosial
                 </h2>
 
-                <p className="text-[13px] md:text-sm text-gray-600 max-w-xl">
+                <p className="text-sm text-gray-600 max-w-xl">
                   Pengurus lembaga sosial dapat melakukan registrasi akun,
                   pendaftaran lembaga, hingga pengelolaan data secara terpusat
-                  melalui aplikasi{" "}
-                  <span className="font-semibold">SIDALEKAS</span>.
+                  melalui aplikasi <span className="font-semibold">SIDALEKAS</span>.
                 </p>
               </div>
 
-              <div className="mt-6 space-y-6 max-w-xl">
+              <div className="mt-6 space-y-4 md:space-y-6 max-w-xl">
                 {/* Langkah 1 */}
                 <div className="flex gap-3 rounded-xl bg-white/40 border border-white/60 shadow-sm px-3 py-3">
                   <div className="mt-1 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
@@ -263,7 +320,7 @@ const Login = () => {
                   </div>
                   <div>
                     <h3 className="text-base font-semibold text-slate-900">
-                      Registrasi Akun Dinsos
+                      Registrasi Akun Sidalekas
                     </h3>
                     <p className="text-[13px] md:text-sm text-gray-600">
                       Akun lembaga didaftarkan dan diverifikasi oleh Dinas
