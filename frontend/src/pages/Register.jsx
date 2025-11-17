@@ -300,7 +300,7 @@ const Register = () => {
             </div>
 
             <div className="mt-6 text-[11px] text-center text-gray-500">
-              © Dinas Sosial {new Date().getFullYear()}
+              © Dinas Sosial Kabupaten indramayu {new Date().getFullYear()}
             </div>
           </div>
 
@@ -329,7 +329,7 @@ const Register = () => {
                   </div>
                   <div>
                     <h3 className="text-base font-semibold text-slate-900">
-                      Registrasi Akun Dinsos
+                      Registrasi Akun Sidalekas
                     </h3>
                     <p className="text-[13px] md:text-sm text-gray-600">
                       Akun lembaga didaftarkan dan diverifikasi oleh Dinas

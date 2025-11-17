@@ -55,11 +55,6 @@ export default function VerifikasiList() {
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6">
       <div className="mx-auto max-w-6xl space-y-4">
-        {/* HEADER */}
-        <h1 className="text-2xl font-semibold text-gray-900">
-          Verifikasi (Admin)
-        </h1>
-
         {/* FILTER BAR (kiri) */}
         <div className="flex flex-wrap items-center gap-2 md:gap-3">
           {/* Filter status pill */}
