@@ -9,35 +9,45 @@ use Illuminate\Support\Facades\Hash;
 class UserController extends Controller
 {
     /**
-     * 🔹 Ambil semua user (khusus admin)
+     * 🔹 Ambil semua user
+     * Admin -> semua
+     * Operator -> hanya akun LKS di kecamatan-nya
      */
     public function index(Request $request)
     {
-        // 🔒 Hanya admin yang boleh
-        if (!$request->user()->hasRole('admin')) {
+        $auth = $request->user();
+
+        $query = User::with(['roles', 'lks', 'kecamatan'])->orderBy('created_at', 'desc');
+
+        // 🔸 Jika operator -> hanya lihat akun LKS di kecamatan sendiri
+        if ($auth->hasRole('operator')) {
+            $query->whereHas('roles', fn($r) => $r->where('name', 'lks'))
+                ->where('kecamatan_id', $auth->kecamatan_id);
+        }
+
+        // 🔸 Jika bukan admin/operator -> tolak akses
+        elseif (!$auth->hasRole('admin')) {
             return response()->json(['message' => 'Akses ditolak'], 403);
         }
 
-        // Ambil semua user dengan relasi roles dan kecamatan (jika ada)
-       $users = User::with(['roles', 'lks', 'kecamatan'])
-    ->orderBy('created_at', 'desc')
-    ->get();
-
+        $users = $query->get();
 
         $data = $users->map(function ($user) {
-    $role = $user->roles->pluck('name')->first();
+            $role = $user->roles->pluck('name')->first();
 
-    return [
-        'id' => $user->id,
-        'username' => $user->username,
-        'name' => $user->name,
-        'email' => $user->email,
-        'role' => $role,
-        'status_aktif' => $user->status_aktif,
-        'kecamatan' => $user->kecamatan ? ['id' => $user->kecamatan->id, 'nama' => $user->kecamatan->nama] : null, // ✅ tambahkan ini
-        'created_at' => optional($user->created_at)->format('Y-m-d H:i'),
-    ];
-});
+            return [
+                'id' => $user->id,
+                'username' => $user->username,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $role,
+                'status_aktif' => $user->status_aktif,
+                'kecamatan' => $user->kecamatan
+                    ? ['id' => $user->kecamatan->id, 'nama' => $user->kecamatan->nama]
+                    : null,
+                'created_at' => optional($user->created_at)->format('Y-m-d H:i'),
+            ];
+        });
 
         return response()->json(['users' => $data]);
     }
@@ -46,40 +56,36 @@ class UserController extends Controller
      * 🔹 Tambah user baru (oleh admin)
      */
     public function store(Request $request)
-{
-    // 🔒 Hanya admin boleh
-    if (!$request->user()->hasRole('admin')) {
-        return response()->json(['message' => 'Akses ditolak'], 403);
+    {
+        if (!$request->user()->hasRole('admin')) {
+            return response()->json(['message' => 'Akses ditolak'], 403);
+        }
+
+        $validated = $request->validate([
+            'username' => 'required|string|unique:users',
+            'name' => 'required|string',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|min:6',
+            'role' => 'required|in:operator,petugas',
+            'kecamatan_id' => 'nullable|exists:kecamatan,id',
+        ]);
+
+        $user = User::create([
+            'username' => $validated['username'],
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'status_aktif' => true,
+            'kecamatan_id' => $validated['kecamatan_id'] ?? null,
+        ]);
+
+        $user->assignRole($validated['role']);
+
+        return response()->json([
+            'message' => 'Akun berhasil dibuat oleh admin',
+            'user' => $user->load('kecamatan'),
+        ], 201);
     }
-
-    $validated = $request->validate([
-        'username' => 'required|string|unique:users',
-        'name' => 'required|string',
-        'email' => 'required|email|unique:users',
-        'password' => 'required|min:6',
-        'role' => 'required|in:operator,petugas', // hanya boleh dua role ini
-        'kecamatan_id' => 'nullable|exists:kecamatan,id', // ✅ tambahkan ini
-    ]);
-
-    // 🧩 Buat akun user
-    $user = User::create([
-        'username' => $validated['username'],
-        'name' => $validated['name'],
-        'email' => $validated['email'],
-        'password' => Hash::make($validated['password']),
-        'status_aktif' => true,
-        'kecamatan_id' => $validated['kecamatan_id'] ?? null, // ✅ simpan kecamatan
-    ]);
-
-    // 🏷️ Assign role
-    $user->assignRole($validated['role']);
-
-    return response()->json([
-        'message' => 'Akun berhasil dibuat oleh admin',
-        'user' => $user->load('kecamatan'), // ✅ kirim juga relasi kecamatan ke frontend
-    ], 201);
-}
-
 
     /**
      * 🔹 Update user
@@ -114,10 +120,16 @@ class UserController extends Controller
     }
 
     /**
-     * 🔹 Hapus user
+     * 🔹 Hapus user (hanya admin)
      */
     public function destroy($id)
     {
+        $auth = request()->user();
+
+        if (!$auth->hasRole('admin')) {
+            return response()->json(['message' => 'Akses ditolak'], 403);
+        }
+
         $user = User::findOrFail($id);
         $user->delete();
 
@@ -126,16 +138,53 @@ class UserController extends Controller
 
     /**
      * 🔹 Toggle aktif / nonaktif
+     * Admin -> semua akun
+     * Operator -> hanya akun LKS di kecamatan-nya
      */
-    public function toggleStatus($id)
-    {
-        $user = User::findOrFail($id);
-        $user->status_aktif = !$user->status_aktif;
-        $user->save();
+   /**
+ * 🔹 Toggle status aktif/nonaktif akun
+ * - Admin bisa ubah semua
+ * - Operator hanya bisa ubah LKS di kecamatan-nya
+ */
+public function toggleStatus(Request $request, $id)
+{
+    $auth = $request->user();
+    $target = User::with(['roles', 'lks'])->findOrFail($id);
 
-        return response()->json([
-            'message' => 'Status akun berhasil diperbarui',
-            'status_aktif' => $user->status_aktif
-        ]);
+    // 🔒 Validasi role
+    if (!$auth->hasAnyRole(['admin', 'operator'])) {
+        return response()->json(['message' => 'Akses ditolak'], 403);
     }
+
+    // 🔒 Jika operator, hanya boleh ubah LKS di kecamatannya
+    if ($auth->hasRole('operator')) {
+        if (
+            !$target->hasRole('lks') ||
+            $target->kecamatan_id !== $auth->kecamatan_id
+        ) {
+            return response()->json([
+                'message' => 'Anda hanya boleh mengubah status akun LKS di kecamatan Anda sendiri.'
+            ], 403);
+        }
+    }
+
+    // 🔄 Ubah status aktif user
+    $target->status_aktif = !$target->status_aktif;
+    $target->save();
+
+    // 🔄 Sinkronkan juga ke tabel LKS jika user punya role LKS
+    if ($target->hasRole('lks') && $target->lks) {
+        $target->lks->status = $target->status_aktif ? 'aktif' : 'pending';
+        $target->lks->save();
+    }
+
+    return response()->json([
+        'message' => 'Status akun berhasil diperbarui.',
+        'status_aktif' => $target->status_aktif,
+        'lks_status' => $target->lks?->status,
+    ]);
+}
+
+
+
 }

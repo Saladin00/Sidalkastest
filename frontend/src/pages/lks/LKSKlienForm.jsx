@@ -17,6 +17,8 @@ const LKSKlienForm = () => {
     status_pembinaan: "",
   });
 
+  const [metaLKS, setMetaLKS] = useState({});
+
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -35,7 +37,8 @@ const LKSKlienForm = () => {
 
       await api.post("/klien", {
         ...form,
-        lks_id: lksId, // ⬅ kunci sinkronisasi dengan admin
+        lks_id: lksId, 
+        kecamatan_id: metaLKS.kecamatan_id,// ⬅ kunci sinkronisasi dengan admin
       });
 
       alert("Klien berhasil ditambahkan!");

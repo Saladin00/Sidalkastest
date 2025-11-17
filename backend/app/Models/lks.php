@@ -49,9 +49,10 @@ class Lks extends Model
      * 🧍 1️⃣ Satu LKS dimiliki oleh satu user (akun LKS)
      */
     public function user()
-    {
-        return $this->hasOne(User::class, 'lks_id', 'id');
-    }
+{
+    return $this->belongsTo(\App\Models\User::class, 'user_id');
+}
+
 
     /**
      * 👥 2️⃣ LKS memiliki banyak klien

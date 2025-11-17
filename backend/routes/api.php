@@ -38,6 +38,7 @@ Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
     |--------------------------------------------------------
     */
     Route::get('/lks/profile-view', [LKSController::class, 'profileView']);
+    Route::get('/lks/me', [LKSController::class, 'me']);
 
     /*
     |--------------------------------------------------------
@@ -85,6 +86,19 @@ Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
         Route::get('/lks/pending', [LksApprovalController::class, 'index']);
         Route::patch('/lks/{id}/approve', [LksApprovalController::class, 'approve']);
         Route::patch('/lks/{id}/reject', [LksApprovalController::class, 'reject']);
+    });
+
+    /*
+    |--------------------------------------------------------
+    | USER MANAGEMENT UNTUK OPERATOR
+    |--------------------------------------------------------
+    */
+    Route::prefix('operator')->middleware('role:operator')->group(function () {
+        // Operator: melihat akun LKS di kecamatannya
+        Route::get('/users', [UserController::class, 'index']);
+
+        // Operator: aktif/nonaktif akun LKS di kecamatannya
+        Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus']);
     });
 
     /*

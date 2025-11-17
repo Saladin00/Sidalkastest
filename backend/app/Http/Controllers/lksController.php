@@ -12,27 +12,35 @@ use App\Models\User;
 
 class LKSController extends Controller
 {
-    // ============================
-    // GET /api/lks
-    // ============================
     public function index(Request $request)
-    {
+{
+    try {
         $user = $request->user();
         $query = Lks::with(['verifikasiTerbaru', 'kecamatan']);
 
-        if ($user->hasRole('operator') || $user->hasRole('petugas')) {
-            if ($user->kecamatan_id) {
-                $query->where('kecamatan_id', $user->kecamatan_id);
-            } else {
+        // 🔹 Jika operator / petugas → hanya tampilkan LKS di kecamatan-nya
+        if ($user->hasAnyRole(['operator', 'petugas'])) {
+            if (!$user->kecamatan_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'User belum memiliki kecamatan_id.'
-                ], 403);
+                ], 400);
             }
+            $query->where('kecamatan_id', $user->kecamatan_id);
         }
 
+        // 🔹 Jika LKS → hanya data miliknya
         if ($user->hasRole('lks')) {
             $query->where('user_id', $user->id);
+        }
+
+        // 🔹 Filter opsional
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', "%$search%")
+                  ->orWhere('jenis_layanan', 'like', "%$search%");
+            });
         }
 
         if ($request->filled('status')) {
@@ -43,21 +51,62 @@ class LKSController extends Controller
             $query->where('kecamatan_id', $request->kecamatan_id);
         }
 
-        if ($request->filled('jenis')) {
-            $query->where('jenis_layanan', $request->jenis);
-        }
-
-        if ($request->filled('search')) {
-            $query->where('nama', 'LIKE', '%' . $request->search . '%');
-        }
-
-        $data = $query->latest()->paginate(10);
+        // 🔹 Ambil data (tanpa paginate dulu)
+        $data = $query->orderBy('created_at', 'desc')->get();
 
         return response()->json([
             'success' => true,
             'data' => $data
         ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+        ], 500);
     }
+}
+// ============================
+    // GET /api/lks
+    // ============================
+    
+    
+    
+    public function toggleStatus(Request $request, $id)
+{
+    $auth = $request->user();
+    $target = User::with(['roles', 'lks'])->findOrFail($id);
+
+    if (!$auth->hasAnyRole(['admin', 'operator'])) {
+        return response()->json(['message' => 'Akses ditolak'], 403);
+    }
+
+    if ($auth->hasRole('operator')) {
+        if (
+            !$target->hasRole('lks') ||
+            $target->kecamatan_id !== $auth->kecamatan_id
+        ) {
+            return response()->json([
+                'message' => 'Anda hanya boleh mengubah status akun LKS di kecamatan Anda sendiri.'
+            ], 403);
+        }
+    }
+
+    $target->status_aktif = !$target->status_aktif;
+    $target->save();
+
+    // 🔄 Sinkronkan juga status di tabel LKS
+    if ($target->hasRole('lks') && $target->lks) {
+        $target->lks->status = $target->status_aktif ? 'disetujui' : 'pending';
+        $target->lks->save();
+    }
+
+    return response()->json([
+        'message' => 'Status akun berhasil diperbarui',
+        'status_aktif' => $target->status_aktif,
+        'lks_status' => $target->lks?->status,
+    ]);
+}
+
 
     // ============================
     // POST /api/lks
@@ -433,6 +482,15 @@ private function meForFE(Request $request)
     }
 
     return $this->formatLksForFE($lks);
+}
+public function getByKecamatan($id)
+{
+    $lks = Lks::where('kecamatan_id', $id)->get();
+
+    return response()->json([
+        'success' => true,
+        'data' => $lks
+    ]);
 }
 
 
