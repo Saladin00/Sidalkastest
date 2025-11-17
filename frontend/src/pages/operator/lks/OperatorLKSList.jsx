@@ -1,155 +1,160 @@
-// src/pages/operator/lks/OperatorLKSList.jsx
 import React, { useEffect, useState } from "react";
-import { Eye, RotateCw, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
-import api from "../../../utils/api";
+import API from "../../../utils/api";
+import { Eye, Search, RefreshCw } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const OperatorLKSList = () => {
-  const [lksList, setLksList] = useState([]);
+  const [data, setData] = useState([]);
+  const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const navigate = useNavigate();
 
-  const loadLKS = async () => {
+  useEffect(() => {
+    fetchLKS();
+  }, []);
+
+  const fetchLKS = async () => {
     setLoading(true);
     try {
       const token = sessionStorage.getItem("token");
-
-      const res = await api.get("/lks", {
-        params: { search },
+      const res = await API.get("/lks", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      console.log("HASIL API OPERATOR:", res.data);
+      let hasil = [];
 
-      setLksList(res.data?.data?.data ?? []);
-    } catch (error) {
-      console.error("Gagal mengambil data LKS:", error.response?.data || error);
-      alert(error.response?.data?.message || "Gagal load LKS");
+      if (Array.isArray(res.data)) hasil = res.data;
+      else if (Array.isArray(res.data.data)) hasil = res.data.data;
+      else if (Array.isArray(res.data.lks)) hasil = res.data.lks;
+      else if (res.data.data && Array.isArray(res.data.data.data))
+        hasil = res.data.data.data;
+
+      setData(hasil);
+      setFiltered(hasil);
+    } catch (err) {
+      console.error("❌ Gagal ambil data LKS:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔥 AUTO LOAD DATA SAAT PAGE DIBUKA
+  // 🧭 Fungsi untuk refresh manual
+  const handleRefresh = () => {
+    fetchLKS();
+  };
+
+  // 🔍 Filter pencarian
   useEffect(() => {
-    loadLKS();
-  }, []);
+    if (!Array.isArray(data)) return;
+    const q = search.toLowerCase();
+    const filteredData = data.filter(
+      (item) =>
+        item.nama?.toLowerCase().includes(q) ||
+        item.jenis_layanan?.toLowerCase().includes(q) ||
+        item.kecamatan?.nama?.toLowerCase().includes(q)
+    );
+    setFiltered(filteredData);
+  }, [search, data]);
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-      {/* Header */}
-      <div className="flex justify-between items-center p-4 border-b border-slate-100">
-        <h2 className="text-lg font-semibold text-slate-800">
-          Daftar Lembaga Kesejahteraan Sosial (LKS)
-        </h2>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      {/* Header dan Filter */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
+        <div>
+          <h2 className="text-lg font-semibold text-sky-900">
+            Daftar LKS di Kecamatan
+          </h2>
+          <p className="text-sm text-gray-500">
+            Lihat seluruh lembaga kesejahteraan sosial yang terdaftar di wilayah Anda.
+          </p>
+        </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center border border-slate-300 rounded-md overflow-hidden bg-white">
+          <div className="relative">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
             <input
               type="text"
-              placeholder="Cari nama LKS..."
+              placeholder="Cari nama LKS atau kecamatan..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="px-3 py-1.5 text-sm outline-none w-48"
+              className="pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-sky-500 bg-white"
             />
-            <button
-              onClick={loadLKS}
-              className="bg-slate-100 px-3 py-1.5 text-slate-600 hover:bg-slate-200 transition"
-            >
-              🔍
-            </button>
           </div>
 
+          {/* Tombol Refresh */}
           <button
-            onClick={loadLKS}
-            className="flex items-center gap-1 border border-slate-300 text-slate-700 px-3 py-1.5 rounded-md hover:bg-slate-100 text-sm transition"
+            onClick={handleRefresh}
+            disabled={loading}
+            className="flex items-center gap-1 border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-700 text-sm px-3 py-2 rounded-md transition"
           >
-            {loading ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <RotateCw size={14} />
-            )}
-            {loading ? "Memuat..." : "Refresh"}
+            <RefreshCw size={14} />
+            Refresh
           </button>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
+      {/* Tabel Data */}
+      <div className="overflow-x-auto bg-white shadow-md rounded-xl ring-1 ring-slate-200/60">
         {loading ? (
-          <div className="flex justify-center items-center py-20 text-gray-500">
-            <Loader2 size={24} className="animate-spin mr-2" />
-            Memuat data LKS...
-          </div>
-        ) : (
-          <table className="min-w-full text-sm text-gray-700">
-            <thead className="bg-slate-50 text-xs font-medium text-slate-600 border-b">
-              <tr>
-                <th className="px-4 py-3 text-center w-16 border-r">No</th>
-                <th className="px-4 py-3 border-r">Nama LKS</th>
-                <th className="px-4 py-3 border-r">Jenis Layanan</th>
-                <th className="px-4 py-3 border-r">Kecamatan</th>
-                <th className="px-4 py-3 border-r">Status</th>
-                <th className="px-4 py-3 text-center w-28">Aksi</th>
+          <p className="text-center text-gray-500 p-4">Memuat data...</p>
+        ) : Array.isArray(filtered) && filtered.length > 0 ? (
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="bg-slate-100 text-slate-800">
+                <th className="px-4 py-3 w-14 font-semibold">No</th>
+                <th className="px-4 py-3 font-semibold">Nama LKS</th>
+                <th className="px-4 py-3 font-semibold">Jenis Layanan</th>
+                <th className="px-4 py-3 font-semibold">Kecamatan</th>
+                <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 text-center font-semibold">Aksi</th>
               </tr>
             </thead>
             <tbody>
-              {lksList.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan="6"
-                    className="text-center py-6 text-slate-400 italic"
-                  >
-                    Tidak ada data LKS ditemukan.
+              {filtered.map((lks, index) => (
+                <tr
+                  key={lks.id}
+                  className="border-b border-slate-200/60 last:border-b-0 hover:bg-slate-50 transition-colors"
+                >
+                  <td className="px-4 py-3">{index + 1}</td>
+                  <td className="px-4 py-3 font-medium text-slate-800">
+                    {lks.nama || "-"}
+                  </td>
+                  <td className="px-4 py-3">{lks.jenis_layanan || "-"}</td>
+                  <td className="px-4 py-3">{lks.kecamatan?.nama || "-"}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        lks.status === "disetujui"
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                          : lks.status === "pending"
+                          ? "bg-amber-50 text-amber-700 border border-amber-100"
+                          : "bg-rose-50 text-rose-700 border border-rose-100"
+                      }`}
+                    >
+                      {(lks.status || "tidak diketahui").toUpperCase()}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      onClick={() => navigate(`/operator/lks/detail/${lks.id}`)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs text-sky-700 border border-sky-200 hover:bg-sky-50 transition"
+                    >
+                      <Eye size={14} />
+                      Detail
+                    </button>
                   </td>
                 </tr>
-              ) : (
-                lksList.map((lks, index) => (
-                  <tr
-                    key={lks.id}
-                    className="border-t hover:bg-slate-50 transition"
-                  >
-                    <td className="px-4 py-3 text-center border-r">
-                      {index + 1}
-                    </td>
-                    <td className="px-4 py-3 border-r font-medium text-slate-800">
-                      {lks.nama}
-                    </td>
-                    <td className="px-4 py-3 border-r">
-                      {lks.jenis_layanan || "-"}
-                    </td>
-                    <td className="px-4 py-3 border-r">
-                      {lks.kecamatan?.nama || "-"}
-                    </td>
-                    <td className="px-4 py-3 border-r">
-                      <span
-                        className={`px-3 py-1 text-xs font-medium rounded-full ${
-                          lks.verifikasi_terbaru?.status?.toLowerCase() ===
-                          "valid"
-                            ? "bg-green-100 text-green-700"
-                            : lks.verifikasi_terbaru?.status?.toLowerCase() ===
-                              "tidak_valid"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-yellow-100 text-yellow-700"
-                        }`}
-                      >
-                        {lks.verifikasi_terbaru?.status?.toUpperCase() ||
-                          "PENDING"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <Link
-                        to={`/operator/lks/detail/${lks.id}`}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        <Eye size={18} />
-                      </Link>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
+        ) : (
+          <p className="text-center text-gray-500 p-5">
+            Tidak ada data LKS ditemukan.
+          </p>
         )}
       </div>
     </div>

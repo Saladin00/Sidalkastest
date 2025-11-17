@@ -37,6 +37,7 @@ import KlienEditForm from "./pages/admin/klien/KlienEditForm";
 
 // Admin: User
 import ManajemenUser from "./pages/admin/ManajemenUser";
+import ManajemenLKSOperator from "./pages/operator/ManajemenLKSOperator";
 
 // Admin: Verifikasi
 import AdminVerifikasiList from "./pages/admin/verifikasi/VerifikasiList";
@@ -46,6 +47,7 @@ import AdminVerifikasiReview from "./pages/admin/verifikasi/VerifikasiReview";
 import OperatorLKSList from "./pages/operator/lks/OperatorLKSList";
 import OperatorLKSDetail from "./pages/operator/lks/OperatorLKSDetail";
 import OperatorKlienList from "./pages/operator/klien/OperatorKlienList";
+import OperatorKlienDetail from "./pages/operator/klien/OperatorKlienDetail";
 
 // LKS Role: Klien
 import LKSKlienList from "./pages/lks/LKSKlienList";
@@ -66,9 +68,7 @@ function App() {
           path="/admin"
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
-              <AdminLayout>
-                <DashboardAdmin />
-              </AdminLayout>
+              <DashboardAdmin />
             </ProtectedRoute>
           }
         />
@@ -102,6 +102,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/admin/lks/detail/:id"
           element={
@@ -195,7 +196,19 @@ function App() {
 
         {/* Operator LKS */}
         <Route
-          path="/operator/lks"
+          path="/operator/manajemen-lks"
+          element={
+            <ProtectedRoute allowedRoles={["operator"]}>
+              <OperatorLayout>
+                <ManajemenLKSOperator />
+              </OperatorLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* 🆕 Tambahan baru */}
+        <Route
+          path="/operator/lks-list"
           element={
             <ProtectedRoute allowedRoles={["operator", "petugas"]}>
               <OperatorLayout>
@@ -222,6 +235,16 @@ function App() {
             <ProtectedRoute allowedRoles={["operator"]}>
               <OperatorLayout>
                 <OperatorKlienList />
+              </OperatorLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/operator/klien/detail/:id"
+          element={
+            <ProtectedRoute allowedRoles={["operator", "petugas"]}>
+              <OperatorLayout>
+                <OperatorKlienDetail />
               </OperatorLayout>
             </ProtectedRoute>
           }
@@ -265,7 +288,6 @@ function App() {
           path="/lks/profile/edit"
           element={
             <ProtectedRoute allowedRoles={["lks", "admin"]}>
-              
               <LKSProfileEdit />
             </ProtectedRoute>
           }

@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowDownTrayIcon, ArrowLeftIcon } from "@heroicons/react/24/solid";
-
 import api from "../../../utils/api";
 
 export default function KlienForm() {
   const navigate = useNavigate();
+
+  // tambahkan ini dari branch satunya
+  const role = sessionStorage.getItem("role");
+  const loggedLKS = sessionStorage.getItem("lks_id");
+
   const [form, setForm] = useState({
     nik: "",
     nama: "",
     alamat: "",
     kelurahan: "",
     kecamatan_id: "",
-    lks_id: "",
+    lks_id: role === "lks" ? loggedLKS : "",
     jenis_kebutuhan: "",
     status_bantuan: "",
     status_pembinaan: "",
@@ -22,22 +26,33 @@ export default function KlienForm() {
   const [lksList, setLksList] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // === GET KECAMATAN ===
   useEffect(() => {
     api.get("/kecamatan").then((res) => {
       setKecamatanList(res.data.data || []);
     });
   }, []);
 
+  // === ADMIN: Dapat semua LKS ===
   useEffect(() => {
+    if (role === "admin") {
+      api.get("/lks").then((res) => {
+        setLksList(res.data.data.data || []);
+      });
+    }
+  }, [role]);
+
+  // === Filter LKS by Kecamatan (ADMIN ONLY) ===
+  useEffect(() => {
+    if (role !== "admin") return;
+
     if (form.kecamatan_id) {
       api
         .get(`/lks/by-kecamatan/${form.kecamatan_id}`)
         .then((res) => setLksList(res.data.data || []))
         .catch(() => setLksList([]));
-    } else {
-      setLksList([]);
     }
-  }, [form.kecamatan_id]);
+  }, [form.kecamatan_id, role]);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -49,7 +64,8 @@ export default function KlienForm() {
     try {
       await api.post("/klien", form);
       alert("Klien berhasil ditambahkan!");
-      navigate("/admin/klien");
+      if (role === "admin") navigate("/admin/klien");
+      else navigate("/lks/klien");
     } catch (err) {
       alert("Gagal menambahkan klien");
     } finally {
@@ -132,26 +148,28 @@ export default function KlienForm() {
             </select>
           </div>
 
-          <div>
-            <label htmlFor="lks_id" className={labelStyle}>
-              6. LKS
-            </label>
-            <select
-              name="lks_id"
-              id="lks_id"
-              className={inputStyle}
-              required
-              value={form.lks_id}
-              onChange={handleChange}
-            >
-              <option value="">Pilih LKS</option>
-              {lksList.map((lks) => (
-                <option key={lks.id} value={lks.id}>
-                  {lks.nama}
-                </option>
-              ))}
-            </select>
-          </div>
+          {role === "admin" && (
+            <div>
+              <label htmlFor="lks_id" className={labelStyle}>
+                6. LKS
+              </label>
+              <select
+                name="lks_id"
+                id="lks_id"
+                className={inputStyle}
+                required
+                value={form.lks_id}
+                onChange={handleChange}
+              >
+                <option value="">Pilih LKS</option>
+                {lksList.map((lks) => (
+                  <option key={lks.id} value={lks.id}>
+                    {lks.nama}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label htmlFor="jenis_kebutuhan" className={labelStyle}>
@@ -208,19 +226,19 @@ export default function KlienForm() {
           </div>
         </div>
 
-        {/* === BUTTONS BAWAH === */}
+        {/* === BUTTONS === */}
         <div className="flex justify-between items-center pt-4">
-          {/* Tombol Kembali */}
           <button
             type="button"
-            onClick={() => navigate("/admin/klien")}
+            onClick={() =>
+              navigate(role === "admin" ? "/admin/klien" : "/lks/klien")
+            }
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100 transition"
           >
             <ArrowLeftIcon className="h-5 w-5" />
             Kembali
           </button>
 
-          {/* Tombol Simpan */}
           <button
             type="submit"
             disabled={loading}

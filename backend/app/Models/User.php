@@ -37,9 +37,10 @@ class User extends Authenticatable
 
     // Relasi ke LKS (satu user punya satu LKS)
     public function lks()
-    {
-        return $this->belongsTo(Lks::class, 'lks_id');
-    }
+{
+    return $this->hasOne(\App\Models\Lks::class, 'user_id');
+}
+
 
     /* ----------------------------
      * 🧩 HELPER METHODS

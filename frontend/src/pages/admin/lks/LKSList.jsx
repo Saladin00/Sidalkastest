@@ -18,13 +18,14 @@ const LKSList = () => {
   const [loading, setLoading] = useState(false);
   const [pageSize, setPageSize] = useState(10);
 
-  // filter UI
+  // Filter UI states
   const [jenisFilter, setJenisFilter] = useState("");
   const [kecamatanFilter, setKecamatanFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
   const location = useLocation();
 
+  // 🔹 Ambil data dari backend
   const loadLKS = async () => {
     setLoading(true);
     try {
@@ -34,7 +35,16 @@ const LKSList = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const items = res.data?.data?.data ?? [];
+      console.log("📦 Hasil API:", res.data);
+
+      // ✅ Aman untuk berbagai struktur response
+      const items =
+        Array.isArray(res.data?.data?.data)
+          ? res.data.data.data
+          : Array.isArray(res.data?.data)
+          ? res.data.data
+          : [];
+
       setLksList(items);
     } catch (error) {
       console.error(
@@ -50,12 +60,17 @@ const LKSList = () => {
     }
   };
 
+  // 🔹 Hapus data
   const handleDelete = async (id) => {
     if (!window.confirm("Yakin ingin menghapus data LKS ini?")) return;
     try {
-      await API.delete(`/lks/${id}`);
+      const token = sessionStorage.getItem("token");
+      await API.delete(`/lks/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       loadLKS();
-    } catch {
+    } catch (error) {
+      console.error("❌ Gagal hapus:", error);
       alert("Terjadi kesalahan saat menghapus data.");
     }
   };
@@ -65,20 +80,16 @@ const LKSList = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location]);
 
-  // ------- DATA UNTUK FILTER DROPDOWN (unik dari data yang ada) -------
+  // ------- Data untuk filter dropdown -------
   const jenisOptions = Array.from(
     new Set(lksList.map((item) => item.jenis_layanan).filter(Boolean))
   );
 
   const kecamatanOptions = Array.from(
-    new Set(
-      lksList
-        .map((item) => item.kecamatan?.nama)
-        .filter((nama) => !!nama)
-    )
+    new Set(lksList.map((item) => item.kecamatan?.nama).filter(Boolean))
   );
 
-  // status di backend bisa "valid", "tidak_valid", dll
+  // 🔹 Status normalization
   const statusDisplay = (raw) => {
     if (!raw) return "Menunggu";
     const lower = raw.toLowerCase();
@@ -87,7 +98,7 @@ const LKSList = () => {
     return "Menunggu";
   };
 
-  // 🔄 RESET FILTER
+  // 🔄 Reset semua filter
   const resetFilters = () => {
     setJenisFilter("");
     setKecamatanFilter("");
@@ -96,41 +107,24 @@ const LKSList = () => {
     loadLKS();
   };
 
-  // ------- FILTER FRONTEND -------
+  // ------- Filter frontend -------
   const filteredList = lksList.filter((lks) => {
-    // search
-    if (
-      search &&
-      !lks.nama?.toLowerCase().includes(search.toLowerCase())
-    ) {
+    if (search && !lks.nama?.toLowerCase().includes(search.toLowerCase()))
       return false;
-    }
+    if (jenisFilter && lks.jenis_layanan !== jenisFilter) return false;
+    if (kecamatanFilter && lks.kecamatan?.nama !== kecamatanFilter) return false;
 
-    if (jenisFilter && lks.jenis_layanan !== jenisFilter) {
-      return false;
-    }
-
-    if (kecamatanFilter && lks.kecamatan?.nama !== kecamatanFilter) {
-      return false;
-    }
-
-    // STATUS
     const rawStatus = lks.verifikasi_terbaru?.status || "";
     if (statusFilter) {
       const lower = rawStatus.toLowerCase();
-      // normalisasi ke 3 nilai saja
-      const normalizedStatus =
+      const normalized =
         lower === "valid"
           ? "valid"
           : lower === "tidak_valid"
           ? "tidak_valid"
           : "pending";
-
-      if (statusFilter !== normalizedStatus) {
-        return false;
-      }
+      if (statusFilter !== normalized) return false;
     }
-
     return true;
   });
 
@@ -138,9 +132,9 @@ const LKSList = () => {
 
   return (
     <AdminLayout>
-      {/* BAR ATAS: filter kiri, search & tambah kanan */}
+      {/* ======= BAR ATAS ======= */}
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        {/* KIRI: FILTER + REFRESH + RESET */}
+        {/* Filter kiri */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Jenis Layanan */}
           <select
@@ -199,7 +193,6 @@ const LKSList = () => {
 
           {/* Reset filter */}
           <button
-            type="button"
             onClick={resetFilters}
             className="h-9 rounded-full border border-gray-300 bg-white px-4 text-xs md:text-sm text-gray-700 transition hover:bg-gray-100"
           >
@@ -207,7 +200,7 @@ const LKSList = () => {
           </button>
         </div>
 
-        {/* KANAN: SEARCH + TAMBAH */}
+        {/* Search + Tambah kanan */}
         <div className="flex items-center gap-2">
           <div className="flex items-center overflow-hidden rounded-md border border-gray-300 bg-white">
             <span className="pl-2 text-gray-500">
@@ -238,7 +231,7 @@ const LKSList = () => {
         </div>
       </div>
 
-      {/* TABEL */}
+      {/* ======= TABEL ======= */}
       <div className="overflow-x-auto rounded-md border border-gray-200 bg-white shadow-sm">
         {loading ? (
           <div className="flex items-center justify-center py-20 text-gray-500">
@@ -251,9 +244,7 @@ const LKSList = () => {
               <tr>
                 <th className="w-16 border-r px-4 py-3 text-center">No</th>
                 <th className="border-r px-4 py-3 text-left">Nama</th>
-                <th className="border-r px-4 py-3 text-left">
-                  Jenis Layanan
-                </th>
+                <th className="border-r px-4 py-3 text-left">Jenis Layanan</th>
                 <th className="border-r px-4 py-3 text-left">Kecamatan</th>
                 <th className="border-r px-4 py-3 text-left">Status</th>
                 <th className="w-40 px-4 py-3 text-center">Aksi</th>
@@ -262,10 +253,7 @@ const LKSList = () => {
             <tbody>
               {displayedList.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan="6"
-                    className="py-6 text-center text-gray-400"
-                  >
+                  <td colSpan="6" className="py-6 text-center text-gray-400">
                     Tidak ada data ditemukan.
                   </td>
                 </tr>
@@ -281,10 +269,7 @@ const LKSList = () => {
                       : "bg-yellow-100 text-yellow-700";
 
                   return (
-                    <tr
-                      key={lks.id}
-                      className="border-t hover:bg-gray-50"
-                    >
+                    <tr key={lks.id} className="border-t hover:bg-gray-50">
                       <td className="border-r px-4 py-3 text-center">
                         {index + 1}
                       </td>
@@ -338,7 +323,7 @@ const LKSList = () => {
         )}
       </div>
 
-      {/* SHOW PER PAGE – DI BAWAH TABEL */}
+      {/* ======= FOOTER ======= */}
       <div className="mt-3 flex flex-col gap-2 text-xs text-gray-600 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <span>Show</span>

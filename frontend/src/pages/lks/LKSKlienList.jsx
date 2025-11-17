@@ -13,7 +13,7 @@ const LKSKlienList = () => {
   });
   const [perPage, setPerPage] = useState(10);
 
-  // 🔁 Load data
+  // 🔁 Load data klien (gabungan versi terbaik)
   const loadKlien = async (customFilters = filters) => {
     try {
       setLoading(true);
@@ -28,15 +28,24 @@ const LKSKlienList = () => {
 
       const res = await api.get("/klien", { params });
 
+      console.log("📦 RESP API:", res.data);
+
+      // ✅ Aman dari berbagai struktur response
       const data =
         res?.data?.data?.data ||
         res?.data?.data ||
         res?.data ||
         [];
 
+      if (!Array.isArray(data)) {
+        console.warn("⚠️ Data klien bukan array:", data);
+        setKlien([]);
+        return;
+      }
+
       setKlien(data);
     } catch (err) {
-      console.error("Gagal memuat daftar klien:", err);
+      console.error("❌ Gagal memuat daftar klien:", err);
       alert("Gagal memuat data klien");
     } finally {
       setLoading(false);
@@ -47,7 +56,7 @@ const LKSKlienList = () => {
     loadKlien();
   }, []);
 
-  // 🔁 Ubah filter
+  // 🔁 Ubah filter dan refresh data
   const handleFilterChange = (key, value) => {
     const updatedFilters = { ...filters, [key]: value };
     setFilters(updatedFilters);
@@ -55,10 +64,7 @@ const LKSKlienList = () => {
   };
 
   const handleReset = () => {
-    const reset = {
-      jenis_kebutuhan: "",
-      status_bantuan: "",
-    };
+    const reset = { jenis_kebutuhan: "", status_bantuan: "" };
     setSearch("");
     setFilters(reset);
     loadKlien(reset);
@@ -77,8 +83,8 @@ const LKSKlienList = () => {
       alert(`✅ Klien "${nama}" berhasil dihapus.`);
       await loadKlien();
     } catch (err) {
-      console.error("Gagal menghapus klien:", err);
-      alert("❌ Terjadi kesalahan saat menghapus data klien.");
+      console.error("❌ Gagal menghapus klien:", err);
+      alert("Terjadi kesalahan saat menghapus data klien.");
     } finally {
       setLoading(false);
     }

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, FileText, MapPin, Loader2 } from "lucide-react";
 import api from "../../../utils/api";
-
+import { useNavigate } from "react-router-dom";
 // 🔧 Helper untuk memastikan dokumen selalu array
 const parseDokumen = (dok) => {
   if (!dok) return [];
@@ -19,6 +19,7 @@ const OperatorLKSDetail = () => {
   const { id } = useParams();
   const [lks, setLks] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const getLKSDetail = async () => {
     try {
@@ -59,34 +60,38 @@ const OperatorLKSDetail = () => {
 
   return (
     <div className="max-w-4xl mx-auto bg-white shadow-md rounded-lg border border-slate-200">
-
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
         <h2 className="text-lg font-semibold text-slate-800">
           Detail LKS: {lks.nama}
         </h2>
-        <Link
-          to="/operator/lks"
+        <button
+          onClick={() => navigate(-1)}
           className="flex items-center text-slate-600 hover:text-sky-600 text-sm"
         >
           <ArrowLeft size={16} className="mr-1" /> Kembali
-        </Link>
+        </button>
       </div>
 
       <div className="p-6 space-y-6">
-
         {/* Informasi Umum */}
         <div>
           <h3 className="text-slate-700 font-semibold mb-2">Informasi Umum</h3>
           <table className="text-sm w-full border border-slate-200 rounded-lg">
             <tbody>
               <tr className="border-b">
-                <td className="p-3 font-medium text-slate-600 w-48">Nama LKS</td>
+                <td className="p-3 font-medium text-slate-600 w-48">
+                  Nama LKS
+                </td>
                 <td className="p-3 text-slate-800">{lks.nama}</td>
               </tr>
               <tr className="border-b">
-                <td className="p-3 font-medium text-slate-600">Jenis Layanan</td>
-                <td className="p-3 text-slate-800">{lks.jenis_layanan || "-"}</td>
+                <td className="p-3 font-medium text-slate-600">
+                  Jenis Layanan
+                </td>
+                <td className="p-3 text-slate-800">
+                  {lks.jenis_layanan || "-"}
+                </td>
               </tr>
               <tr className="border-b">
                 <td className="p-3 font-medium text-slate-600">Status</td>
@@ -132,7 +137,8 @@ const OperatorLKSDetail = () => {
         {/* Legalitas */}
         <div>
           <h3 className="text-slate-700 font-semibold mb-2 flex items-center">
-            <FileText size={16} className="mr-2 text-sky-500" /> Dokumen Legalitas
+            <FileText size={16} className="mr-2 text-sky-500" /> Dokumen
+            Legalitas
           </h3>
           <table className="text-sm w-full border border-slate-200 rounded-lg">
             <tbody>
@@ -163,7 +169,8 @@ const OperatorLKSDetail = () => {
         {/* Dokumen */}
         <div>
           <h3 className="text-slate-700 font-semibold mb-2 flex items-center">
-            <FileText size={16} className="mr-2 text-sky-500" /> Dokumen Pendukung
+            <FileText size={16} className="mr-2 text-sky-500" /> Dokumen
+            Pendukung
           </h3>
 
           {lks.dokumen.length === 0 ? (
@@ -185,7 +192,6 @@ const OperatorLKSDetail = () => {
             </ul>
           )}
         </div>
-
       </div>
     </div>
   );

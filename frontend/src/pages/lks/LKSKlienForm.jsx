@@ -7,6 +7,7 @@ const LKSKlienForm = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [kecamatanList, setKecamatanList] = useState([]);
+  const [metaLKS, setMetaLKS] = useState({}); // ➕ dari versi bawah
 
   const [form, setForm] = useState({
     nik: "",
@@ -19,7 +20,7 @@ const LKSKlienForm = () => {
     status_pembinaan: "",
   });
 
-  // 🔁 Ambil daftar kecamatan dari API
+  // 🔁 Ambil daftar kecamatan dari API (optional, untuk tampilkan info)
   useEffect(() => {
     const fetchKecamatan = async () => {
       try {
@@ -32,6 +33,21 @@ const LKSKlienForm = () => {
     fetchKecamatan();
   }, []);
 
+  // 🏢 Ambil info meta LKS (biar tahu kecamatan_id otomatis)
+  useEffect(() => {
+    const fetchMetaLKS = async () => {
+      const lksId = sessionStorage.getItem("lks_id");
+      if (!lksId) return;
+      try {
+        const res = await api.get(`/lks/${lksId}`);
+        setMetaLKS(res.data.data || {});
+      } catch (err) {
+        console.error("❌ Gagal memuat meta LKS:", err);
+      }
+    };
+    fetchMetaLKS();
+  }, []);
+
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -42,18 +58,23 @@ const LKSKlienForm = () => {
     try {
       const lksId = sessionStorage.getItem("lks_id");
       if (!lksId) {
-        alert("Gagal: lks_id tidak ditemukan. Pastikan LKS sudah login.");
+        alert("❌ Gagal: LKS belum login atau lks_id tidak ditemukan.");
         setLoading(false);
         return;
       }
 
-      await api.post("/klien", { ...form, lks_id: lksId });
+      // Kirim data lengkap dengan kecamatan dari metaLKS
+      await api.post("/klien", {
+        ...form,
+        lks_id: lksId,
+        kecamatan_id: metaLKS.kecamatan_id,
+      });
 
       alert("✅ Klien berhasil ditambahkan!");
       navigate("/lks/klien");
     } catch (err) {
-      console.error("Gagal menyimpan klien:", err);
-      alert("❌ Gagal menyimpan klien, periksa kembali data.");
+      console.error("❌ Gagal menyimpan klien:", err);
+      alert("Gagal menyimpan klien, periksa kembali data.");
     } finally {
       setLoading(false);
     }
@@ -69,7 +90,10 @@ const LKSKlienForm = () => {
         Lengkapi form berikut untuk menambahkan data klien baru.
       </p>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <form
+        onSubmit={handleSubmit}
+        className="grid grid-cols-1 md:grid-cols-2 gap-6"
+      >
         {/* NIK */}
         <div>
           <label className="block font-semibold text-gray-700 mb-1">
@@ -132,24 +156,21 @@ const LKSKlienForm = () => {
           />
         </div>
 
-        {/* Kecamatan */}
+        {/* Kecamatan (readonly otomatis dari metaLKS) */}
         <div>
           <label className="block font-semibold text-gray-700 mb-1">
-            5. Kecamatan
+            5. Kecamatan (otomatis)
           </label>
-          <select
-            name="kecamatan_id"
-            value={form.kecamatan_id}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-          >
-            <option value="">Pilih Kecamatan</option>
-            {kecamatanList.map((kec) => (
-              <option key={kec.id} value={kec.id}>
-                {kec.nama}
-              </option>
-            ))}
-          </select>
+          <input
+            type="text"
+            value={
+              metaLKS.kecamatan
+                ? metaLKS.kecamatan.nama
+                : "Memuat kecamatan..."
+            }
+            disabled
+            className="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-gray-600"
+          />
         </div>
 
         {/* Jenis Kebutuhan */}
