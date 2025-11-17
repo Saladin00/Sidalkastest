@@ -10,6 +10,7 @@ const LKSList = () => {
   const [loading, setLoading] = useState(false);
   const location = useLocation();
 
+  // 🔹 Ambil data dari backend
   const loadLKS = async () => {
     setLoading(true);
     try {
@@ -21,7 +22,8 @@ const LKSList = () => {
 
       console.log("HASIL API:", res.data);
 
-      const items = res.data?.data?.data ?? [];
+      // ✅ Backend sekarang kirim { success: true, data: [...] }
+      const items = Array.isArray(res.data?.data) ? res.data.data : [];
       setLksList(items);
     } catch (error) {
       console.error(
@@ -33,16 +35,21 @@ const LKSList = () => {
           "Terjadi kesalahan saat memuat data LKS."
       );
     } finally {
-      setLoading(false); // ⬅ WAJIB
+      setLoading(false);
     }
   };
 
+  // 🔹 Hapus data
   const handleDelete = async (id) => {
     if (!window.confirm("Yakin ingin menghapus data LKS ini?")) return;
     try {
-      await API.delete(`/lks/${id}`);
+      const token = sessionStorage.getItem("token");
+      await API.delete(`/lks/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       loadLKS();
-    } catch {
+    } catch (error) {
+      console.error("❌ Gagal hapus:", error);
       alert("Terjadi kesalahan saat menghapus data.");
     }
   };
@@ -53,10 +60,12 @@ const LKSList = () => {
 
   return (
     <AdminLayout>
+      {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-[18px] font-semibold text-gray-800">Daftar LKS</h2>
 
         <div className="flex items-center gap-2">
+          {/* Tombol Refresh */}
           <button
             onClick={loadLKS}
             className="flex items-center gap-1 border border-gray-300 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-100 text-sm transition"
@@ -69,6 +78,7 @@ const LKSList = () => {
             {loading ? "Memuat..." : "Refresh"}
           </button>
 
+          {/* Search bar */}
           <div className="flex items-center border border-gray-300 rounded-md overflow-hidden bg-white">
             <input
               type="text"
@@ -85,6 +95,7 @@ const LKSList = () => {
             </button>
           </div>
 
+          {/* Tombol Tambah */}
           <Link
             to="/admin/lks/tambah"
             className="bg-blue-700 text-white px-4 py-2 rounded-md hover:bg-blue-800 text-sm transition"
@@ -94,6 +105,7 @@ const LKSList = () => {
         </div>
       </div>
 
+      {/* TABLE */}
       <div className="overflow-x-auto bg-white border border-gray-200 rounded-md shadow-sm">
         {loading ? (
           <div className="flex justify-center items-center py-20 text-gray-500">
@@ -128,7 +140,9 @@ const LKSList = () => {
                     <td className="px-4 py-3 border-r font-medium text-gray-800">
                       {lks.nama}
                     </td>
-                    <td className="px-4 py-3 border-r">{lks.jenis_layanan}</td>
+                    <td className="px-4 py-3 border-r">
+                      {lks.jenis_layanan || "-"}
+                    </td>
                     <td className="px-4 py-3 border-r">
                       {lks.kecamatan?.nama || "-"}
                     </td>

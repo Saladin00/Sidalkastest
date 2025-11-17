@@ -9,35 +9,39 @@ const LKSKlienList = () => {
   const [search, setSearch] = useState("");
 
   const loadKlien = async () => {
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      // Ambil lks_id dari session storage (dari data login)
-      const lksId = sessionStorage.getItem("lks_id");
+    const lksId = sessionStorage.getItem("lks_id");
 
-      const res = await api.get("/klien", {
-        params: { 
-          search,
-          lks_id: lksId,   // 🔥 PENTING: Filter agar hanya ambil klien milik LKS
-        },
-      });
+    const res = await api.get("/klien", {
+      params: { 
+        search,
+        lks_id: lksId,
+      },
+    });
 
-      // Extract list data klien
-      const data =
-        res?.data?.data?.data ||
-        res?.data?.data ||
-        res?.data ||
-        [];
+    // 🔍 Debug respons untuk memastikan bentuk data
+    console.log("RESP API:", res.data);
 
-      setKlien(data);
+    // ✅ Ambil array dari response API (aman di semua struktur)
+    const data = res?.data?.data ?? [];
 
-    } catch (err) {
-      console.error("Gagal memuat daftar klien:", err);
-      alert("Gagal meload data klien");
-    } finally {
-      setLoading(false);
+    if (!Array.isArray(data)) {
+      console.warn("Data bukan array, isi:", data);
+      setKlien([]);
+      return;
     }
-  };
+
+    setKlien(data);
+  } catch (err) {
+    console.error("Gagal memuat daftar klien:", err);
+    alert("Gagal memuat data klien");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => {
     loadKlien();
