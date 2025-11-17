@@ -138,7 +138,8 @@ export default function KlienList() {
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = (safePage - 1) * perPage;
 
-  const pageData = uniqueFiltered.slice(startIndex, startIndex + perPage);
+  const pageData = uniqueFiltered.slice(0, perPage);
+
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -312,60 +313,28 @@ export default function KlienList() {
             </table>
           </div>
 
-          {/* PAGINATION */}
-          <div className="flex justify-between items-center mt-4">
-            <div>
-              Show{" "}
-              <select
-                value={perPage}
-                onChange={(e) => {
-                  setPerPage(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className="border rounded px-2 py-1 ml-1"
-              >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-              </select>{" "}
-              entries
-            </div>
-
-            <div className="flex gap-1">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={safePage === 1}
-                className="px-2 py-1 border rounded"
-              >
-                Prev
-              </button>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (p) => (
-                  <button
-                    key={p}
-                    onClick={() => setCurrentPage(p)}
-                    className={`px-3 py-1 border rounded ${
-                      p === safePage ? "bg-slate-800 text-white" : "bg-white"
-                    }`}
-                  >
-                    {p}
-                  </button>
-                )
-              )}
-
-              <button
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(totalPages, p + 1))
-                }
-                disabled={safePage === totalPages}
-                className="px-2 py-1 border rounded"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+          {/* SHOW PER PAGE CONTROL SAJA */}
+        <div className="flex items-center mt-4">
+          <label className="text-sm mr-2">Tampilkan</label>
+          <select
+            value={perPage}
+            onChange={(e) => setPerPage(Number(e.target.value))}
+            className="border rounded px-2 py-1 text-sm"
+          >
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="40">40</option>
+            <option value="60">60</option>
+            <option value="80">80</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+            <option value="300">300</option>
+            <option value="300">500</option>
+            <option value="300">1000</option>
+          </select>
+          <span className="text-sm ml-2">data</span>
+        </div>
         </>
       )}
     </div>

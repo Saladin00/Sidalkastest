@@ -12,9 +12,9 @@ class LksSeeder extends Seeder
 {
     public function run()
     {
-        $kecamatanList = Kecamatan::whereIn('nama', [
-            'Indramayu', 'Lohbener', 'Sindang', 'Jatibarang', 'Kandanghaur'
-        ])->get();
+        $targetKecamatan = ['Indramayu', 'Lohbener', 'Sindang', 'Jatibarang', 'Kandanghaur'];
+
+        $kecamatanList = Kecamatan::whereIn('nama', $targetKecamatan)->get();
 
         $jenisList = ['Anak', 'Lansia', 'Disabilitas', 'Fakir Miskin', 'Kesejahteraan Sosial'];
 
@@ -22,7 +22,7 @@ class LksSeeder extends Seeder
             for ($i = 1; $i <= 5; $i++) {
 
                 $username = strtolower($kec->nama)."_lks{$i}";
-                $email = "{$username}@example.com";
+                $email = "{$username}@sidalekas.go.id";
 
                 // USER LKS
                 $user = User::firstOrCreate(
@@ -30,7 +30,7 @@ class LksSeeder extends Seeder
                     [
                         'username' => $username,
                         'name' => "LKS {$i} {$kec->nama}",
-                        'password' => Hash::make('password'),
+                        'password' => Hash::make('lks123'),
                         'status_aktif' => true,
                         'kecamatan_id' => $kec->id,
                     ]
@@ -38,18 +38,22 @@ class LksSeeder extends Seeder
 
                 $user->assignRole('lks');
 
-                // LKS DATA
-                $lks = Lks::create([
-                    'nama' => "LKS {$i} {$kec->nama}",
-                    'jenis_layanan' => $jenisList[array_rand($jenisList)],
-                    'status' => 'aktif',
-                    'alamat' => "Jl. Mawar {$i}, {$kec->nama}",
-                    'kelurahan' => "Kelurahan {$i}",
-                    'kecamatan_id' => $kec->id,
-                    'npwp' => fake()->numerify('##.###.###.#-###.###'),
-                    'kontak_pengurus' => fake()->phoneNumber(),
-                    'koordinat' => '-6.33,108.32',
-                ]);
+                // DATA LKS
+                $lks = Lks::firstOrCreate(
+                    [
+                        'nama' => "LKS {$i} {$kec->nama}",
+                        'kecamatan_id' => $kec->id,
+                    ],
+                    [
+                        'jenis_layanan' => $jenisList[array_rand($jenisList)],
+                        'status' => 'aktif',
+                        'alamat' => "Jl. Mawar {$i}, {$kec->nama}",
+                        'kelurahan' => "Kelurahan {$i}",
+                        'npwp' => fake()->numerify('##.###.###.#-###.###'),
+                        'kontak_pengurus' => fake()->phoneNumber(),
+                        'koordinat' => '-6.33,108.32',
+                    ]
+                );
 
                 // Hubungkan user dengan LKS
                 $user->update(['lks_id' => $lks->id]);
