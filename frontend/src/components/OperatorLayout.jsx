@@ -12,7 +12,7 @@ import {
   UserCog,
   ChevronDown,
   ChevronUp,
-  FolderOpen, // icon utama LKS
+  FolderOpen,
 } from "lucide-react";
 
 const OperatorLayout = ({ children }) => {
@@ -36,12 +36,17 @@ const OperatorLayout = ({ children }) => {
       label: "LKS",
       icon: FolderOpen,
       submenu: [
-        { label: "Manajemen LKS", to: "/operator/manajemen-lks", icon: UserCog },
+        {
+          label: "Manajemen LKS",
+          to: "/operator/manajemen-lks",
+          icon: UserCog,
+        },
         { label: "Daftar LKS", to: "/operator/lks-list", icon: ShieldCheck },
       ],
     },
     { label: "Data Klien", to: "/operator/klien", icon: Users },
     { label: "Sebaran Wilayah", to: "/operator/sebaran", icon: MapPin },
+    { label: "Verifikasi Data", to: "/operator/verifikasi", icon: ShieldCheck },
   ];
 
   const isActive = (path) =>
@@ -56,19 +61,37 @@ const OperatorLayout = ({ children }) => {
     }
 
     if (path.startsWith("/operator/manajemen-lks")) {
-      return { breadcrumb: ["Operator", "LKS", "Manajemen LKS"], title: "Manajemen Akun LKS Kecamatan" };
+      return {
+        breadcrumb: ["Operator", "LKS", "Manajemen LKS"],
+        title: "Manajemen Akun LKS Kecamatan",
+      };
     }
 
     if (path.startsWith("/operator/lks-list")) {
-      return { breadcrumb: ["Operator", "LKS", "Daftar LKS"], title: "Daftar LKS di Kecamatan" };
+      return {
+        breadcrumb: ["Operator", "LKS", "Daftar LKS"],
+        title: "Daftar LKS di Kecamatan",
+      };
     }
 
     if (path.startsWith("/operator/klien")) {
-      return { breadcrumb: ["Operator", "Data Klien"], title: "Data Klien Kecamatan" };
+      return {
+        breadcrumb: ["Operator", "Data Klien"],
+        title: "Data Klien Kecamatan",
+      };
     }
 
     if (path.startsWith("/operator/sebaran")) {
-      return { breadcrumb: ["Operator", "Sebaran Wilayah"], title: "Sebaran Wilayah LKS & Klien" };
+      return {
+        breadcrumb: ["Operator", "Sebaran Wilayah"],
+        title: "Sebaran Wilayah LKS & Klien",
+      };
+    }
+    if (path.startsWith("/operator/verifikasi")) {
+      return {
+        breadcrumb: ["Operator", "Verifikasi Data"],
+        title: "Verifikasi Data LKS Kecamatan",
+      };
     }
 
     return { breadcrumb: ["Dashboard"], title: "Dashboard Operator" };
@@ -98,7 +121,11 @@ const OperatorLayout = ({ children }) => {
 
         {/* Logo + Title */}
         <div className="flex items-center gap-3 px-7 py-5 border-b border-sky-800">
-          <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
+          <img
+            src="/logo.png"
+            alt="Logo"
+            className="h-10 w-10 object-contain"
+          />
           {!isCollapsed && (
             <div className="flex flex-col">
               <span className="text-[11px] tracking-[0.25em] text-emerald-200 uppercase">
@@ -173,36 +200,37 @@ const OperatorLayout = ({ children }) => {
                         />
                         {!isCollapsed && <span>{label}</span>}
                       </div>
-                      {!isCollapsed && (
-                        openSubmenu ? (
+                      {!isCollapsed &&
+                        (openSubmenu ? (
                           <ChevronUp size={14} className="text-sky-200" />
                         ) : (
                           <ChevronDown size={14} className="text-sky-200" />
-                        )
-                      )}
+                        ))}
                     </button>
 
                     {/* Submenu list */}
                     {openSubmenu && !isCollapsed && (
                       <ul className="mt-1 ml-5 space-y-1 border-l border-sky-800/60 pl-3">
-                        {submenu.map(({ label: subLabel, to: subTo, icon: SubIcon }) => {
-                          const subActive = isActive(subTo);
-                          return (
-                            <li key={subTo}>
-                              <Link
-                                to={subTo}
-                                className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition ${
-                                  subActive
-                                    ? "bg-sky-800 text-white"
-                                    : "text-sky-100 hover:bg-sky-800/60 hover:text-white"
-                                }`}
-                              >
-                                <SubIcon size={16} />
-                                <span>{subLabel}</span>
-                              </Link>
-                            </li>
-                          );
-                        })}
+                        {submenu.map(
+                          ({ label: subLabel, to: subTo, icon: SubIcon }) => {
+                            const subActive = isActive(subTo);
+                            return (
+                              <li key={subTo}>
+                                <Link
+                                  to={subTo}
+                                  className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition ${
+                                    subActive
+                                      ? "bg-sky-800 text-white"
+                                      : "text-sky-100 hover:bg-sky-800/60 hover:text-white"
+                                  }`}
+                                >
+                                  <SubIcon size={16} />
+                                  <span>{subLabel}</span>
+                                </Link>
+                              </li>
+                            );
+                          }
+                        )}
                       </ul>
                     )}
                   </li>
@@ -269,7 +297,9 @@ const OperatorLayout = ({ children }) => {
           </div>
         </header>
 
-        <main className="p-6 bg-slate-50 flex-1 overflow-y-auto">{children}</main>
+        <main className="p-6 bg-slate-50 flex-1 overflow-y-auto">
+          {children}
+        </main>
       </div>
     </div>
   );

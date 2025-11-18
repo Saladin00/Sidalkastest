@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Verifikasi extends Model
 {
     use HasFactory;
-    
+
     protected $table = 'verifikasi';
 
     protected $fillable = [
@@ -27,18 +27,31 @@ class Verifikasi extends Model
         'tanggal_verifikasi' => 'datetime',
     ];
 
+    /* ----------------------------
+     * 🔗 RELASI
+     * ---------------------------- */
+
+    // LKS yang diverifikasi
     public function lks()
     {
-        return $this->belongsTo(LKS::class, 'lks_id');
+        return $this->belongsTo(Lks::class, 'lks_id');
     }
 
+    // Petugas yang melakukan verifikasi
     public function petugas()
     {
         return $this->belongsTo(User::class, 'petugas_id');
     }
 
+    // Klien yang diverifikasi (opsional)
+    public function klien()
+    {
+        return $this->belongsTo(Klien::class, 'klien_id');
+    }
+
+    // Log aktivitas verifikasi
     public function logs()
     {
-        return $this->hasMany(VerifikasiLog::class,'verifikasi_id');
+        return $this->hasMany(VerifikasiLog::class, 'verifikasi_id');
     }
 }

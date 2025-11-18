@@ -30,69 +30,69 @@ const AdminLayout = ({ children }) => {
   });
 
   // === HELPER PAGE META (ditambahkan di sini) ===
-      const getPageMeta = (path) => {
-      if (path === "/admin") {
-        return {
-          breadcrumb: ["Dashboard"],
-          title: "Dashboard Admin",
-        };
-      }
-
-      if (path.startsWith("/admin/lks")) {
-        return {
-          breadcrumb: ["LKS", "Manajemen LKS"],
-          title: "Manajemen LKS",
-        };
-      }
-
-      if (path.startsWith("/lks/dokumen")) {
-        return {
-          breadcrumb: ["LKS", "Dokumen Pendukung"],
-          title: "Dokumen Pendukung",
-        };
-      }
-
-      if (path.startsWith("/lks/laporan")) {
-        return {
-          breadcrumb: ["LKS", "Laporan Kegiatan"],
-          title: "Laporan Kegiatan",
-        };
-      }
-
-      if (path.startsWith("/admin/klien")) {
-        return {
-          breadcrumb: ["Klien", "Data Klien"],
-          title: "Data Klien",
-        };
-      }
-
-      if (path.startsWith("/admin/verifikasi")) {
-        return {
-          breadcrumb: ["Petugas", "Verifikasi Data"],
-          title: "Verifikasi Data",
-        };
-      }
-
-      if (path.startsWith("/operator/sebaran")) {
-        return {
-          breadcrumb: ["Operator", "Sebaran Sosial"],
-          title: "Sebaran Sosial",
-        };
-      }
-
-      if (path.startsWith("/admin/users")) {
-        return {
-          breadcrumb: ["Manajemen Pengguna", "Daftar Pengguna"],
-          title: "Manajemen Pengguna",
-        };
-      }
-
-      // fallback
+  const getPageMeta = (path) => {
+    if (path === "/admin") {
       return {
         breadcrumb: ["Dashboard"],
         title: "Dashboard Admin",
       };
+    }
+
+    if (path.startsWith("/admin/lks")) {
+      return {
+        breadcrumb: ["LKS", "Manajemen LKS"],
+        title: "Manajemen LKS",
+      };
+    }
+
+    if (path.startsWith("/lks/dokumen")) {
+      return {
+        breadcrumb: ["LKS", "Dokumen Pendukung"],
+        title: "Dokumen Pendukung",
+      };
+    }
+
+    if (path.startsWith("/lks/laporan")) {
+      return {
+        breadcrumb: ["LKS", "Laporan Kegiatan"],
+        title: "Laporan Kegiatan",
+      };
+    }
+
+    if (path.startsWith("/admin/klien")) {
+      return {
+        breadcrumb: ["Klien", "Data Klien"],
+        title: "Data Klien",
+      };
+    }
+
+    if (path.startsWith("/admin/verifikasi")) {
+      return {
+        breadcrumb: ["Petugas", "Verifikasi Data"],
+        title: "Verifikasi Data",
+      };
+    }
+
+    if (path.startsWith("/operator/sebaran")) {
+      return {
+        breadcrumb: ["Operator", "Sebaran Sosial"],
+        title: "Sebaran Sosial",
+      };
+    }
+
+    if (path.startsWith("/admin/users")) {
+      return {
+        breadcrumb: ["Manajemen Pengguna", "Daftar Pengguna"],
+        title: "Manajemen Pengguna",
+      };
+    }
+
+    // fallback
+    return {
+      breadcrumb: ["Dashboard"],
+      title: "Dashboard Admin",
     };
+  };
 
   const pageMeta = getPageMeta(current);
   // === END HELPER PAGE META ===
@@ -138,7 +138,11 @@ const AdminLayout = ({ children }) => {
         {/* Logo + title */}
         <div className="flex items-center gap-3 px-7 py-5 border-b border-sky-800">
           <div className="flex items-center justify-center w-15 h-11 rounded-full">
-            <img src="/logo.png" alt="Logo" className="h-20 w-10 object-contain" />
+            <img
+              src="/logo.png"
+              alt="Logo"
+              className="h-20 w-10 object-contain"
+            />
           </div>
           {!isCollapsed && (
             <div className="flex flex-col leading-tight">
@@ -336,16 +340,17 @@ const AdminLayout = ({ children }) => {
 
               {!isCollapsed && openModules.petugas && (
                 <ul className="ml-7 mt-1 space-y-1 border-l border-sky-700/60 pl-3">
+                  {/* Submenu Verifikasi Data */}
                   <li>
                     <Link
                       to="/admin/verifikasi"
                       className={`relative flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all ${
-                        current.includes("/admin/verifikasi")
+                        current.startsWith("/admin/verifikasi")
                           ? "bg-sky-800 text-white"
                           : "text-sky-100 hover:bg-sky-800/70 hover:text-white"
                       }`}
                     >
-                      {current.includes("/admin/verifikasi") && (
+                      {current.startsWith("/admin/verifikasi") && (
                         <span className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-emerald-400" />
                       )}
                       <ShieldCheck size={17} /> Verifikasi Data
@@ -443,14 +448,14 @@ const AdminLayout = ({ children }) => {
       {/* MAIN */}
       <div className="flex-1 flex flex-col">
         {/* Top bar / navbar */}
-       <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-slate-100">
-  <div className="pr-3 py-2 pl-10 flex items-center justify-between">
-    {/* Kiri: judul sistem + breadcrumb + title halaman */}
-    <div className="space-y-1">
-      {/* Judul sistem */}
-      <p className="text-[11px] font-semibold tracking-[0.18em] text-emerald-600 uppercase">
-        Sistem Informasi Data Lembaga Kesejahteraan Sosial
-      </p>
+        <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-slate-100">
+          <div className="pr-3 py-2 pl-10 flex items-center justify-between">
+            {/* Kiri: judul sistem + breadcrumb + title halaman */}
+            <div className="space-y-1">
+              {/* Judul sistem */}
+              <p className="text-[11px] font-semibold tracking-[0.18em] text-emerald-600 uppercase">
+                Sistem Informasi Data Lembaga Kesejahteraan Sosial
+              </p>
 
               {/* Breadcrumb */}
               <div className="mt-1 flex items-center gap-1 text-xs md:text-sm text-slate-500">
@@ -496,7 +501,6 @@ const AdminLayout = ({ children }) => {
           {children || <Outlet />}
         </main>
       </div>
-
     </div>
   );
 };

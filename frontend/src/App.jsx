@@ -42,6 +42,7 @@ import ManajemenLKSOperator from "./pages/operator/ManajemenLKSOperator";
 // Admin: Verifikasi
 import AdminVerifikasiList from "./pages/admin/verifikasi/VerifikasiList";
 import AdminVerifikasiReview from "./pages/admin/verifikasi/VerifikasiReview";
+import AdminVerifikasiDetail from "./pages/admin/verifikasi/VerifikasiDetail";
 
 // Operator LKS & Klien
 import OperatorLKSList from "./pages/operator/lks/OperatorLKSList";
@@ -54,6 +55,23 @@ import LKSKlienList from "./pages/lks/LKSKlienList";
 import LKSKlienForm from "./pages/lks/LKSKlienForm";
 import LKSKlienDetail from "./pages/lks/LKSKlienDetail";
 import LKSKlienEdit from "./pages/lks/LKSKlienEdit";
+
+// ==================== VERIFIKASI ====================
+
+// Admin Verifikasi
+
+// Operator Verifikasi
+import OperatorVerifikasiList from "./pages/operator/verifikasi/OperatorVerifikasiList";
+import OperatorVerifikasiDetail from "./pages/operator/verifikasi/OperatorVerifikasiDetail";
+
+// Petugas Verifikasi
+import PetugasVerifikasiList from "./pages/petugas/verifikasi/PetugasVerifikasiList";
+import PetugasVerifikasiForm from "./pages/petugas/verifikasi/PetugasVerifikasiForm";
+import PetugasVerifikasiDetail from "./pages/petugas/verifikasi/PetugasVerifikasiDetail";
+
+// LKS Verifikasi (status hasil verifikasi)
+import LKSVerifikasiStatus from "./pages/lks/verifikasi/LKSVerifikasiStatus";
+import LKSVerifikasiDetail from "./pages/lks/verifikasi/LKSVerifikasiDetail";
 
 function App() {
   return (
@@ -174,6 +192,16 @@ function App() {
           }
         />
         <Route
+          path="/admin/verifikasi/detail/:id"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminLayout>
+                <AdminVerifikasiDetail />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/admin/verifikasi/review/:id"
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
@@ -250,6 +278,28 @@ function App() {
           }
         />
 
+        {/* ================= OPERATOR: VERIFIKASI ================= */}
+        <Route
+          path="/operator/verifikasi"
+          element={
+            <ProtectedRoute allowedRoles={["operator"]}>
+              <OperatorLayout>
+                <OperatorVerifikasiList />
+              </OperatorLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/operator/verifikasi/detail/:id"
+          element={
+            <ProtectedRoute allowedRoles={["operator"]}>
+              <OperatorLayout>
+                <OperatorVerifikasiDetail />
+              </OperatorLayout>
+            </ProtectedRoute>
+          }
+        />
+
         {/* ================= PETUGAS ================= */}
         <Route
           path="/petugas"
@@ -257,6 +307,38 @@ function App() {
             <ProtectedRoute allowedRoles={["petugas"]}>
               <PetugasLayout>
                 <DashboardPetugas />
+              </PetugasLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= PETUGAS: VERIFIKASI ================= */}
+        <Route
+          path="/petugas/verifikasi"
+          element={
+            <ProtectedRoute allowedRoles={["petugas"]}>
+              <PetugasLayout>
+                <PetugasVerifikasiList />
+              </PetugasLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/petugas/verifikasi/tambah"
+          element={
+            <ProtectedRoute allowedRoles={["petugas"]}>
+              <PetugasLayout>
+                <PetugasVerifikasiForm />
+              </PetugasLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/petugas/verifikasi/detail/:id"
+          element={
+            <ProtectedRoute allowedRoles={["petugas"]}>
+              <PetugasLayout>
+                <PetugasVerifikasiDetail />
               </PetugasLayout>
             </ProtectedRoute>
           }
@@ -330,6 +412,30 @@ function App() {
             <ProtectedRoute allowedRoles={["lks"]}>
               <LKSLayout>
                 <LKSKlienEdit />
+              </LKSLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= LKS: STATUS VERIFIKASI ================= */}
+        <Route
+          path="/lks/verifikasi"
+          element={
+            <ProtectedRoute allowedRoles={["lks"]}>
+              <LKSLayout>
+                <LKSVerifikasiStatus />
+              </LKSLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ✅ LKS: DETAIL VERIFIKASI */}
+        <Route
+          path="/lks/verifikasi/detail/:id"
+          element={
+            <ProtectedRoute allowedRoles={["lks"]}>
+              <LKSLayout>
+                <LKSVerifikasiDetail />
               </LKSLayout>
             </ProtectedRoute>
           }

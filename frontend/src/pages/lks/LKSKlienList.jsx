@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../utils/api";
-import { Plus, Eye, Pencil, Loader2 } from "lucide-react";
+import { Plus, Eye, Pencil, Trash2, Loader2 } from "lucide-react";
 
 const LKSKlienList = () => {
   const [loading, setLoading] = useState(true);
@@ -9,39 +9,47 @@ const LKSKlienList = () => {
   const [search, setSearch] = useState("");
 
   const loadKlien = async () => {
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
+      const lksId = sessionStorage.getItem("lks_id");
 
-    const lksId = sessionStorage.getItem("lks_id");
+      const res = await api.get("/klien", {
+        params: {
+          search,
+          lks_id: lksId,
+        },
+      });
 
-    const res = await api.get("/klien", {
-      params: { 
-        search,
-        lks_id: lksId,
-      },
-    });
+      console.log("RESP API:", res.data);
+      const data = res?.data?.data ?? [];
 
-    // 🔍 Debug respons untuk memastikan bentuk data
-    console.log("RESP API:", res.data);
+      if (!Array.isArray(data)) {
+        console.warn("Data bukan array, isi:", data);
+        setKlien([]);
+        return;
+      }
 
-    // ✅ Ambil array dari response API (aman di semua struktur)
-    const data = res?.data?.data ?? [];
-
-    if (!Array.isArray(data)) {
-      console.warn("Data bukan array, isi:", data);
-      setKlien([]);
-      return;
+      setKlien(data);
+    } catch (err) {
+      console.error("Gagal memuat daftar klien:", err);
+      alert("Gagal memuat data klien");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    setKlien(data);
-  } catch (err) {
-    console.error("Gagal memuat daftar klien:", err);
-    alert("Gagal memuat data klien");
-  } finally {
-    setLoading(false);
-  }
-};
+  const handleDelete = async (id) => {
+    if (!window.confirm("Apakah Anda yakin ingin menghapus klien ini?")) return;
 
+    try {
+      await api.delete(`/klien/${id}`);
+      alert("✅ Klien berhasil dihapus.");
+      loadKlien(); // reload data setelah hapus
+    } catch (err) {
+      console.error("Gagal menghapus klien:", err);
+      alert("Gagal menghapus klien. Silakan coba lagi.");
+    }
+  };
 
   useEffect(() => {
     loadKlien();
@@ -49,7 +57,6 @@ const LKSKlienList = () => {
 
   return (
     <div className="max-w-5xl mx-auto bg-white shadow-md rounded-xl border border-slate-200">
-
       {/* Header */}
       <div className="flex justify-between items-center p-5 border-b bg-slate-50">
         <h2 className="text-lg font-semibold text-slate-800">
@@ -130,7 +137,7 @@ const LKSKlienList = () => {
                     <td className="px-4 py-3">{item.status_bantuan || "-"}</td>
                     <td className="px-4 py-3">{item.status_pembinaan || "-"}</td>
 
-                    <td className="px-4 py-3 flex gap-2 justify-center">
+                    <td className="px-4 py-3 flex gap-3 justify-center">
                       <Link
                         to={`/lks/klien/detail/${item.id}`}
                         className="text-sky-600 hover:text-sky-800"
@@ -144,12 +151,18 @@ const LKSKlienList = () => {
                       >
                         <Pencil size={18} />
                       </Link>
+
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     </td>
                   </tr>
                 ))
               )}
             </tbody>
-
           </table>
         )}
       </div>
