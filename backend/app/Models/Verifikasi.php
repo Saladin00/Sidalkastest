@@ -13,45 +13,30 @@ class Verifikasi extends Model
 
     protected $fillable = [
         'lks_id',
-        'klien_id',
         'petugas_id',
         'status',
         'penilaian',
         'catatan',
         'foto_bukti',
         'tanggal_verifikasi',
+        'hasil_survei', // tambahan
     ];
 
     protected $casts = [
         'foto_bukti' => 'array',
+        'hasil_survei' => 'array',
         'tanggal_verifikasi' => 'datetime',
     ];
 
-    /* ----------------------------
-     * 🔗 RELASI
-     * ---------------------------- */
+    /**
+     * STATUS FLOW:
+     * - dikirim_operator → LKS kirim ke operator
+     * - dikirim_petugas → Operator kirim ke petugas
+     * - dikirim_admin → Petugas kirim hasil ke admin
+     * - valid / tidak_valid → keputusan akhir admin
+     */
 
-    // LKS yang diverifikasi
-    public function lks()
-    {
-        return $this->belongsTo(Lks::class, 'lks_id');
-    }
-
-    // Petugas yang melakukan verifikasi
-    public function petugas()
-    {
-        return $this->belongsTo(User::class, 'petugas_id');
-    }
-
-    // Klien yang diverifikasi (opsional)
-    public function klien()
-    {
-        return $this->belongsTo(Klien::class, 'klien_id');
-    }
-
-    // Log aktivitas verifikasi
-    public function logs()
-    {
-        return $this->hasMany(VerifikasiLog::class, 'verifikasi_id');
-    }
+    public function lks() { return $this->belongsTo(Lks::class, 'lks_id'); }
+    public function petugas() { return $this->belongsTo(User::class, 'petugas_id'); }
+    public function logs() { return $this->hasMany(VerifikasiLog::class, 'verifikasi_id'); }
 }

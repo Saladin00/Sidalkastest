@@ -9,8 +9,13 @@ import {
   FileText,
   ClipboardCheck,
   Database,
-  RefreshCcw, // ✅ untuk tombol refresh captcha
+  Check,
 } from "lucide-react";
+import ReCAPTCHA from "react-google-recaptcha";
+
+// ambil site key dari env (Vite) atau isi manual
+const RECAPTCHA_SITE_KEY = "6LdJBw8sAAAAAE2C2A5Gywdf4L5N2HB7VwgIKVm5";
+import.meta.env.VITE_RECAPTCHA_SITE_KEY || "YOUR_RECAPTCHA_SITE_KEY";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -28,27 +33,14 @@ const Register = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // ✅ captcha teks
-  const [captcha, setCaptcha] = useState("");
-  const [generatedCaptcha, setGeneratedCaptcha] = useState("");
-
-  // generator captcha huruf/angka
-  const generateCaptcha = () => {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let text = "";
-    for (let i = 0; i < 5; i++) {
-      text += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setGeneratedCaptcha(text);
-    setCaptcha("");
-  };
+  // reCAPTCHA token & persetujuan privasi
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
 
   useEffect(() => {
     API.get("/kecamatan")
       .then((res) => setDaftarKecamatan(res.data?.data || []))
       .catch((err) => console.error("Gagal ambil daftar kecamatan:", err));
-
-    generateCaptcha(); // ✅ buat captcha pertama kali
   }, []);
 
   const handleChange = (e) => {
@@ -60,10 +52,13 @@ const Register = () => {
     setError("");
     setSuccess("");
 
-    // ✅ validasi captcha
-    if (captcha.toUpperCase() !== generatedCaptcha) {
-      setError("Captcha tidak sesuai, silakan coba lagi!");
-      generateCaptcha();
+    if (!recaptchaToken) {
+      setError("Silakan selesaikan verifikasi reCAPTCHA terlebih dahulu.");
+      return;
+    }
+
+    if (!agreePrivacy) {
+      setError("Anda harus menyetujui kebijakan privasi terlebih dahulu.");
       return;
     }
 
@@ -81,6 +76,8 @@ const Register = () => {
         password_confirmation: form.confirmPassword,
         jenis_layanan: form.jenis_layanan,
         kecamatan_id: form.kecamatan_id,
+        // kalau backend nanti mau validasi token, kirim juga:
+        // recaptcha_token: recaptchaToken,
       });
 
       setSuccess(
@@ -99,9 +96,10 @@ const Register = () => {
       <div className="absolute w-72 h-72 bg-blue-400 rounded-full blur-3xl opacity-20 top-10 left-10 animate-pulse" />
       <div className="absolute w-80 h-80 bg-indigo-400 rounded-full blur-3xl opacity-20 bottom-10 right-10 animate-pulse" />
 
-      {/* container tengah – padding atas/bawah sama login */}
-      <div className="relative z-10 w-full max-w-5xl px-4 py-16 md:py-10">
-        <div className="grid gap-8 md:grid-cols-2 items-stretch">
+      {/* container tengah */}
+      <div className="relative z-10 w-full max-w-6xl px-4 py-14 md:py-16">
+        {/* grid responsif: 1 kolom di mobile, 2 kolom di lg ke atas */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
           {/* PANEL KIRI – CARD REGISTER */}
           <div className="backdrop-blur-xl bg-gradient-to-b from-sky-100/95 via-sky-50/95 to-blue-50/95 border border-white/70 shadow-2xl rounded-2xl px-7 py-7 flex flex-col justify-between">
             <div>
@@ -251,31 +249,45 @@ const Register = () => {
                   />
                 </div>
 
-                {/* ✅ Captcha huruf/angka */}
+                {/* reCAPTCHA ASLI – model Google, bisa muncul verifikasi gambar */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-slate-700">
-                    Captcha
+                    Verifikasi Keamanan
                   </label>
-                  <div className="flex items-center gap-2">
-                    <div className="px-4 py-2 font-mono text-lg tracking-[0.4em] bg-gradient-to-r from-blue-200 to-blue-100 border border-blue-300 rounded-lg shadow-inner select-none min-w-[110px] text-center">
-                      {generatedCaptcha}
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Masukkan captcha"
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm"
-                      value={captcha}
-                      onChange={(e) => setCaptcha(e.target.value)}
-                      required
+                  <div className="bg-white border border-gray-300 rounded-lg shadow-sm inline-block px-3 py-2">
+                    <ReCAPTCHA
+                      sitekey={RECAPTCHA_SITE_KEY}
+                      onChange={(token) => setRecaptchaToken(token)}
+                      className="scale-[0.98] origin-left"
                     />
-                    <button
-                      type="button"
-                      onClick={generateCaptcha}
-                      className="p-2 rounded-full bg-blue-100 hover:bg-blue-200 border border-blue-300 transition"
-                    >
-                      <RefreshCcw size={18} className="text-blue-500" />
-                    </button>
                   </div>
+                </div>
+
+                {/* Checkbox kebijakan privasi – model Google */}
+                <div className="flex items-start gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setAgreePrivacy((v) => !v)}
+                    className="mt-0.5 h-5 w-5 flex items-center justify-center"
+                  >
+                    <div
+                      className={`h-full w-full rounded-sm border-2 flex items-center justify-center transition ${
+                        agreePrivacy ? "border-blue-500" : "border-gray-400"
+                      }`}
+                    >
+                      {agreePrivacy && (
+                        <Check className="h-3 w-3 text-blue-500" />
+                      )}
+                    </div>
+                  </button>
+                  <p className="text-[11px] md:text-xs text-gray-700 leading-snug">
+                    Saya menyetujui{" "}
+                    <span className="font-semibold text-blue-600">
+                      kebijakan privasi
+                    </span>{" "}
+                    dan penggunaan data dalam aplikasi{" "}
+                    <span className="font-semibold">SIDALEKAS</span>.
+                  </p>
                 </div>
 
                 {/* Tombol daftar */}
@@ -300,21 +312,21 @@ const Register = () => {
             </div>
 
             <div className="mt-6 text-[11px] text-center text-gray-500">
-              © Dinas Sosial {new Date().getFullYear()}
+              © Dinas Sosial Kabupaten Indramayu {new Date().getFullYear()}
             </div>
           </div>
 
-          {/* PANEL KANAN – ALUR PROSES (sama seperti di Login) */}
-          <div className="hidden md:flex h-full">
-            <div className="flex flex-col justify-start py-10 pl-8 pr-4 text-left text-gray-800 w-full">
+          {/* PANEL KANAN – ALUR PROSES (responsif seperti login) */}
+          <div className="flex h-full order-last lg:order-none mt-6 lg:mt-0">
+            <div className="flex flex-col justify-start py-7 pl-2 pr-2 md:pl-8 md:pr-4 text-left text-gray-800 w-full">
               <div>
-                <h2 className="text-3xl font-semibold mb-3 leading-snug text-slate-900">
+                <h2 className="text-2xl md:text-3xl font-semibold mb-3 leading-snug text-slate-900">
                   Alur Proses Pendaftaran Lembaga
                   <br />
                   Kesejahteraan Sosial
                 </h2>
 
-                <p className="text-[13px] md:text-sm text-gray-600 max-w-xl">
+                <p className="text-sm text-gray-600 max-w-xl">
                   Pengurus lembaga sosial dapat melakukan registrasi akun,
                   pendaftaran lembaga, hingga pengelolaan data secara terpusat
                   melalui aplikasi{" "}
@@ -322,14 +334,14 @@ const Register = () => {
                 </p>
               </div>
 
-              <div className="mt-6 space-y-6 max-w-xl">
+              <div className="mt-6 space-y-4 md:space-y-6 max-w-xl">
                 <div className="flex gap-3 rounded-xl bg-white/40 border border-white/60 shadow-sm px-3 py-3">
                   <div className="mt-1 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
                     <ShieldCheck size={24} />
                   </div>
                   <div>
                     <h3 className="text-base font-semibold text-slate-900">
-                      Registrasi Akun Dinsos
+                      Registrasi Akun Sidalekas
                     </h3>
                     <p className="text-[13px] md:text-sm text-gray-600">
                       Akun lembaga didaftarkan dan diverifikasi oleh Dinas
@@ -386,7 +398,7 @@ const Register = () => {
             </div>
           </div>
         </div>
-      </div>      
+      </div>
     </div>
   );
 };

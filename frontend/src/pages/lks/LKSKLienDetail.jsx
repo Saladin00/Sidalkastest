@@ -1,102 +1,105 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import api from "../../utils/api";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
-const LKSKlienDetail = () => {
+const KlienDetail = () => {
   const { id } = useParams();
-  const [klien, setKlien] = useState(null);
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-
-  const loadDetail = async () => {
-    try {
-      const res = await api.get(`/klien/${id}`);
-      setKlien(res.data.data);
-    } catch (err) {
-      alert("Gagal memuat detail");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [klien, setKlien] = useState(null);
 
   useEffect(() => {
-    loadDetail();
+    const fetchKlien = async () => {
+      try {
+        setLoading(true);
+        const res = await api.get(`/klien/${id}`);
+        setKlien(res.data.data || res.data);
+      } catch (err) {
+        console.error("❌ Gagal memuat data klien:", err);
+        alert("Gagal memuat data klien.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchKlien();
   }, [id]);
 
   if (loading)
     return (
-      <div className="p-5 flex justify-center">
-        <Loader2 className="animate-spin" />
+      <div className="flex justify-center items-center py-16 text-gray-500">
+        <Loader2 className="animate-spin mr-2" /> Memuat detail klien...
       </div>
     );
 
   if (!klien)
-    return <div className="text-center p-10 text-gray-500">Tidak ditemukan</div>;
+    return (
+      <div className="text-center py-10 text-gray-500 italic">
+        Data klien tidak ditemukan.
+      </div>
+    );
+
+  const renderStatusBadge = (status) => {
+    const isActive = status?.toLowerCase() === "aktif";
+    const colorClass = isActive
+      ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+      : "bg-rose-100 text-rose-700 border-rose-200";
+    return (
+      <span
+        className={`px-2.5 py-1 text-xs font-medium rounded-full border ${colorClass}`}
+      >
+        {status || "-"}
+      </span>
+    );
+  };
 
   return (
-    <div className="max-w-3xl mx-auto bg-white shadow rounded-lg p-6">
-      <Link to="/lks/klien" className="text-sky-600 flex items-center mb-4">
-        <ArrowLeft size={16} className="mr-1" /> Kembali
-      </Link>
-
-      <h2 className="text-xl font-semibold text-slate-700 mb-5">
+    <div className="max-w-5xl mx-auto bg-white shadow-xl rounded-2xl border border-gray-100 p-8 mt-6">
+      {/* Judul */}
+      <h1 className="text-2xl font-bold text-gray-800 mb-1">
         Detail Klien: {klien.nama}
-      </h2>
+      </h1>
+      <p className="text-sm text-gray-500 mb-8">
+        Data hasil input oleh LKS terkait.
+      </p>
 
-      <table className="text-sm w-full border">
-        <tbody>
-          <tr>
-            <td className="font-medium p-3">NIK</td>
-            <td className="p-3">{klien.nik}</td>
-          </tr>
-          <tr>
-            <td className="font-medium p-3">Nama</td>
-            <td className="p-3">{klien.nama}</td>
-          </tr>
-          <tr>
-            <td className="font-medium p-3">Alamat</td>
-            <td className="p-3">{klien.alamat || "-"}</td>
-          </tr>
-          <tr>
-            <td className="font-medium p-3">Kelurahan</td>
-            <td className="p-3">{klien.kelurahan || "-"}</td>
-          </tr>
-          <tr>
-            <td className="font-medium p-3">Kecamatan</td>
-            <td className="p-3">{klien.kecamatan?.nama || "-"}</td>
-          </tr>
-          <tr>
-            <td className="font-medium p-3">Jenis Kebutuhan</td>
-            <td className="p-3">{klien.jenis_kebutuhan || "-"}</td>
-          </tr>
-          <tr>
-            <td className="font-medium p-3">Status Bantuan</td>
-            <td className="p-3">{klien.status_bantuan || "-"}</td>
-          </tr>
-          <tr>
-            <td className="font-medium p-3">Status Pembinaan</td>
-            <td className="p-3">{klien.status_pembinaan || "-"}</td>
-          </tr>
-        </tbody>
-      </table>
+      {/* Grid detail */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {[
+          { label: "NIK", value: klien.nik },
+          { label: "Nama", value: klien.nama },
+          { label: "Alamat", value: klien.alamat },
+          { label: "Kelurahan", value: klien.kelurahan },
+          { label: "Kecamatan", value: klien.kecamatan?.nama },
+          { label: "Jenis Kebutuhan", value: klien.jenis_kebutuhan },
+          { label: "Status Bantuan", value: klien.status_bantuan },
+          { label: "Status Pembinaan", value: renderStatusBadge(klien.status_pembinaan) },
+        ].map((item, i) => (
+          <div
+            key={i}
+            className="p-4 rounded-xl border border-gray-100 bg-gray-50 hover:bg-sky-50 transition"
+          >
+            <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-1">
+              {i + 1}. {item.label}
+            </p>
+            <p className="text-gray-800 font-semibold text-sm">
+              {item.value || <span className="text-gray-400">Belum diisi</span>}
+            </p>
+          </div>
+        ))}
+      </div>
 
-      {/** dokumen jika ada */}
-      {klien.dokumen && klien.dokumen.length > 0 && (
-        <div className="mt-5">
-          <h3 className="text-sm font-medium mb-2">Dokumen Pendukung</h3>
-          <ul className="list-disc pl-5">
-            {klien.dokumen.map((doc, idx) => (
-              <li key={idx}>
-                <a href={doc.url || doc} target="_blank" className="text-sky-600 underline">
-                  {doc.name || `Dokumen ${idx + 1}`}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {/* Tombol kembali di bawah kiri */}
+      <div className="flex justify-start mt-10">
+        <button
+          onClick={() => navigate("/lks/klien")}
+          className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 text-sm font-medium transition"
+        >
+          <ArrowLeft size={16} /> Kembali
+        </button>
+      </div>
     </div>
   );
 };
 
-export default LKSKlienDetail;
+export default KlienDetail;

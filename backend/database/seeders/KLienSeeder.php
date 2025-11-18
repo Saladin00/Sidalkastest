@@ -18,17 +18,21 @@ class KlienSeeder extends Seeder
         foreach ($lksList as $lks) {
             for ($i = 1; $i <= 5; $i++) {
 
-                Klien::create([
-                    'nik' => fake()->numerify('3209##########'),
-                    'nama' => "Klien {$i} - {$lks->nama}",
-                    'alamat' => "Jl. Melati No. {$i}",
-                    'kelurahan' => "Kelurahan {$i}",
-                    'kecamatan_id' => $lks->kecamatan_id,
-                    'lks_id' => $lks->id,
-                    'jenis_kebutuhan' => $jenisKebutuhan[array_rand($jenisKebutuhan)],
-                    'status_bantuan' => $statusBantuan[array_rand($statusBantuan)],
-                    'status_pembinaan' => 'aktif',
-                ]);
+                Klien::firstOrCreate(
+                    [
+                        'nik' => fake()->numerify('3209##########'),
+                    ],
+                    [
+                        'nama' => "Klien {$i} - {$lks->nama}",
+                        'alamat' => "Jl. Melati No. {$i}",
+                        'kelurahan' => "Kelurahan {$i}",
+                        'kecamatan_id' => $lks->kecamatan_id,
+                        'lks_id' => $lks->id,
+                        'jenis_kebutuhan' => $jenisKebutuhan[array_rand($jenisKebutuhan)],
+                        'status_bantuan' => $statusBantuan[array_rand($statusBantuan)],
+                        'status_pembinaan' => 'aktif',
+                    ]
+                );
             }
         }
     }

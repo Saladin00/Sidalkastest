@@ -11,7 +11,6 @@ const LKSVerifikasiDetail = () => {
   const loadData = async () => {
     try {
       const res = await api.get(`/lks/verifikasi/${id}`);
-      console.log("📦 Detail Verifikasi LKS:", res.data);
       setData(res.data?.data);
     } catch (err) {
       console.error("❌ Gagal ambil detail verifikasi:", err);
@@ -96,7 +95,7 @@ const LKSVerifikasiDetail = () => {
 
       <div>
         <h3 className="text-sm font-semibold text-slate-700 mb-2">
-          Foto Bukti Verifikasi
+          Dokumen / Foto Bukti
         </h3>
         {data.foto_bukti?.length ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -118,7 +117,7 @@ const LKSVerifikasiDetail = () => {
           </div>
         ) : (
           <p className="text-slate-500 text-sm italic">
-            Tidak ada foto bukti.
+            Tidak ada foto atau dokumen bukti.
           </p>
         )}
       </div>

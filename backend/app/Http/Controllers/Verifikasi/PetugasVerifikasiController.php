@@ -9,75 +9,53 @@ use Illuminate\Http\Request;
 
 class PetugasVerifikasiController extends Controller
 {
-    // 🔹 Petugas hanya lihat verifikasi miliknya
+    // 🔹 Petugas lihat verifikasi dari kecamatan-nya
     public function index(Request $request)
     {
         $user = $request->user();
 
-        $data = Verifikasi::with(['lks', 'klien'])
+        $data = Verifikasi::with(['lks'])
             ->where('petugas_id', $user->id)
+            ->where('status', 'dikirim_petugas')
             ->orderByDesc('created_at')
             ->get();
 
         return response()->json(['success' => true, 'data' => $data]);
     }
 
-    // 🔹 Tambah verifikasi baru
-    public function store(Request $request)
+    // 🔹 Isi hasil survei dan kirim ke admin
+    public function kirimKeAdmin(Request $request, $id)
     {
         $validated = $request->validate([
-            'lks_id' => 'required|exists:lks,id',
-            'status' => 'required|in:menunggu,valid,tidak_valid',
-            'penilaian' => 'nullable|string',
+            'hasil_survei' => 'required|array',
+            'penilaian' => 'required|string',
             'catatan' => 'nullable|string',
             'foto_bukti' => 'nullable|array',
         ]);
 
-        $validated['petugas_id'] = $request->user()->id;
-        $validated['tanggal_verifikasi'] = now();
-
-        $verifikasi = Verifikasi::create($validated);
-
-        VerifikasiLog::create([
-            'verifikasi_id' => $verifikasi->id,
-            'user_id' => $request->user()->id,
-            'aksi' => 'buat',
-            'keterangan' => 'Petugas membuat verifikasi baru.',
-        ]);
-
-        return response()->json(['success' => true, 'data' => $verifikasi]);
-    }
-
-    // 🔹 Update status (petugas update hasil verifikasi)
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'status' => 'required|in:valid,tidak_valid,menunggu',
-            'penilaian' => 'nullable|string',
-            'catatan' => 'nullable|string',
-        ]);
-
         $verifikasi = Verifikasi::findOrFail($id);
         $verifikasi->update([
-            'status' => $request->status,
-            'penilaian' => $request->penilaian,
-            'catatan' => $request->catatan,
+            'hasil_survei' => $validated['hasil_survei'],
+            'status' => 'dikirim_admin',
+            'penilaian' => $validated['penilaian'],
+            'catatan' => $validated['catatan'] ?? 'Petugas mengirim hasil survei.',
+            'foto_bukti' => $validated['foto_bukti'] ?? [],
             'tanggal_verifikasi' => now(),
         ]);
 
         VerifikasiLog::create([
             'verifikasi_id' => $verifikasi->id,
             'user_id' => $request->user()->id,
-            'aksi' => 'update',
-            'keterangan' => "Petugas memperbarui hasil verifikasi menjadi {$request->status}.",
+            'aksi' => 'kirim_admin',
+            'keterangan' => 'Petugas mengirim hasil survei ke Admin Dinsos.',
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Verifikasi diperbarui']);
+        return response()->json(['success' => true, 'message' => 'Hasil survei berhasil dikirim ke admin.']);
     }
+
     public function show($id)
     {
-        $data = Verifikasi::with(['lks', 'petugas'])
-            ->find($id);
+        $data = Verifikasi::with(['lks', 'petugas'])->find($id);
 
         if (!$data) {
             return response()->json(['success' => false, 'message' => 'Data tidak ditemukan'], 404);

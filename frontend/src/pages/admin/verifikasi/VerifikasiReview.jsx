@@ -6,17 +6,14 @@ import { Loader2, ArrowLeft, CheckCircle, XCircle } from "lucide-react";
 const VerifikasiReview = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState("menunggu");
   const [catatan, setCatatan] = useState("");
 
-  // 🔹 Ambil detail verifikasi
   const loadData = async () => {
     try {
-      // ✅ endpoint benar
       const res = await api.get(`/admin/verifikasi/${id}`);
       const detail = res.data?.data;
       setData(detail);
@@ -30,7 +27,6 @@ const VerifikasiReview = () => {
     }
   };
 
-  // 🔹 Simpan hasil review
   const handleSubmit = async () => {
     if (!window.confirm("Yakin ingin menyimpan hasil review ini?")) return;
     setSaving(true);
@@ -50,26 +46,22 @@ const VerifikasiReview = () => {
     loadData();
   }, [id]);
 
-  // 🔄 Loading state
-  if (loading) {
+  if (loading)
     return (
       <div className="flex justify-center items-center py-20 text-gray-500">
         <Loader2 className="animate-spin mr-2" /> Memuat form review...
       </div>
     );
-  }
 
-  if (!data) {
+  if (!data)
     return (
       <div className="text-center py-20 text-gray-500">
         Data verifikasi tidak ditemukan.
       </div>
     );
-  }
 
   return (
     <div className="max-w-3xl mx-auto bg-white shadow-md border border-slate-200 rounded-lg p-6">
-      {/* 🔹 Header */}
       <div className="flex justify-between items-center mb-5">
         <h2 className="text-lg font-semibold text-slate-800">
           Review Verifikasi LKS
@@ -78,18 +70,16 @@ const VerifikasiReview = () => {
           to={`/admin/verifikasi/detail/${id}`}
           className="flex items-center text-slate-600 hover:text-sky-600 text-sm"
         >
-          <ArrowLeft size={16} className="mr-1" /> Kembali ke Detail
+          <ArrowLeft size={16} className="mr-1" /> Kembali
         </Link>
       </div>
 
-      {/* 🔹 Info singkat */}
       <div className="bg-slate-50 border rounded-md p-4 mb-6 text-sm text-slate-700">
         <p><strong>Nama LKS:</strong> {data.lks?.nama || "-"}</p>
         <p><strong>Petugas:</strong> {data.petugas?.name || "-"}</p>
         <p><strong>Status Saat Ini:</strong> {data.status?.toUpperCase() || "-"}</p>
       </div>
 
-      {/* 🔹 Form Review */}
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Ubah Status</label>
@@ -105,9 +95,7 @@ const VerifikasiReview = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">
-            Catatan Admin
-          </label>
+          <label className="block text-sm font-medium mb-1">Catatan Admin</label>
           <textarea
             value={catatan}
             onChange={(e) => setCatatan(e.target.value)}

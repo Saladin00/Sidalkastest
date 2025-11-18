@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AdminLayout from "../../../components/AdminLayout";
 import API from "../../../utils/api";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
@@ -10,16 +10,15 @@ import {
   PrinterIcon,
   BuildingOffice2Icon,
   MapPinIcon,
-  IdentificationIcon,
-  PhoneIcon,
-  ClipboardDocumentListIcon,
 } from "@heroicons/react/24/outline";
 import VerificationBadge from "../../../components/shared/VerificationBadge";
 
+// Marker Custom
 const markerIcon = new L.Icon({
-  iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
+  iconUrl:
+    "https://cdn-icons-png.flaticon.com/512/854/854878.png", // marker biru lucu & lembut
+  iconSize: [36, 36],
+  iconAnchor: [18, 36],
 });
 
 const LKSDetail = () => {
@@ -48,81 +47,58 @@ const LKSDetail = () => {
     );
   };
 
-  const display = (value) => value || "Belum diisi";
   if (!lks) return null;
 
-  const {
-    nama,
-    jenis_layanan,
-    kecamatan,
-    kelurahan,
-    status,
-    alamat,
-    koordinat,
-    npwp,
-    kontak_pengurus,
-    jumlah_pengurus,
-    akta_pendirian,
-    izin_operasional,
-    legalitas,
-    no_akta,
-    status_akreditasi,
-    no_sertifikat,
-    tanggal_akreditasi,
-    sarana,
-    hasil_observasi,
-    tindak_lanjut,
-  } = lks;
-
+  const display = (v) => v || "Belum diisi";
   const verif = lks.verifikasi_terbaru;
 
+  const infoList = [
+    { label: "Nama LKS", value: lks.nama },
+    { label: "Akta Pendirian", value: lks.akta_pendirian },
+    { label: "Jenis Layanan", value: lks.jenis_layanan },
+    { label: "No Akta", value: lks.no_akta },
+    { label: "Kecamatan", value: lks.kecamatan?.nama },
+    { label: "Izin Operasional", value: lks.izin_operasional },
+    { label: "Kelurahan / Desa", value: lks.kelurahan },
+    { label: "Legalitas", value: lks.legalitas },
+    { label: "Status", value: lks.status },
+    { label: "Akreditasi", value: lks.status_akreditasi },
+    { label: "Alamat", value: lks.alamat },
+    { label: "No Sertifikat", value: lks.no_sertifikat },
+    { label: "Koordinat", value: lks.koordinat },
+    { label: "Tanggal Akreditasi", value: lks.tanggal_akreditasi },
+    { label: "NPWP", value: lks.npwp },
+    { label: "Sarana & Fasilitas", value: lks.sarana },
+    { label: "Kontak Pengurus", value: lks.kontak_pengurus },
+    { label: "Hasil Observasi", value: lks.hasil_observasi },
+    { label: "Jumlah Pengurus", value: lks.jumlah_pengurus },
+    { label: "Tindak Lanjut", value: lks.tindak_lanjut },
+  ];
+
   let position = null;
-  if (koordinat && koordinat.includes(",")) {
-    const [lat, lng] = koordinat.split(",").map(Number);
+  if (lks.koordinat && lks.koordinat.includes(",")) {
+    const [lat, lng] = lks.koordinat.split(",").map(Number);
     position = [lat, lng];
   }
 
-  const infoList = [
-    { label: "Nama LKS", value: nama, icon: BuildingOffice2Icon },
-    { label: "Akta Pendirian", value: akta_pendirian, icon: ClipboardDocumentListIcon },
-    { label: "Jenis Layanan", value: jenis_layanan, icon: ClipboardDocumentListIcon },
-    { label: "No Akta", value: no_akta, icon: IdentificationIcon },
-    { label: "Kecamatan", value: kecamatan?.nama, icon: MapPinIcon },
-    { label: "Izin Operasional", value: izin_operasional, icon: ClipboardDocumentListIcon },
-    { label: "Kelurahan / Desa", value: kelurahan, icon: MapPinIcon },
-    { label: "Legalitas", value: legalitas, icon: ClipboardDocumentListIcon },
-    { label: "Status", value: status, icon: IdentificationIcon },
-    { label: "Akreditasi", value: status_akreditasi, icon: ClipboardDocumentListIcon },
-    { label: "Alamat", value: alamat, icon: MapPinIcon },
-    { label: "No Sertifikat", value: no_sertifikat, icon: IdentificationIcon },
-    { label: "Koordinat", value: koordinat, icon: MapPinIcon },
-    { label: "Tanggal Akreditasi", value: tanggal_akreditasi, icon: ClipboardDocumentListIcon },
-    { label: "NPWP", value: npwp, icon: IdentificationIcon },
-    { label: "Sarana & Fasilitas", value: sarana, icon: ClipboardDocumentListIcon },
-    { label: "Kontak Pengurus", value: kontak_pengurus, icon: PhoneIcon },
-    { label: "Hasil Observasi", value: hasil_observasi, icon: ClipboardDocumentListIcon },
-    { label: "Jumlah Pengurus", value: jumlah_pengurus, icon: IdentificationIcon },
-    { label: "Tindak Lanjut", value: tindak_lanjut, icon: ClipboardDocumentListIcon },
-  ];
-
   return (
     <AdminLayout>
-      <div className="max-w-5xl mx-auto bg-white shadow-lg rounded-2xl p-8 border border-gray-100">
-
+      <div className="max-w-6xl mx-auto bg-white/80 backdrop-blur-2xl shadow-2xl rounded-3xl p-6 sm:p-10 border border-gray-100 transition-all duration-300">
         {/* Header */}
-        <div className="flex justify-between items-start border-b pb-5 mb-8">
-          <div className="flex items-center gap-3">
-            <BuildingOffice2Icon className="h-8 w-8 text-blue-700" />
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-200 pb-6 mb-10 gap-4">
+          <div className="flex items-start sm:items-center gap-4">
+            <div className="p-3 bg-gradient-to-tr from-blue-100 to-indigo-100 rounded-2xl shadow-sm">
+              <BuildingOffice2Icon className="h-9 w-9 text-blue-700" />
+            </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">
+              <h1 className="text-3xl font-bold text-gray-800">
                 Profil Lembaga Kesejahteraan Sosial
               </h1>
               <p className="text-sm text-gray-500 mt-1">
                 Data hasil inputan SIDALEKAS
               </p>
-
               {verif && (
-                <div className="mt-2">
+                <div className="mt-3">
                   <span className="text-xs mr-2 text-gray-500">
                     Status Verifikasi:
                   </span>
@@ -131,87 +107,87 @@ const LKSDetail = () => {
               )}
             </div>
           </div>
-
           <div className="hidden print:block text-sm text-gray-400">
             Dicetak: {new Date().toLocaleDateString("id-ID")}
           </div>
         </div>
 
         {/* Detail Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {infoList.map((item, index) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {infoList.map((item, i) => (
             <div
-              key={index}
-              className="flex items-start gap-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
+              key={i}
+              className="bg-gradient-to-br from-gray-50 to-white hover:from-blue-50 hover:to-white transition-all duration-300 rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md"
             >
-              <span className="text-sm font-semibold text-gray-400 w-6 shrink-0">
-                {index + 1}.
-              </span>
-
-              <item.icon className="h-5 w-5 text-blue-600 mt-0.5" />
-
-              <div>
-                <p className="text-xs uppercase text-gray-500 tracking-wide">
-                  {item.label}
-                </p>
-                <p className="text-sm font-medium text-gray-800">
-                  {display(item.value)}
-                </p>
-              </div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                {i + 1}. {item.label}
+              </p>
+              <p className="text-[15px] font-medium text-gray-800 leading-snug">
+                {display(item.value)}
+              </p>
             </div>
           ))}
+
+          {/* Nomor 21: Lokasi */}
+          {position && (
+            <div className="sm:col-span-2 bg-gradient-to-tr from-gray-50 to-white rounded-2xl border border-gray-100 shadow-lg p-5 hover:shadow-xl transition-all duration-300">
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                21. Lokasi LKS
+              </h2>
+
+              <div className="relative rounded-2xl overflow-hidden border border-blue-100 shadow-inner">
+                <MapContainer
+                  center={position}
+                  zoom={14}
+                  scrollWheelZoom={false}
+                  className="h-80 w-full rounded-2xl z-0"
+                >
+                  <TileLayer url="https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png" />
+                  <Marker position={position} icon={markerIcon}>
+                    <Popup>
+                      <div className="text-sm font-semibold text-gray-800">
+                        {lks.nama}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {lks.alamat || "Alamat tidak tersedia"}
+                      </div>
+                    </Popup>
+                  </Marker>
+                </MapContainer>
+                <div className="absolute inset-0 pointer-events-none rounded-2xl ring-1 ring-blue-300/30"></div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Map */}
-        {position && (
-          <div className="mt-10">
-            <h2 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <MapPinIcon className="h-5 w-5 text-blue-700" />
-              Lokasi LKS
-            </h2>
-
-            <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-              <MapContainer
-                center={position}
-                zoom={13}
-                className="h-72 w-full z-0"
-              >
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                <Marker position={position} icon={markerIcon} />
-              </MapContainer>
-            </div>
-          </div>
-        )}
-
         {/* Tombol Aksi */}
-        <div className="flex justify-between items-center mt-10 print:hidden">
+        <div className="flex flex-col sm:flex-row justify-between items-center mt-12 gap-4 print:hidden">
           <button
             onClick={() => navigate("/admin/lks")}
-            className="flex items-center gap-2 px-5 py-2.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+            className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all shadow-sm"
           >
             <ArrowLeftIcon className="h-4 w-4" />
             Kembali ke Daftar
           </button>
 
-          <div className="flex gap-2">
-            {lks.verifikasi_terbaru && lks.verifikasi_terbaru.id ? (
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            {lks.verifikasi_terbaru?.id ? (
               <button
                 onClick={() =>
                   navigate(`/admin/verifikasi/${lks.verifikasi_terbaru.id}`)
                 }
-                className="flex items-center gap-2 px-5 py-2.5 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition"
+                className="flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition-all"
               >
                 Review Verifikasi
               </button>
             ) : (
-              <p className="text-gray-500 text-sm italic">
+              <p className="text-gray-500 text-sm italic text-center sm:text-left">
                 Belum ada data verifikasi.
               </p>
             )}
-
             <button
               onClick={printPDF}
-              className="flex items-center gap-2 px-5 py-2.5 text-sm text-white bg-green-600 hover:bg-green-700 rounded-lg transition"
+              className="flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-xl shadow-sm transition-all"
             >
               <PrinterIcon className="h-4 w-4" /> Cetak Profil (PDF)
             </button>

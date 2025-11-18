@@ -10,7 +10,6 @@ const VerifikasiDetail = () => {
 
   const loadData = async () => {
     try {
-      // ✅ pakai endpoint sesuai backend route
       const res = await api.get(`/admin/verifikasi/${id}`);
       setData(res.data?.data || null);
     } catch (err) {
@@ -65,6 +64,8 @@ const VerifikasiDetail = () => {
                 ? "text-green-600"
                 : data.status === "tidak_valid"
                 ? "text-red-600"
+                : data.status === "proses_survei"
+                ? "text-blue-600"
                 : "text-yellow-600"
             }`}
           >
@@ -73,7 +74,9 @@ const VerifikasiDetail = () => {
         </p>
         <p>
           <strong>Tanggal Verifikasi:</strong>{" "}
-          {data.tanggal_verifikasi || "-"}
+          {data.tanggal_verifikasi
+            ? new Date(data.tanggal_verifikasi).toLocaleString("id-ID")
+            : "-"}
         </p>
         <p>
           <strong>Penilaian:</strong> {data.penilaian || "-"}
@@ -85,13 +88,13 @@ const VerifikasiDetail = () => {
         <div>
           <strong>Foto Bukti:</strong>
           {Array.isArray(data.foto_bukti) && data.foto_bukti.length > 0 ? (
-            <div className="flex flex-wrap gap-3 mt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2">
               {data.foto_bukti.map((foto, i) => (
                 <img
                   key={i}
                   src={foto.url || foto}
                   alt={`Foto-${i}`}
-                  className="w-32 h-32 object-cover border rounded-md"
+                  className="w-full h-32 object-cover border rounded-md"
                 />
               ))}
             </div>

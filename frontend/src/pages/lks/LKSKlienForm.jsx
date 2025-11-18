@@ -1,23 +1,52 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import api from "../../utils/api";
 import { useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft, Save } from "lucide-react";
 
 const LKSKlienForm = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [kecamatanList, setKecamatanList] = useState([]);
+  const [metaLKS, setMetaLKS] = useState({}); // ➕ dari versi bawah
 
   const [form, setForm] = useState({
     nik: "",
     nama: "",
     alamat: "",
     kelurahan: "",
+    kecamatan_id: "",
     jenis_kebutuhan: "",
     status_bantuan: "",
     status_pembinaan: "",
   });
 
-  const [metaLKS, setMetaLKS] = useState({});
+  // 🔁 Ambil daftar kecamatan dari API (optional, untuk tampilkan info)
+  useEffect(() => {
+    const fetchKecamatan = async () => {
+      try {
+        const res = await api.get("/kecamatan");
+        setKecamatanList(res.data.data || []);
+      } catch (err) {
+        console.error("❌ Gagal memuat kecamatan:", err);
+      }
+    };
+    fetchKecamatan();
+  }, []);
+
+  // 🏢 Ambil info meta LKS (biar tahu kecamatan_id otomatis)
+  useEffect(() => {
+    const fetchMetaLKS = async () => {
+      const lksId = sessionStorage.getItem("lks_id");
+      if (!lksId) return;
+      try {
+        const res = await api.get(`/lks/${lksId}`);
+        setMetaLKS(res.data.data || {});
+      } catch (err) {
+        console.error("❌ Gagal memuat meta LKS:", err);
+      }
+    };
+    fetchMetaLKS();
+  }, []);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -27,24 +56,24 @@ const LKSKlienForm = () => {
     setLoading(true);
 
     try {
-      const lksId = sessionStorage.getItem("lks_id"); // ⬅ ambil dari login LKS
-
+      const lksId = sessionStorage.getItem("lks_id");
       if (!lksId) {
-        alert("Gagal: lks_id tidak ditemukan. Pastikan LKS sudah login.");
+        alert("❌ Gagal: LKS belum login atau lks_id tidak ditemukan.");
         setLoading(false);
         return;
       }
 
+      // Kirim data lengkap dengan kecamatan dari metaLKS
       await api.post("/klien", {
         ...form,
-        lks_id: lksId, 
-        kecamatan_id: metaLKS.kecamatan_id,// ⬅ kunci sinkronisasi dengan admin
+        lks_id: lksId,
+        kecamatan_id: metaLKS.kecamatan_id,
       });
 
-      alert("Klien berhasil ditambahkan!");
+      alert("✅ Klien berhasil ditambahkan!");
       navigate("/lks/klien");
     } catch (err) {
-      console.error("Gagal menyimpan klien:", err);
+      console.error("❌ Gagal menyimpan klien:", err);
       alert("Gagal menyimpan klien, periksa kembali data.");
     } finally {
       setLoading(false);
@@ -52,121 +81,180 @@ const LKSKlienForm = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto bg-white shadow-md rounded-lg p-6">
-      <h2 className="text-xl font-semibold text-slate-700 mb-4">
-        Tambah Klien Baru
-      </h2>
+    <div className="max-w-5xl mx-auto bg-white shadow-xl rounded-2xl border border-gray-100 p-8 mt-4">
+      {/* Header */}
+      <h1 className="text-2xl font-bold text-emerald-700 mb-2">
+        Tambah Data Klien
+      </h1>
+      <p className="text-gray-500 mb-6">
+        Lengkapi form berikut untuk menambahkan data klien baru.
+      </p>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form
+        onSubmit={handleSubmit}
+        className="grid grid-cols-1 md:grid-cols-2 gap-6"
+      >
         {/* NIK */}
         <div>
-          <label className="font-medium">NIK *</label>
+          <label className="block font-semibold text-gray-700 mb-1">
+            1. NIK <span className="text-red-500">*</span>
+          </label>
           <input
             type="text"
             name="nik"
+            placeholder="Masukkan NIK (16 digit)"
             value={form.nik}
             onChange={handleChange}
-            className="w-full border rounded p-2"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
             required
           />
         </div>
 
         {/* Nama */}
         <div>
-          <label className="font-medium">Nama *</label>
+          <label className="block font-semibold text-gray-700 mb-1">
+            2. Nama <span className="text-red-500">*</span>
+          </label>
           <input
             type="text"
             name="nama"
+            placeholder="Masukkan nama lengkap"
             value={form.nama}
             onChange={handleChange}
-            className="w-full border rounded p-2"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
             required
+          />
+        </div>
+
+        {/* Kelurahan */}
+        <div>
+          <label className="block font-semibold text-gray-700 mb-1">
+            3. Kelurahan
+          </label>
+          <input
+            type="text"
+            name="kelurahan"
+            placeholder="Contoh: Sukamaju"
+            value={form.kelurahan}
+            onChange={handleChange}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
           />
         </div>
 
         {/* Alamat */}
         <div>
-          <label className="font-medium">Alamat</label>
+          <label className="block font-semibold text-gray-700 mb-1">
+            4. Alamat
+          </label>
           <textarea
             name="alamat"
+            placeholder="Alamat lengkap"
             value={form.alamat}
             onChange={handleChange}
-            className="w-full border rounded p-2"
-          ></textarea>
+            rows={3}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none resize-none"
+          />
         </div>
 
-        {/* Kelurahan */}
+        {/* Kecamatan (readonly otomatis dari metaLKS) */}
         <div>
-          <label className="font-medium">Kelurahan</label>
+          <label className="block font-semibold text-gray-700 mb-1">
+            5. Kecamatan (otomatis)
+          </label>
           <input
             type="text"
-            name="kelurahan"
-            value={form.kelurahan}
-            onChange={handleChange}
-            className="w-full border rounded p-2"
+            value={
+              metaLKS.kecamatan
+                ? metaLKS.kecamatan.nama
+                : "Memuat kecamatan..."
+            }
+            disabled
+            className="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-gray-600"
           />
         </div>
 
         {/* Jenis Kebutuhan */}
         <div>
-          <label className="font-medium">Jenis Kebutuhan</label>
+          <label className="block font-semibold text-gray-700 mb-1">
+            6. Jenis Kebutuhan
+          </label>
           <select
             name="jenis_kebutuhan"
             value={form.jenis_kebutuhan}
             onChange={handleChange}
-            className="w-full border rounded p-2"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
           >
-            <option value="">Pilih Jenis Kebutuhan</option>
+            <option value="">Pilih Jenis</option>
             <option value="anak">Anak</option>
-            <option value="disabilitas">Disabilitas</option>
             <option value="lansia">Lansia</option>
+            <option value="disabilitas">Disabilitas</option>
             <option value="fakir_miskin">Fakir Miskin</option>
-            <option value="lainnya">Lainnya</option>
           </select>
         </div>
 
         {/* Status Bantuan */}
         <div>
-          <label className="font-medium">Status Bantuan</label>
+          <label className="block font-semibold text-gray-700 mb-1">
+            7. Status Bantuan
+          </label>
           <select
             name="status_bantuan"
             value={form.status_bantuan}
             onChange={handleChange}
-            className="w-full border rounded p-2"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
           >
-            <option value="">Pilih Status Bantuan</option>
+            <option value="">Pilih Bantuan</option>
             <option value="BPNT">BPNT</option>
             <option value="PKH">PKH</option>
             <option value="BLT">BLT</option>
-            <option value="lainnya">Lainnya</option>
           </select>
         </div>
 
         {/* Status Pembinaan */}
         <div>
-          <label className="font-medium">Status Pembinaan</label>
+          <label className="block font-semibold text-gray-700 mb-1">
+            8. Status Pembinaan
+          </label>
           <select
             name="status_pembinaan"
             value={form.status_pembinaan}
             onChange={handleChange}
-            className="w-full border rounded p-2"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
           >
-            <option value="">Pilih Status Pembinaan</option>
+            <option value="">Pilih Status</option>
             <option value="aktif">Aktif</option>
-            <option value="selesai">Selesai</option>
+            <option value="nonaktif">Nonaktif</option>
           </select>
         </div>
-
-        {/* Submit */}
-        <button
-          type="submit"
-          className="bg-sky-600 text-white px-4 py-2 rounded-md flex items-center gap-2"
-          disabled={loading}
-        >
-          {loading && <Loader2 className="animate-spin" />}
-          Simpan
-        </button>
       </form>
+
+      {/* Tombol Aksi */}
+      <div className="flex justify-between mt-10">
+        <button
+          type="button"
+          onClick={() => navigate("/lks/klien")}
+          className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 text-sm font-medium transition"
+        >
+          <ArrowLeft size={16} /> Kembali
+        </button>
+
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-white text-sm font-medium transition disabled:opacity-60"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="animate-spin" size={16} />
+              Menyimpan...
+            </>
+          ) : (
+            <>
+              <Save size={16} /> Simpan
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 };
