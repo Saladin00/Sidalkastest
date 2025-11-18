@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Users,
+  ShieldCheck,
 } from "lucide-react";
 
 const LKSLayout = ({ children }) => {
@@ -24,12 +25,14 @@ const LKSLayout = ({ children }) => {
   // ==== NAV ITEMS ====
   const navItems = [
     { label: "Dashboard", to: "/lks", icon: LayoutDashboard, exact: true },
-
     { label: "Data Klien", to: "/lks/klien", icon: Users },
     { label: "Dokumen Pendukung", to: "/lks/dokumen", icon: UploadCloud },
     { label: "Laporan Kegiatan", to: "/lks/laporan", icon: FileText },
-    { label: "Profil Saya", to: "/lks/profile", icon: User },
 
+    // 🆕 Tambahan baru:
+    { label: "Status Verifikasi", to: "/lks/verifikasi", icon: ShieldCheck },
+
+    { label: "Profil Saya", to: "/lks/profile", icon: User },
   ];
 
   const isActive = (path, exact = false) =>
@@ -64,6 +67,14 @@ const LKSLayout = ({ children }) => {
         title: "Laporan Kegiatan",
       };
     }
+
+    if (path.startsWith("/lks/verifikasi")) {
+      return {
+        breadcrumb: ["LKS", "Status Verifikasi"],
+        title: "Status Verifikasi LKS",
+      };
+    }
+
     if (path.startsWith("/lks/profile")) {
       return {
         breadcrumb: ["LKS", "Profil"],

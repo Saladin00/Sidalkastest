@@ -12,14 +12,13 @@ class User extends Authenticatable
     use HasApiTokens, Notifiable, HasRoles;
 
     protected $fillable = [
-    'username',
-    'name',
-    'email',
-    'password',
-    'status_aktif',
-    'kecamatan_id', // ✅ tambahkan ini
-];
-
+        'username',
+        'name',
+        'email',
+        'password',
+        'status_aktif',
+        'kecamatan_id',
+    ];
 
     protected $hidden = [
         'password',
@@ -35,12 +34,29 @@ class User extends Authenticatable
      * 🔗 RELASI
      * ---------------------------- */
 
-    // Relasi ke LKS (satu user punya satu LKS)
+    // Satu user bisa memiliki satu LKS
     public function lks()
-{
-    return $this->hasOne(\App\Models\Lks::class, 'user_id');
-}
+    {
+        return $this->hasOne(Lks::class, 'user_id');
+    }
 
+    // Setiap user (operator/petugas/lks) berada di satu kecamatan
+    public function kecamatan()
+    {
+        return $this->belongsTo(Kecamatan::class, 'kecamatan_id');
+    }
+
+    // Petugas bisa memiliki banyak verifikasi
+    public function verifikasiDibuat()
+    {
+        return $this->hasMany(Verifikasi::class, 'petugas_id');
+    }
+
+    // Semua aktivitas log verifikasi yang dibuat user ini
+    public function verifikasiLogs()
+    {
+        return $this->hasMany(VerifikasiLog::class, 'user_id');
+    }
 
     /* ----------------------------
      * 🧩 HELPER METHODS
@@ -56,16 +72,13 @@ class User extends Authenticatable
         return $this->hasRole('operator');
     }
 
+    public function isPetugas(): bool
+    {
+        return $this->hasRole('petugas');
+    }
+
     public function isLks(): bool
     {
         return $this->hasRole('lks');
     }
-    
-    public function kecamatan()
-{
-    return $this->belongsTo(Kecamatan::class);
 }
-
-}
-
-

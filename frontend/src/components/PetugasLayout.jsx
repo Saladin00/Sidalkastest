@@ -48,7 +48,7 @@ const PetugasLayout = ({ children }) => {
     if (path.startsWith("/petugas/verifikasi")) {
       return {
         breadcrumb: ["Petugas", "Verifikasi Data"],
-        title: "Verifikasi Data",
+        title: "Verifikasi Data Lapangan",
       };
     }
 

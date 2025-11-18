@@ -13,7 +13,7 @@ const LKSKlienList = () => {
   });
   const [perPage, setPerPage] = useState(10);
 
-  // 🔁 Load data klien (gabungan versi terbaik)
+  // 🔁 Load data klien
   const loadKlien = async (customFilters = filters) => {
     try {
       setLoading(true);
@@ -27,10 +27,8 @@ const LKSKlienList = () => {
       };
 
       const res = await api.get("/klien", { params });
-
       console.log("📦 RESP API:", res.data);
 
-      // ✅ Aman dari berbagai struktur response
       const data =
         res?.data?.data?.data ||
         res?.data?.data ||
@@ -56,11 +54,11 @@ const LKSKlienList = () => {
     loadKlien();
   }, []);
 
-  // 🔁 Ubah filter dan refresh data
+  // 🔁 Filter & reset
   const handleFilterChange = (key, value) => {
-    const updatedFilters = { ...filters, [key]: value };
-    setFilters(updatedFilters);
-    loadKlien(updatedFilters);
+    const updated = { ...filters, [key]: value };
+    setFilters(updated);
+    loadKlien(updated);
   };
 
   const handleReset = () => {
@@ -201,14 +199,10 @@ const LKSKlienList = () => {
                 ))}
               </tr>
             </thead>
-
             <tbody className="divide-y divide-gray-200">
               {klien.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan="10"
-                    className="text-center py-6 text-gray-500 italic"
-                  >
+                  <td colSpan="10" className="text-center py-6 text-gray-500 italic">
                     Tidak ada data klien.
                   </td>
                 </tr>
@@ -218,34 +212,28 @@ const LKSKlienList = () => {
                     key={item.id}
                     className="hover:bg-sky-50 transition-all duration-200"
                   >
-                    <td className="px-4 py-3 border border-gray-200 text-center">
-                      {index + 1}
-                    </td>
-                    <td className="px-4 py-3 border border-gray-200">
-                      {item.nik}
-                    </td>
-                    <td className="px-4 py-3 border border-gray-200 font-semibold text-gray-800">
+                    <td className="px-4 py-3 text-center">{index + 1}</td>
+                    <td className="px-4 py-3">{item.nik}</td>
+                    <td className="px-4 py-3 font-semibold text-gray-800">
                       {item.nama}
                     </td>
-                    <td className="px-4 py-3 border border-gray-200">
-                      {item.alamat}
-                    </td>
-                    <td className="px-4 py-3 border border-gray-200 text-center">
+                    <td className="px-4 py-3">{item.alamat}</td>
+                    <td className="px-4 py-3 text-center">
                       {item.kelurahan?.nama || item.kelurahan || "-"}
                     </td>
-                    <td className="px-4 py-3 border border-gray-200 text-center">
+                    <td className="px-4 py-3 text-center">
                       {item.kecamatan?.nama || "-"}
                     </td>
-                    <td className="px-4 py-3 border border-gray-200 text-center">
+                    <td className="px-4 py-3 text-center">
                       {item.jenis_kebutuhan || "-"}
                     </td>
-                    <td className="px-4 py-3 border border-gray-200 text-center">
+                    <td className="px-4 py-3 text-center">
                       {item.status_bantuan || "-"}
                     </td>
-                    <td className="px-4 py-3 border border-gray-200 text-center">
+                    <td className="px-4 py-3 text-center">
                       {renderStatusBadge(item.status_pembinaan)}
                     </td>
-                    <td className="px-4 py-3 border border-gray-200 text-center">
+                    <td className="px-4 py-3 text-center">
                       <div className="flex justify-center gap-2">
                         <Link
                           to={`/lks/klien/detail/${item.id}`}

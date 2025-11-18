@@ -14,8 +14,8 @@ import {
 import ReCAPTCHA from "react-google-recaptcha";
 
 // ambil site key dari env (Vite) atau isi manual
-const RECAPTCHA_SITE_KEY ="6LdJBw8sAAAAAE2C2A5Gywdf4L5N2HB7VwgIKVm5"
-  import.meta.env.VITE_RECAPTCHA_SITE_KEY || "YOUR_RECAPTCHA_SITE_KEY";
+const RECAPTCHA_SITE_KEY = "6LdJBw8sAAAAAE2C2A5Gywdf4L5N2HB7VwgIKVm5";
+import.meta.env.VITE_RECAPTCHA_SITE_KEY || "YOUR_RECAPTCHA_SITE_KEY";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -398,7 +398,7 @@ const Register = () => {
             </div>
           </div>
         </div>
-      </div>      
+      </div>
     </div>
   );
 };

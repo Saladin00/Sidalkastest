@@ -108,7 +108,8 @@ const Login = () => {
         password,
       });
 
-      const { access_token, role, user, message } = response.data;
+      const { access_token, user, message } = response.data;
+      const role = user?.role; // ✅ ambil role dari dalam user
 
       if (!access_token) {
         setErrorMsg(
@@ -117,11 +118,18 @@ const Login = () => {
         return;
       }
 
+      if (!role) {
+        setErrorMsg("Role tidak dikenali, login gagal.");
+        return;
+      }
+
+      // ✅ Simpan semua data penting ke sessionStorage
       sessionStorage.setItem("token", access_token);
       sessionStorage.setItem("role", role);
       sessionStorage.setItem("user", JSON.stringify(user));
-      sessionStorage.setItem("lks_id", user.lks_id);
+      sessionStorage.setItem("lks_id", user.lks_id ?? "");
 
+      // ✅ Redirect sesuai role
       switch (role) {
         case "admin":
           navigate("/admin");
@@ -137,24 +145,6 @@ const Login = () => {
           break;
         default:
           setErrorMsg("Role tidak dikenali, login gagal.");
-      }
-    } catch (error) {
-      console.error("Login Error:", error.response?.data || error.message);
-
-      if (error.response?.status === 403) {
-        setErrorMsg("Akun Anda belum disetujui oleh Admin Dinsos.");
-      } else if (error.response?.status === 401) {
-        setErrorMsg("Email atau password salah.");
-      } else if (error.response?.status === 422) {
-        const validationErrors = error.response?.data?.errors;
-        const message = validationErrors
-          ? Object.values(validationErrors).flat().join(", ")
-          : "Format data tidak valid.";
-        setErrorMsg(message);
-      } else {
-        setErrorMsg(
-          error.response?.data?.message || "Login gagal, coba lagi nanti."
-        );
       }
     } finally {
       setIsLoading(false);
@@ -308,7 +298,8 @@ const Login = () => {
                 <p className="text-sm text-gray-600 max-w-xl">
                   Pengurus lembaga sosial dapat melakukan registrasi akun,
                   pendaftaran lembaga, hingga pengelolaan data secara terpusat
-                  melalui aplikasi <span className="font-semibold">SIDALEKAS</span>.
+                  melalui aplikasi{" "}
+                  <span className="font-semibold">SIDALEKAS</span>.
                 </p>
               </div>
 
