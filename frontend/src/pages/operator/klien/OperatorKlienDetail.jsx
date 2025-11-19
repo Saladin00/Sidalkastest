@@ -1,18 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { ArrowLeftIcon, UserIcon } from "@heroicons/react/24/solid";
+import { Loader2 } from "lucide-react";
 import api from "../../../utils/api";
 
-const OperatorKlienDetail = () => {
+export default function OperatorKlienDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [klien, setKlien] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // ==========================
   // Ambil detail klien
-  // ==========================
   useEffect(() => {
     const loadDetail = async () => {
       setLoading(true);
@@ -50,88 +49,87 @@ const OperatorKlienDetail = () => {
     );
   }
 
+  // daftar field seperti admin
+  const fields = [
+    { label: "NIK", value: klien.nik },
+    { label: "Nama", value: klien.nama },
+    { label: "Alamat", value: klien.alamat },
+    { label: "Kelurahan", value: klien.kelurahan },
+    { label: "Kecamatan", value: klien.kecamatan?.nama },
+    { label: "LKS Penanggung Jawab", value: klien.lks?.nama },
+    { label: "Jenis Kebutuhan", value: klien.jenis_kebutuhan },
+    { label: "Status Bantuan", value: klien.status_bantuan },
+    {
+      label: "Status Pembinaan",
+      value: (
+        <span
+          className={`px-3 py-1 text-xs rounded-full font-semibold ${
+            klien.status_pembinaan === "aktif"
+              ? "bg-green-100 text-green-700"
+              : "bg-gray-100 text-gray-600"
+          }`}
+        >
+          {klien.status_pembinaan || "-"}
+        </span>
+      ),
+    },
+  ];
+
   return (
-    <div className="max-w-3xl mx-auto bg-white shadow-md rounded-xl border border-slate-200 p-6">
-      {/* Tombol Kembali */}
-      <button
-        onClick={() => navigate("/operator/klien")}
-        className="flex items-center gap-1 text-slate-600 hover:text-slate-900 mb-5"
-      >
-        <ArrowLeft size={16} /> Kembali ke daftar
-      </button>
-
-      {/* Judul */}
-      <h2 className="text-2xl font-bold text-slate-800 mb-6">
-        Detail Klien: {klien.nama}
-      </h2>
-
-      {/* Informasi utama */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-sm">
-        <div>
-          <p className="text-gray-500">NIK</p>
-          <p className="font-semibold">{klien.nik || "-"}</p>
-        </div>
-
-        <div>
-          <p className="text-gray-500">Nama Lengkap</p>
-          <p className="font-semibold">{klien.nama || "-"}</p>
-        </div>
-
-        <div>
-          <p className="text-gray-500">Kelurahan</p>
-          <p className="font-semibold">{klien.kelurahan || "-"}</p>
-        </div>
-
-        <div>
-          <p className="text-gray-500">Alamat</p>
-          <p className="font-semibold">{klien.alamat || "-"}</p>
-        </div>
-
-        <div>
-          <p className="text-gray-500">Jenis Kebutuhan</p>
-          <p className="font-semibold">{klien.jenis_kebutuhan || "-"}</p>
-        </div>
-
-        <div>
-          <p className="text-gray-500">Status Bantuan</p>
-          <p className="font-semibold">{klien.status_bantuan || "-"}</p>
-        </div>
-
-        <div>
-          <p className="text-gray-500">Status Pembinaan</p>
-          <p
-            className={`font-semibold px-3 py-1 rounded-full text-xs inline-block ${
-              klien.status_pembinaan === "aktif"
-                ? "bg-green-100 text-green-700"
-                : "bg-gray-100 text-gray-600"
-            }`}
-          >
-            {klien.status_pembinaan || "-"}
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
+      <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-10 border border-gray-100">
+        {/* HEADER */}
+        <div className="text-center mb-10 sm:mb-12">
+          <UserIcon className="h-12 w-12 sm:h-14 sm:w-14 text-emerald-600 mx-auto mb-3" />
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-emerald-700">
+            Detail Klien
+          </h1>
+          <p className="text-gray-500 text-sm sm:text-base mt-1">
+            Informasi lengkap mengenai data klien
           </p>
         </div>
 
-        <div>
-          <p className="text-gray-500">Kecamatan</p>
-          <p className="font-semibold">{klien.kecamatan?.nama || "-"}</p>
+        {/* GRID DATA */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 lg:gap-8">
+          {fields.map((field, index) => (
+            <div
+              key={index}
+              className="bg-gray-50 border border-gray-200 rounded-xl p-5 sm:p-6 
+              hover:border-emerald-300 hover:bg-gray-100 transition-shadow shadow-sm"
+            >
+              <span className="text-xs sm:text-sm text-gray-500 font-semibold tracking-wide block mb-1">
+                {String(index + 1).padStart(2, "0")}. {field.label}
+              </span>
+              <p className="text-gray-900 font-semibold text-base sm:text-lg">
+                {field.value ?? "-"}
+              </p>
+            </div>
+          ))}
         </div>
 
-        <div>
-          <p className="text-gray-500">LKS Penanggung Jawab</p>
-          <p className="font-semibold">{klien.lks?.nama || "-"}</p>
+        {/* TERAKHIR DIPERBARUI */}
+        <div className="mt-10 border-t pt-4 text-sm sm:text-base text-gray-600">
+          <p className="text-gray-500 mb-1">Diperbarui Terakhir</p>
+          <p className="font-semibold text-slate-700">
+            {klien.updated_at
+              ? new Date(klien.updated_at).toLocaleString("id-ID")
+              : "-"}
+          </p>
         </div>
-      </div>
 
-      {/* Informasi tambahan */}
-      <div className="mt-8 border-t pt-4 text-sm">
-        <p className="text-gray-500 mb-1">Diperbarui Terakhir</p>
-        <p className="font-semibold text-slate-700">
-          {klien.updated_at
-            ? new Date(klien.updated_at).toLocaleString("id-ID")
-            : "-"}
-        </p>
+        {/* BACK BUTTON */}
+        <div className="mt-8">
+          <button
+            onClick={() => navigate("/operator/klien")}
+            className="inline-flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3
+            text-sm sm:text-base font-medium text-gray-700 border border-gray-300 
+            rounded-lg hover:bg-gray-100 transition shadow-sm"
+          >
+            <ArrowLeftIcon className="h-5 w-5" />
+            Kembali
+          </button>
+        </div>
       </div>
     </div>
   );
-};
-
-export default OperatorKlienDetail;
+}

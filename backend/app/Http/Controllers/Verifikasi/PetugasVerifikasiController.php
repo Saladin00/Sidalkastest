@@ -11,17 +11,25 @@ class PetugasVerifikasiController extends Controller
 {
     // 🔹 Petugas lihat verifikasi dari kecamatan-nya
     public function index(Request $request)
-    {
-        $user = $request->user();
+{
+    $user = $request->user();
 
-        $data = Verifikasi::with(['lks'])
-            ->where('petugas_id', $user->id)
-            ->where('status', 'dikirim_petugas')
-            ->orderByDesc('created_at')
-            ->get();
+    $data = \App\Models\Verifikasi::with(['lks', 'lks.kecamatan'])
+        ->where('petugas_id', $user->id)
+        ->whereIn('status', ['proses_survei', 'menunggu'])
+        ->whereHas('lks', fn($q) =>
+            $q->where('kecamatan_id', $user->kecamatan_id)
+        )
+        ->orderByDesc('created_at')
+        ->get();
 
-        return response()->json(['success' => true, 'data' => $data]);
-    }
+    return response()->json([
+        'success' => true,
+        'data' => $data,
+    ]);
+}
+
+
 
     // 🔹 Isi hasil survei dan kirim ke admin
     public function kirimKeAdmin(Request $request, $id)

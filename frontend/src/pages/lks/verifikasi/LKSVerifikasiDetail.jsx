@@ -1,17 +1,29 @@
+// src/pages/lks/verifikasi/LKSVerifikasiDetail.jsx
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, FileImage } from "lucide-react";
 import api from "../../../utils/api";
 
 const LKSVerifikasiDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
     try {
       const res = await api.get(`/lks/verifikasi/${id}`);
-      setData(res.data?.data);
+      const result = res.data?.data;
+
+      if (typeof result.foto_bukti === "string") {
+        try {
+          result.foto_bukti = JSON.parse(result.foto_bukti);
+        } catch {
+          result.foto_bukti = [];
+        }
+      }
+      if (!Array.isArray(result.foto_bukti)) result.foto_bukti = [];
+      setData(result);
     } catch (err) {
       console.error("❌ Gagal ambil detail verifikasi:", err);
       alert("Gagal memuat detail verifikasi.");
@@ -23,6 +35,21 @@ const LKSVerifikasiDetail = () => {
   useEffect(() => {
     loadData();
   }, [id]);
+
+  const getStatusStyle = (status) => {
+    switch (status?.toLowerCase()) {
+      case "menunggu":
+        return "bg-blue-100 text-blue-700 border border-blue-300";
+      case "proses_survei":
+        return "bg-yellow-100 text-yellow-700 border border-yellow-300";
+      case "valid":
+        return "bg-green-100 text-green-700 border border-green-300";
+      case "tidak_valid":
+        return "bg-red-100 text-red-700 border border-red-300";
+      default:
+        return "bg-slate-100 text-slate-700 border border-slate-300";
+    }
+  };
 
   if (loading)
     return (
@@ -39,87 +66,109 @@ const LKSVerifikasiDetail = () => {
     );
 
   return (
-    <div className="max-w-3xl mx-auto bg-white border border-slate-200 rounded-md shadow-md p-6">
-      <div className="flex justify-between items-center mb-5">
-        <h2 className="text-lg font-semibold text-slate-800">
+    <div className="max-w-5xl mx-auto p-8">
+      {/* Card utama */}
+      <div className="bg-white shadow-xl rounded-2xl border border-slate-200 p-8 relative overflow-hidden">
+        {/* Accent background */}
+        <div className="absolute top-0 right-0 w-72 h-72 bg-sky-100/40 rounded-full blur-3xl -z-10 translate-x-16 -translate-y-10"></div>
+
+        {/* Header */}
+        <h2 className="text-2xl font-semibold text-sky-900 mb-6">
           Detail Verifikasi
         </h2>
-        <Link
-          to="/lks/verifikasi"
-          className="text-slate-600 hover:text-sky-600 text-sm"
-        >
-          <ArrowLeft size={16} className="inline mr-1" /> Kembali
-        </Link>
-      </div>
 
-      <table className="text-sm w-full border border-slate-200 rounded-lg mb-5">
-        <tbody>
-          <tr>
-            <td className="p-3 font-medium w-48 border-b">Tanggal Verifikasi</td>
-            <td className="p-3 border-b">
-              {data.tanggal_verifikasi
-                ? new Date(data.tanggal_verifikasi).toLocaleString("id-ID")
-                : "-"}
-            </td>
-          </tr>
-          <tr>
-            <td className="p-3 font-medium border-b">Petugas Verifikasi</td>
-            <td className="p-3 border-b">{data.petugas?.name || "-"}</td>
-          </tr>
-          <tr>
-            <td className="p-3 font-medium border-b">Status</td>
-            <td className="p-3 border-b">
-              <span
-                className={`px-2 py-1 rounded-full text-xs ${
-                  data.status === "valid"
-                    ? "bg-green-100 text-green-700"
-                    : data.status === "tidak_valid"
-                    ? "bg-red-100 text-red-700"
-                    : "bg-yellow-100 text-yellow-700"
-                }`}
-              >
-                {data.status?.toUpperCase()}
-              </span>
-            </td>
-          </tr>
-          <tr>
-            <td className="p-3 font-medium border-b">Penilaian</td>
-            <td className="p-3 border-b">{data.penilaian || "-"}</td>
-          </tr>
-          <tr>
-            <td className="p-3 font-medium">Catatan</td>
-            <td className="p-3">{data.catatan || "-"}</td>
-          </tr>
-        </tbody>
-      </table>
+        {/* Detail Table */}
+        <div className="overflow-hidden border border-slate-200 rounded-xl">
+          <table className="w-full text-sm">
+            <tbody className="divide-y divide-slate-200">
+              <tr className="bg-slate-50/60">
+                <td className="p-4 font-semibold text-slate-700 w-1/3">
+                  1. Tanggal Verifikasi
+                </td>
+                <td className="p-4 text-slate-800">
+                  {data.tanggal_verifikasi
+                    ? new Date(data.tanggal_verifikasi).toLocaleString("id-ID")
+                    : "-"}
+                </td>
+              </tr>
+              <tr>
+                <td className="p-4 font-semibold text-slate-700">
+                  2. Petugas Verifikasi
+                </td>
+                <td className="p-4 text-slate-800">{data.petugas?.name || "-"}</td>
+              </tr>
+              <tr className="bg-slate-50/60">
+                <td className="p-4 font-semibold text-slate-700">3. Status</td>
+                <td className="p-4">
+                  <span
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-full ${getStatusStyle(
+                      data.status
+                    )}`}
+                  >
+                    {data.status?.toUpperCase() || "MENUNGGU"}
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td className="p-4 font-semibold text-slate-700">4. Penilaian</td>
+                <td className="p-4 text-slate-800">
+                  {data.penilaian || (
+                    <span className="italic text-slate-500">
+                      Menunggu review dari operator kecamatan.
+                    </span>
+                  )}
+                </td>
+              </tr>
+              <tr className="bg-slate-50/60">
+                <td className="p-4 font-semibold text-slate-700">5. Catatan</td>
+                <td className="p-4 text-slate-800">{data.catatan || "-"}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-      <div>
-        <h3 className="text-sm font-semibold text-slate-700 mb-2">
-          Dokumen / Foto Bukti
-        </h3>
-        {data.foto_bukti?.length ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {data.foto_bukti.map((foto, i) => (
-              <a
-                key={i}
-                href={foto.url || foto}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block border rounded-md overflow-hidden"
-              >
-                <img
-                  src={foto.url || foto}
-                  alt={`Foto ${i + 1}`}
-                  className="object-cover w-full h-32"
-                />
-              </a>
-            ))}
-          </div>
-        ) : (
-          <p className="text-slate-500 text-sm italic">
-            Tidak ada foto atau dokumen bukti.
-          </p>
-        )}
+        {/* Foto Bukti */}
+        <div className="mt-8">
+          <h3 className="text-base font-semibold text-slate-700 mb-3">
+            Dokumen / Foto Bukti
+          </h3>
+          {data.foto_bukti?.length ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {data.foto_bukti.map((foto, i) => {
+                const src = foto.url || foto;
+                return (
+                  <a
+                    key={i}
+                    href={src}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition"
+                  >
+                    <img
+                      src={src}
+                      alt={`Foto ${i + 1}`}
+                      className="object-cover w-full h-36"
+                    />
+                  </a>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-slate-500 text-sm italic flex items-center gap-2">
+              <FileImage size={16} /> Tidak ada foto atau dokumen bukti.
+            </p>
+          )}
+        </div>
+
+        {/* Tombol Kembali */}
+        <div className="mt-10">
+          <button
+            onClick={() => navigate("/lks/verifikasi")}
+            className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-base font-semibold px-6 py-3 rounded-lg shadow-lg transition"
+          >
+            <ArrowLeft size={20} /> Kembali
+          </button>
+        </div>
       </div>
     </div>
   );

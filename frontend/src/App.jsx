@@ -85,16 +85,18 @@ function App() {
         <Route path="/register" element={<Register />} />
         {/* ================= ADMIN ================= */}
         <Route
-          path="/admin"
-          element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <AdminLayout>
-                <DashboardAdmin />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-        {/* ADMIN: USERS */}
+        path="/admin"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminLayout>
+              <DashboardAdmin />
+            </AdminLayout>
+          </ProtectedRoute>
+        }
+      />
+
+
+        {/* --- ADMIN: USERS --- */}
         <Route
           path="/admin/users"
           element={
@@ -110,9 +112,7 @@ function App() {
           path="/admin/lks"
           element={
             <ProtectedRoute allowedRoles={["admin", "operator"]}>
-              <AdminLayout>
                 <LKSList />
-              </AdminLayout>
             </ProtectedRoute>
           }
         />

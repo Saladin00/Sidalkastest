@@ -32,13 +32,25 @@ const OperatorVerifikasiList = () => {
     loadData();
   }, []);
 
+  const getStatusStyle = (status) => {
+    switch (status?.toLowerCase()) {
+      case "menunggu":
+        return "bg-gray-100 text-gray-700 border border-gray-300";
+      case "proses_survei":
+        return "bg-yellow-100 text-yellow-700 border border-yellow-300";
+      case "valid":
+        return "bg-green-100 text-green-700 border border-green-300";
+      case "tidak_valid":
+        return "bg-red-100 text-red-700 border border-red-300";
+      default:
+        return "bg-slate-100 text-slate-700 border border-slate-300";
+    }
+  };
+
   return (
-    <div className="max-w-6xl mx-auto bg-white shadow-md rounded-md border border-slate-200 p-5">
+    <div className="max-w-6xl mx-auto bg-white shadow-lg rounded-xl border border-slate-300 p-6">
       {/* Header */}
-      <div className="flex justify-between items-center mb-5">
-        <h2 className="text-lg font-semibold text-slate-800">
-          Daftar Verifikasi Kecamatan
-        </h2>
+      <div className="flex justify-end mb-5">
         <button
           onClick={handleRefresh}
           className="flex items-center gap-1 border border-slate-300 text-slate-700 px-3 py-1.5 rounded-md hover:bg-slate-100 text-sm transition"
@@ -52,7 +64,7 @@ const OperatorVerifikasiList = () => {
         </button>
       </div>
 
-      {/* Tabel */}
+      {/* Table */}
       {loading ? (
         <div className="flex justify-center items-center py-10 text-gray-500">
           <Loader2 className="animate-spin mr-2" /> Memuat data...
@@ -62,53 +74,60 @@ const OperatorVerifikasiList = () => {
           Belum ada data verifikasi di kecamatan ini.
         </p>
       ) : (
-        <table className="min-w-full text-sm border">
-          <thead className="bg-slate-100 text-slate-700 text-xs font-semibold">
-            <tr>
-              <th className="px-3 py-2 border-r">No</th>
-              <th className="px-3 py-2 border-r">Nama LKS</th>
-              <th className="px-3 py-2 border-r">Petugas</th>
-              <th className="px-3 py-2 border-r">Tanggal</th>
-              <th className="px-3 py-2 border-r">Status</th>
-              <th className="px-3 py-2 text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((item, i) => (
-              <tr key={item.id} className="border-t hover:bg-slate-50">
-                <td className="px-3 py-2 text-center">{i + 1}</td>
-                <td className="px-3 py-2">{item.lks?.nama || "-"}</td>
-                <td className="px-3 py-2">{item.petugas?.name || "-"}</td>
-                <td className="px-3 py-2">
-                  {item.tanggal_verifikasi
-                    ? new Date(item.tanggal_verifikasi).toLocaleDateString("id-ID")
-                    : "-"}
-                </td>
-                <td className="px-3 py-2 text-center">
-                  <span
-                    className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      item.status === "valid"
-                        ? "bg-green-100 text-green-700"
-                        : item.status === "tidak_valid"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {item.status?.toUpperCase()}
-                  </span>
-                </td>
-                <td className="px-3 py-2 text-center">
-                  <Link
-                    to={`/operator/verifikasi/detail/${item.id}`}
-                    className="text-sky-600 hover:text-sky-800"
-                  >
-                    <Eye size={18} />
-                  </Link>
-                </td>
+        <div className="overflow-x-auto rounded-lg border border-slate-300">
+          <table className="w-full text-sm border-collapse">
+            <thead className="bg-slate-100 text-slate-700 text-xs font-semibold uppercase border-b border-slate-300">
+              <tr>
+                <th className="px-3 py-3 border-r border-slate-300 text-center">No</th>
+                <th className="px-3 py-3 border-r border-slate-300">Nama LKS</th>
+                <th className="px-3 py-3 border-r border-slate-300">Petugas</th>
+                <th className="px-3 py-3 border-r border-slate-300">Tanggal</th>
+                <th className="px-3 py-3 border-r border-slate-300 text-center">Status</th>
+                <th className="px-3 py-3 text-center">Aksi</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.map((item, i) => (
+                <tr
+                  key={item.id}
+                  className="border-t border-slate-300 hover:bg-slate-50 transition"
+                >
+                  <td className="px-3 py-2 text-center border-r border-slate-300">
+                    {i + 1}
+                  </td>
+                  <td className="px-3 py-2 border-r border-slate-300 font-medium text-slate-800">
+                    {item.lks?.nama || "-"}
+                  </td>
+                  <td className="px-3 py-2 border-r border-slate-300 text-slate-700">
+                    {item.petugas?.name || "-"}
+                  </td>
+                  <td className="px-3 py-2 border-r border-slate-300 text-slate-700">
+                    {item.tanggal_verifikasi
+                      ? new Date(item.tanggal_verifikasi).toLocaleDateString("id-ID")
+                      : "-"}
+                  </td>
+                  <td className="px-3 py-2 border-r border-slate-300 text-center">
+                    <span
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold inline-block ${getStatusStyle(
+                        item.status
+                      )}`}
+                    >
+                      {item.status?.toUpperCase() || "MENUNGGU"}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    <Link
+                      to={`/operator/verifikasi/detail/${item.id}`}
+                      className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-800 text-sm font-medium transition"
+                    >
+                      <Eye size={16} /> Lihat Detail
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

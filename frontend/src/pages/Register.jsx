@@ -1,4 +1,3 @@
-// src/pages/Register.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../utils/api";
@@ -10,10 +9,11 @@ import {
   ClipboardCheck,
   Database,
   Check,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import ReCAPTCHA from "react-google-recaptcha";
 
-// ambil site key dari env (Vite) atau isi manual
 const RECAPTCHA_SITE_KEY = "6LdJBw8sAAAAAE2C2A5Gywdf4L5N2HB7VwgIKVm5";
 import.meta.env.VITE_RECAPTCHA_SITE_KEY || "YOUR_RECAPTCHA_SITE_KEY";
 
@@ -32,10 +32,11 @@ const Register = () => {
   const [daftarKecamatan, setDaftarKecamatan] = useState([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
-  // reCAPTCHA token & persetujuan privasi
   const [recaptchaToken, setRecaptchaToken] = useState(null);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     API.get("/kecamatan")
@@ -46,6 +47,10 @@ const Register = () => {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const validatePassword = (pass) =>
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(pass);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -59,6 +64,18 @@ const Register = () => {
 
     if (!agreePrivacy) {
       setError("Anda harus menyetujui kebijakan privasi terlebih dahulu.");
+      return;
+    }
+
+    if (!validateEmail(form.email)) {
+      setError("Format email tidak valid. Gunakan format seperti nama@domain.com.");
+      return;
+    }
+
+    if (!validatePassword(form.password)) {
+      setError(
+        "Password harus minimal 8 karakter, memiliki huruf besar, huruf kecil, angka, dan simbol."
+      );
       return;
     }
 
@@ -76,8 +93,6 @@ const Register = () => {
         password_confirmation: form.confirmPassword,
         jenis_layanan: form.jenis_layanan,
         kecamatan_id: form.kecamatan_id,
-        // kalau backend nanti mau validasi token, kirim juga:
-        // recaptcha_token: recaptchaToken,
       });
 
       setSuccess(
@@ -92,15 +107,13 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex justify-center bg-gradient-to-br from-blue-100 via-blue-200 to-blue-100 relative overflow-hidden">
-      {/* bubble background sama seperti login */}
+      {/* bubble background */}
       <div className="absolute w-72 h-72 bg-blue-400 rounded-full blur-3xl opacity-20 top-10 left-10 animate-pulse" />
       <div className="absolute w-80 h-80 bg-indigo-400 rounded-full blur-3xl opacity-20 bottom-10 right-10 animate-pulse" />
 
-      {/* container tengah */}
       <div className="relative z-10 w-full max-w-6xl px-4 py-14 md:py-16">
-        {/* grid responsif: 1 kolom di mobile, 2 kolom di lg ke atas */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-          {/* PANEL KIRI – CARD REGISTER */}
+          {/* PANEL KIRI */}
           <div className="backdrop-blur-xl bg-gradient-to-b from-sky-100/95 via-sky-50/95 to-blue-50/95 border border-white/70 shadow-2xl rounded-2xl px-7 py-7 flex flex-col justify-between">
             <div>
               <div className="flex justify-center mb-4">
@@ -118,8 +131,7 @@ const Register = () => {
               </p>
               <p className="text-center text-[11px] text-gray-600 mt-2 mb-5">
                 Formulir pendaftaran akun LKS. Akun akan diverifikasi terlebih
-                dahulu oleh Admin Dinas Sosial sebelum dapat digunakan untuk
-                login.
+                dahulu oleh Admin Dinas Sosial sebelum dapat digunakan untuk login.
               </p>
 
               {error && (
@@ -134,6 +146,7 @@ const Register = () => {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-3.5">
+                {/* Username */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-slate-700">
                     Username
@@ -148,6 +161,7 @@ const Register = () => {
                   />
                 </div>
 
+                {/* Nama LKS */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-slate-700">
                     Nama LKS
@@ -162,6 +176,7 @@ const Register = () => {
                   />
                 </div>
 
+                {/* Jenis Layanan */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-slate-700">
                     Jenis Layanan
@@ -178,15 +193,12 @@ const Register = () => {
                     <option value="Disabilitas">Disabilitas</option>
                     <option value="Lansia">Lansia</option>
                     <option value="Fakir Miskin">Fakir Miskin</option>
-                    <option value="Kesejahteraan Sosial">
-                      Kesejahteraan Sosial
-                    </option>
-                    <option value="Rehabilitasi Sosial">
-                      Rehabilitasi Sosial
-                    </option>
+                    <option value="Kesejahteraan Sosial">Kesejahteraan Sosial</option>
+                    <option value="Rehabilitasi Sosial">Rehabilitasi Sosial</option>
                   </select>
                 </div>
 
+                {/* Kecamatan */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-slate-700">
                     Kecamatan
@@ -207,6 +219,7 @@ const Register = () => {
                   </select>
                 </div>
 
+                {/* Email */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-slate-700">
                     E-mail
@@ -216,40 +229,95 @@ const Register = () => {
                     name="email"
                     value={form.email}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm"
+                    className={`w-full px-4 py-2 rounded-lg border ${
+                      form.email && !validateEmail(form.email)
+                        ? "border-red-400"
+                        : "border-gray-300"
+                    } focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm`}
                     required
                   />
+                  {form.email && !validateEmail(form.email) && (
+                    <p className="text-[11px] text-red-500 mt-1">
+                      Format email tidak valid (contoh: nama@domain.com)
+                    </p>
+                  )}
                 </div>
 
-                <div className="space-y-1.5">
+                {/* Password */}
+                <div className="space-y-1.5 relative">
                   <label className="block text-xs font-semibold text-slate-700">
                     Password
                   </label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={form.password}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm"
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={form.password}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-2 rounded-lg border ${
+                        form.password && !validatePassword(form.password)
+                          ? "border-red-400"
+                          : "border-gray-300"
+                      } focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm`}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {form.password && !validatePassword(form.password) && (
+                    <p className="text-[11px] text-red-500 mt-1">
+                      Minimal 8 karakter, wajib ada huruf besar, kecil, angka, dan simbol.
+                    </p>
+                  )}
                 </div>
 
-                <div className="space-y-1.5">
+                {/* Konfirmasi Password */}
+                <div className="space-y-1.5 relative">
                   <label className="block text-xs font-semibold text-slate-700">
                     Konfirmasi Password
                   </label>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={form.confirmPassword}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm"
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      name="confirmPassword"
+                      value={form.confirmPassword}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-2 rounded-lg border ${
+                        form.confirmPassword &&
+                        form.confirmPassword !== form.password
+                          ? "border-red-400"
+                          : "border-gray-300"
+                      } focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm`}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff size={16} />
+                      ) : (
+                        <Eye size={16} />
+                      )}
+                    </button>
+                  </div>
+                  {form.confirmPassword &&
+                    form.confirmPassword !== form.password && (
+                      <p className="text-[11px] text-red-500 mt-1">
+                        Konfirmasi password harus sama dengan password.
+                      </p>
+                    )}
                 </div>
 
-                {/* reCAPTCHA ASLI – model Google, bisa muncul verifikasi gambar */}
+                {/* reCAPTCHA */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-slate-700">
                     Verifikasi Keamanan
@@ -263,7 +331,7 @@ const Register = () => {
                   </div>
                 </div>
 
-                {/* Checkbox kebijakan privasi – model Google */}
+                {/* Checkbox */}
                 <div className="flex items-start gap-2 pt-1">
                   <button
                     type="button"
@@ -299,7 +367,7 @@ const Register = () => {
                   Daftar Akun
                 </button>
 
-                {/* Tombol masuk (dari register ke halaman login) */}
+                {/* Tombol masuk */}
                 <button
                   type="button"
                   onClick={() => navigate("/")}
@@ -316,7 +384,7 @@ const Register = () => {
             </div>
           </div>
 
-          {/* PANEL KANAN – ALUR PROSES (responsif seperti login) */}
+          {/* PANEL KANAN – dikembalikan */}
           <div className="flex h-full order-last lg:order-none mt-6 lg:mt-0">
             <div className="flex flex-col justify-start py-7 pl-2 pr-2 md:pl-8 md:pr-4 text-left text-gray-800 w-full">
               <div>
@@ -329,8 +397,7 @@ const Register = () => {
                 <p className="text-sm text-gray-600 max-w-xl">
                   Pengurus lembaga sosial dapat melakukan registrasi akun,
                   pendaftaran lembaga, hingga pengelolaan data secara terpusat
-                  melalui aplikasi{" "}
-                  <span className="font-semibold">SIDALEKAS</span>.
+                  melalui aplikasi <span className="font-semibold">SIDALEKAS</span>.
                 </p>
               </div>
 
@@ -344,8 +411,8 @@ const Register = () => {
                       Registrasi Akun Sidalekas
                     </h3>
                     <p className="text-[13px] md:text-sm text-gray-600">
-                      Akun lembaga didaftarkan dan diverifikasi oleh Dinas
-                      Sosial Kabupaten/Kota sebelum dapat mengakses SIDALEKAS.
+                      Akun lembaga didaftarkan dan diverifikasi oleh Dinas Sosial
+                      Kabupaten/Kota sebelum dapat mengakses SIDALEKAS.
                     </p>
                   </div>
                 </div>
@@ -359,8 +426,8 @@ const Register = () => {
                       Pendaftaran Lembaga
                     </h3>
                     <p className="text-[13px] md:text-sm text-gray-600">
-                      Pengurus mengisi biodata lengkap lembaga sebagai dasar
-                      pengajuan verifikasi dan penetapan status LKS.
+                      Pengurus mengisi biodata lengkap lembaga sebagai dasar pengajuan
+                      verifikasi dan penetapan status LKS.
                     </p>
                   </div>
                 </div>
@@ -374,8 +441,8 @@ const Register = () => {
                       Verifikasi oleh Dinas Sosial
                     </h3>
                     <p className="text-[13px] md:text-sm text-gray-600">
-                      Dinas Sosial melakukan validasi data dan kunjungan
-                      lapangan sebelum menetapkan status verifikasi lembaga.
+                      Dinas Sosial melakukan validasi data dan kunjungan lapangan sebelum
+                      menetapkan status verifikasi lembaga.
                     </p>
                   </div>
                 </div>
@@ -389,14 +456,15 @@ const Register = () => {
                       Lembaga Mengelola Data
                     </h3>
                     <p className="text-[13px] md:text-sm text-gray-600">
-                      Setelah disetujui, lembaga dapat memperbarui data,
-                      pelaporan, dan monitoring program sosial secara berkala.
+                      Setelah disetujui, lembaga dapat memperbarui data, pelaporan, dan
+                      monitoring program sosial secara berkala.
                     </p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+          {/* PANEL KANAN END */}
         </div>
       </div>
     </div>

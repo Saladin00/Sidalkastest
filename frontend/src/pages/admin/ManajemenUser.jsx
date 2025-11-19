@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from "react";
 import API from "../../utils/api";
-import { Search, UserPlus, X } from "lucide-react";
+import { Search, UserPlus, X, RotateCcw, Trash2 } from "lucide-react";
 
 const ManajemenUser = () => {
   const [allUsers, setAllUsers] = useState([]);
   const [displayedUsers, setDisplayedUsers] = useState([]);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [daftarKecamatan, setDaftarKecamatan] = useState([]);
-  const [activeFilter, setActiveFilter] = useState("operator_petugas"); // default
+  const [activeFilter, setActiveFilter] = useState("semua");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [perPage, setPerPage] = useState(10);
@@ -38,11 +37,10 @@ const ManajemenUser = () => {
       });
       const all = res.data.users || [];
       setAllUsers(all);
-      // default tampilkan operator + petugas
-      setDisplayedUsers(all.filter((u) => ["operator", "petugas"].includes(u.role)));
+      setDisplayedUsers(all);
+      setActiveFilter("semua");
     } catch (err) {
-      console.error(err);
-      setError("Gagal memuat data pengguna.");
+      console.error("Gagal memuat data pengguna:", err);
     } finally {
       setLoading(false);
     }
@@ -95,10 +93,26 @@ const ManajemenUser = () => {
     if (!window.confirm("Ubah status aktif pengguna ini?")) return;
     try {
       const token = sessionStorage.getItem("token");
-      await API.patch(`/admin/users/${id}/toggle-status`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await API.patch(`/admin/users/${id}/toggle-status`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       fetchUsers();
     } catch {
       alert("Gagal mengubah status pengguna.");
+    }
+  };
+
+  const handleDeleteUser = async (id) => {
+    if (!window.confirm("Yakin ingin menghapus pengguna ini?")) return;
+    try {
+      const token = sessionStorage.getItem("token");
+      await API.delete(`/admin/users/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      alert("✅ Pengguna berhasil dihapus.");
+      fetchUsers();
+    } catch {
+      alert("Gagal menghapus pengguna.");
     }
   };
 
@@ -119,26 +133,38 @@ const ManajemenUser = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Toolbar */}
+      {/* TOP BAR */}
       <div className="flex flex-col gap-3 mb-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-2 text-sm text-gray-700">
-          <span>Show</span>
-          <select
-            value={perPage}
-            onChange={(e) => {
-              setPerPage(Number(e.target.value));
-              setCurrentPage(1);
-            }}
-            className="border border-gray-300 rounded-md px-2 py-1 bg-white text-sm"
+        <div className="flex flex-wrap items-center gap-2">
+          {[
+            { key: "semua", label: "Semua User" },
+            { key: "operator", label: "Operator" },
+            { key: "petugas", label: "Petugas" },
+            { key: "lks", label: "LKS" },
+            { key: "admin", label: "Admin" },
+          ].map((btn) => (
+            <button
+              key={btn.key}
+              onClick={() => applyFilter(btn.key)}
+              className={`px-4 py-1.5 text-xs rounded-md border transition ${
+                activeFilter === btn.key
+                  ? "bg-slate-900 text-white border-slate-900"
+                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              {btn.label}
+            </button>
+          ))}
+          <button
+            onClick={fetchUsers}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100 transition"
           >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-          </select>
-          <span>entries</span>
+            <RotateCcw size={14} /> Muat Ulang
+          </button>
         </div>
 
-        <div className="flex items-center gap-3 md:justify-end">
+        {/* Search + Add */}
+        <div className="flex items-center gap-3">
           <div className="relative">
             <span className="absolute inset-y-0 left-0 pl-2 flex items-center text-gray-400">
               <Search size={16} />
@@ -154,69 +180,44 @@ const ManajemenUser = () => {
               className="pl-7 pr-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-slate-500 bg-white min-w-[200px]"
             />
           </div>
-
           <button
             onClick={() => setShowForm(true)}
             className="inline-flex items-center gap-2 bg-slate-900 hover:bg-black text-white px-4 py-2 rounded-md text-sm font-medium shadow-sm"
           >
-            <UserPlus size={16} />
-            <span>Tambah User</span>
+            <UserPlus size={16} /> Tambah User
           </button>
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {[
-          { key: "semua", label: "Semua User" },
-          { key: "operator", label: "Operator" },
-          { key: "petugas", label: "Petugas" },
-          { key: "lks", label: "LKS" },
-          { key: "admin", label: "Admin" },
-        ].map((btn) => (
-          <button
-            key={btn.key}
-            onClick={() => applyFilter(btn.key)}
-            className={`px-4 py-1.5 text-xs rounded-md border transition ${
-              activeFilter === btn.key
-                ? "bg-slate-900 text-white border-slate-900"
-                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            {btn.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Table */}
+      {/* TABLE */}
       {loading ? (
         <p className="text-center text-gray-500">Memuat data...</p>
       ) : (
         <div className="overflow-x-auto bg-white shadow-md rounded-xl ring-1 ring-slate-200/60">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm border-collapse border border-gray-200">
             <thead>
-              <tr className="bg-slate-100 text-slate-800">
-                <th className="px-4 py-3 w-14 font-semibold">No</th>
-                <th className="px-4 py-3 font-semibold">Username</th>
-                <th className="px-4 py-3 font-semibold">Nama</th>
-                <th className="px-4 py-3 font-semibold">Email</th>
-                <th className="px-4 py-3 font-semibold">Role</th>
-                <th className="px-4 py-3 font-semibold">Kecamatan</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 text-center font-semibold">Aksi</th>
+              <tr className="bg-slate-100 text-slate-800 border-b border-gray-300">
+                <th className="px-4 py-3 w-14 font-semibold border border-gray-200">No</th>
+                <th className="px-4 py-3 font-semibold border border-gray-200">Username</th>
+                <th className="px-4 py-3 font-semibold border border-gray-200">Nama</th>
+                <th className="px-4 py-3 font-semibold border border-gray-200">Email</th>
+                <th className="px-4 py-3 font-semibold border border-gray-200">Role</th>
+                <th className="px-4 py-3 font-semibold border border-gray-200">Kecamatan</th>
+                <th className="px-4 py-3 font-semibold border border-gray-200">Status</th>
+                <th className="px-4 py-3 text-center font-semibold border border-gray-200">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {paginatedUsers.length ? (
                 paginatedUsers.map((user, i) => (
-                  <tr key={user.id} className="border-b hover:bg-slate-50">
-                    <td className="px-4 py-3">{startIndex + i + 1}</td>
-                    <td className="px-4 py-3">{user.username}</td>
-                    <td className="px-4 py-3">{user.name}</td>
-                    <td className="px-4 py-3">{user.email}</td>
-                    <td className="px-4 py-3 capitalize">{user.role}</td>
-                    <td className="px-4 py-3">{user.kecamatan?.nama || "-"}</td>
-                    <td className="px-4 py-3">
+                  <tr key={user.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 border border-gray-200">{startIndex + i + 1}</td>
+                    <td className="px-4 py-3 border border-gray-200">{user.username}</td>
+                    <td className="px-4 py-3 border border-gray-200">{user.name}</td>
+                    <td className="px-4 py-3 border border-gray-200">{user.email}</td>
+                    <td className="px-4 py-3 border border-gray-200 capitalize">{user.role}</td>
+                    <td className="px-4 py-3 border border-gray-200">{user.kecamatan?.nama || "-"}</td>
+                    <td className="px-4 py-3 border border-gray-200">
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-semibold ${
                           user.status_aktif
@@ -227,23 +228,31 @@ const ManajemenUser = () => {
                         {user.status_aktif ? "Aktif" : "Nonaktif"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <button
-                        onClick={() => handleToggleStatus(user.id)}
-                        className={`px-3 py-1.5 text-xs rounded-full ${
-                          user.status_aktif
-                            ? "text-rose-700 ring-1 ring-rose-200 hover:bg-rose-50"
-                            : "text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-50"
-                        }`}
-                      >
-                        {user.status_aktif ? "Nonaktifkan" : "Aktifkan"}
-                      </button>
+                    <td className="px-4 py-3 border border-gray-200 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleToggleStatus(user.id)}
+                          className={`px-3 py-1.5 text-xs rounded-full ${
+                            user.status_aktif
+                              ? "text-rose-700 ring-1 ring-rose-200 hover:bg-rose-50"
+                              : "text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-50"
+                          }`}
+                        >
+                          {user.status_aktif ? "Nonaktifkan" : "Aktifkan"}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="p-1.5 rounded-full text-red-700 ring-1 ring-red-200 hover:bg-red-50 flex items-center justify-center"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="8" className="text-center py-6 text-gray-500">
+                  <td colSpan="8" className="text-center py-6 text-gray-500 border border-gray-200">
                     Tidak ada data pengguna.
                   </td>
                 </tr>
@@ -253,8 +262,8 @@ const ManajemenUser = () => {
         </div>
       )}
 
-      {/* Modal Tambah User */}
-      {showForm && (
+      {/* FORM TAMBAH USER */}
+     {showForm && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between px-5 py-3 border-b">
@@ -319,6 +328,53 @@ const ManajemenUser = () => {
           </div>
         </div>
       )}
+
+      {/* BOTTOM CONTROLS */}
+      <div className="mt-3 flex flex-col md:flex-row justify-between items-center text-xs text-gray-600 gap-2">
+        <div className="flex items-center gap-2">
+          <span>Tampilkan</span>
+          <select
+            value={perPage}
+            onChange={(e) => {
+              setPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="border border-gray-300 rounded-md px-2 py-1 bg-white text-xs"
+          >
+            {[5, 10, 25, 50, 100].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+          <span>data per halaman</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            disabled={currentPageSafe === 1}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            className={`px-2 py-1 border rounded ${
+              currentPageSafe === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100"
+            }`}
+          >
+            &laquo; Sebelumnya
+          </button>
+          <span>
+            Halaman {currentPageSafe} dari {totalPages}
+          </span>
+          <button
+            disabled={currentPageSafe === totalPages}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            className={`px-2 py-1 border rounded ${
+              currentPageSafe === totalPages
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-gray-100"
+            }`}
+          >
+            Selanjutnya &raquo;
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

@@ -8,10 +8,11 @@ const ManajemenLKSOperator = () => {
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("");
 
-  // Pagination (opsional)
-  const [page, setPage] = useState(1);
-  const perPage = 10;
+  // Pagination (tanpa tombol prev/next)
+  const [page] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
   // 🔹 Ambil data akun LKS di kecamatan operator
   const loadUsers = async () => {
@@ -62,15 +63,27 @@ const ManajemenLKSOperator = () => {
     }
   };
 
-  // 🔹 Filter dan pagination
-  const filtered = users.filter((u) =>
-    u.name?.toLowerCase().includes(search.toLowerCase()) ||
-    u.username?.toLowerCase().includes(search.toLowerCase()) ||
-    u.email?.toLowerCase().includes(search.toLowerCase())
-  );
+  // 🔹 Filter data
+  const filtered = users.filter((u) => {
+    const matchSearch =
+      u.name?.toLowerCase().includes(search.toLowerCase()) ||
+      u.username?.toLowerCase().includes(search.toLowerCase()) ||
+      u.email?.toLowerCase().includes(search.toLowerCase());
+    const matchStatus =
+      !statusFilter ||
+      (statusFilter === "aktif" && u.status_aktif) ||
+      (statusFilter === "nonaktif" && !u.status_aktif);
+    return matchSearch && matchStatus;
+  });
 
-  const paginated = filtered.slice((page - 1) * perPage, page * perPage);
-  const totalPages = Math.ceil(filtered.length / perPage);
+  // 🔹 Pagination sederhana (tanpa tombol navigasi)
+  const paginated = filtered.slice(0, perPage);
+
+  // 🔹 Reset filter
+  const handleReset = () => {
+    setSearch("");
+    setStatusFilter("");
+  };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -80,20 +93,43 @@ const ManajemenLKSOperator = () => {
           Manajemen Akun LKS di Kecamatan Anda
         </h2>
 
-        <div className="flex items-center gap-2">
+        {/* FILTER BAR */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Filter Status Akun */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="h-9 px-3 text-sm border border-slate-300 rounded-md bg-white"
+          >
+            <option value="">Semua Status</option>
+            <option value="aktif">Aktif</option>
+            <option value="nonaktif">Nonaktif</option>
+          </select>
+
+          {/* Reset */}
+          <button
+            onClick={handleReset}
+            className="h-9 px-3 text-sm bg-white border border-slate-300 rounded-md hover:bg-gray-100"
+          >
+            Reset
+          </button>
+
+          {/* Search */}
           <div className="relative">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
             <input
               type="text"
               placeholder="Cari nama/email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="border border-slate-300 rounded-md px-3 py-1.5 pl-8 text-sm w-56 focus:ring-2 focus:ring-slate-500 outline-none"
-            />
-            <Search
-              size={16}
-              className="absolute left-2 top-2.5 text-slate-400"
+              className="pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-sky-500 bg-white w-56"
             />
           </div>
+
+          {/* Refresh */}
           <button
             onClick={handleRefresh}
             className="flex items-center gap-1 border border-slate-300 text-slate-700 px-3 py-1.5 rounded-md hover:bg-slate-100 text-sm transition"
@@ -125,12 +161,12 @@ const ManajemenLKSOperator = () => {
           <table className="min-w-full text-sm text-slate-700">
             <thead className="bg-slate-100 border-b text-xs font-semibold text-slate-600">
               <tr>
-                <th className="px-4 py-3 w-12 text-center border-r">No</th>
+                <th className="px-4 py-3 text-center w-12 border-r">No</th>
                 <th className="px-4 py-3 border-r">Username</th>
                 <th className="px-4 py-3 border-r">Nama</th>
                 <th className="px-4 py-3 border-r">Email</th>
-                <th className="px-4 py-3 border-r">Status Akun</th>
-                <th className="px-4 py-3 border-r">Kecamatan</th>
+                <th className="px-4 py-3 border-r text-center">Status Akun</th>
+                <th className="px-4 py-3 border-r text-center">Kecamatan</th>
                 <th className="px-4 py-3 text-center">Aksi</th>
               </tr>
             </thead>
@@ -151,14 +187,14 @@ const ManajemenLKSOperator = () => {
                     className="border-t hover:bg-slate-50 transition"
                   >
                     <td className="px-4 py-3 text-center border-r">
-                      {(page - 1) * perPage + idx + 1}
+                      {idx + 1}
                     </td>
                     <td className="px-4 py-3 border-r">{u.username}</td>
                     <td className="px-4 py-3 border-r font-medium text-slate-800">
                       {u.name}
                     </td>
                     <td className="px-4 py-3 border-r">{u.email}</td>
-                    <td className="px-4 py-3 border-r">
+                    <td className="px-4 py-3 text-center border-r">
                       <span
                         className={`px-3 py-1 text-xs font-semibold rounded-full ${
                           u.status_aktif
@@ -169,7 +205,7 @@ const ManajemenLKSOperator = () => {
                         {u.status_aktif ? "Aktif" : "Nonaktif"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 border-r">
+                    <td className="px-4 py-3 text-center border-r">
                       {u.kecamatan?.nama || "-"}
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -192,28 +228,31 @@ const ManajemenLKSOperator = () => {
         )}
       </div>
 
-      {/* PAGINATION */}
+      {/* FOOTER */}
       <div className="flex justify-between items-center text-sm text-slate-600 mt-3">
-        <p>
-          Menampilkan {Math.min(users.length, page * perPage)} dari{" "}
-          {users.length} data
-        </p>
-        <div className="flex gap-2">
-          <button
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
+        {/* Show per page */}
+        <div className="flex items-center gap-2">
+          <label htmlFor="perPage">Tampilkan</label>
+          <select
+            id="perPage"
+            value={perPage}
+            onChange={(e) => setPerPage(Number(e.target.value))}
+            className="border rounded px-2 py-1 text-sm"
           >
-            ⬅️ Prev
-          </button>
-          <button
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Next ➡️
-          </button>
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="40">40</option>
+            <option value="60">60</option>
+            <option value="100">100</option>
+          </select>
+          <span>data per halaman</span>
         </div>
+
+        {/* Info jumlah data */}
+        <p>
+          Menampilkan {Math.min(filtered.length, perPage)} dari {filtered.length} data
+        </p>
       </div>
     </div>
   );

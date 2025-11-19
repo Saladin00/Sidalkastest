@@ -30,8 +30,8 @@ const Login = () => {
 
   // fungsi gambar captcha di canvas (mirip contoh yang kamu kirim)
   const drawCaptcha = (text) => {
-    const canvas = captchaCanvasRef.current;
-    if (!canvas) return;
+  const canvas = captchaCanvasRef.current;
+  if (!canvas) return;
 
     const width = 130;
     const height = 40;
