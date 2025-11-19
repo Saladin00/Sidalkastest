@@ -14,7 +14,7 @@ class Lks extends Model
     protected $fillable = [
         'nama',
         'jenis_layanan',
-        'status', // aktif / pending / ditolak
+        'status',
         'alamat',
         'kelurahan',
         'kecamatan_id',
@@ -33,7 +33,7 @@ class Lks extends Model
         'hasil_observasi',
         'tindak_lanjut',
         'dokumen',
-        'user_id'
+        'user_id',
     ];
 
     protected $casts = [
@@ -45,54 +45,39 @@ class Lks extends Model
      * 🔗 RELASI
      * ---------------------------- */
 
-    /**
-     * 🧍 1️⃣ Satu LKS dimiliki oleh satu user (akun LKS)
-     */
+    // 1️⃣ LKS dimiliki oleh satu user (akun LKS)
     public function user()
-{
-    return $this->belongsTo(\App\Models\User::class, 'user_id');
-}
-
-
-    /**
-     * 👥 2️⃣ LKS memiliki banyak klien
-     */
-    public function klien()
     {
-        return $this->hasMany(Klien::class, 'lks_id', 'id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
-    /**
-     * 🏙️ 3️⃣ LKS berada di satu kecamatan
-     */
+    // 2️⃣ LKS berada di satu kecamatan
     public function kecamatan()
     {
         return $this->belongsTo(Kecamatan::class, 'kecamatan_id');
     }
 
-    /**
-     * 🧾 4️⃣ LKS memiliki banyak laporan kunjungan
-     */
+    // 3️⃣ LKS memiliki banyak klien
+    public function klien()
+    {
+        return $this->hasMany(Klien::class, 'lks_id');
+    }
+
+    // 4️⃣ LKS memiliki banyak laporan kunjungan
     public function kunjungan()
     {
-        return $this->hasMany(LaporanKunjungan::class, 'lks_id', 'id');
+        return $this->hasMany(LaporanKunjungan::class, 'lks_id');
     }
 
-    /**
-     * 📋 5️⃣ Relasi ke semua data verifikasi
-     */
+    // 5️⃣ LKS memiliki banyak data verifikasi
     public function verifikasi()
     {
-        return $this->hasMany(\App\Models\Verifikasi::class, 'lks_id', 'id');
+        return $this->hasMany(Verifikasi::class, 'lks_id');
     }
 
-    /**
-     * ✅ 6️⃣ Relasi ke verifikasi terbaru
-     * Mengambil data verifikasi terakhir berdasarkan kolom ID.
-     */
+    // 6️⃣ Verifikasi terbaru (relasi satu-satu dengan verifikasi terakhir)
     public function verifikasiTerbaru()
     {
-        return $this->hasOne(\App\Models\Verifikasi::class, 'lks_id', 'id' )
-                    ->latestOfMany(); // lebih rapi dari manual latest('id')
+        return $this->hasOne(Verifikasi::class, 'lks_id')->latestOfMany();
     }
 }

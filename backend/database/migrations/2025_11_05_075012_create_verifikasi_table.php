@@ -10,7 +10,7 @@ return new class extends Migration {
         Schema::create('verifikasi', function (Blueprint $t) {
             $t->id();
 
-            // FK ke tabel LKS kamu: 'l_k_s'
+            // FK ke tabel LKS kamu
             $t->foreignId('lks_id')->constrained('lks')->cascadeOnDelete();
 
             // siapkan kolom klien kalau nanti dipakai
@@ -19,7 +19,7 @@ return new class extends Migration {
             // petugas yang mengisi verifikasi (users)
             $t->foreignId('petugas_id')->constrained('users')->cascadeOnDelete();
 
-            $t->enum('status', ['menunggu','valid','tidak_valid'])->default('menunggu');
+            $t->enum('status', ['menunggu', 'valid', 'tidak_valid'])->default('menunggu');
             $t->text('penilaian')->nullable();
             $t->text('catatan')->nullable();
             $t->json('foto_bukti')->nullable();   // array path foto

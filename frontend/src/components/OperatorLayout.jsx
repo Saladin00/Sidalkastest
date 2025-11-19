@@ -1,6 +1,5 @@
-// src/components/OperatorLayout.jsx
-import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   ShieldCheck,
@@ -12,24 +11,56 @@ import {
   UserCog,
   ChevronDown,
   ChevronUp,
-  FolderOpen, // icon utama LKS
+  FolderOpen,
+  X,
+  CheckCircle2,
+  UserCircle2,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const OperatorLayout = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const current = location.pathname;
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [openSubmenu, setOpenSubmenu] = useState(false); // untuk submenu LKS
+  const [openSubmenu, setOpenSubmenu] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [userInfo, setUserInfo] = useState({ name: "", role: "" });
+  const dropdownRef = useRef(null);
 
+  // Ambil data user dari sessionStorage
+  useEffect(() => {
+    const user = JSON.parse(sessionStorage.getItem("user") || "{}");
+    const role = sessionStorage.getItem("role") || "Operator";
+    const name = user.name || "Pengguna Operator";
+    setUserInfo({ name, role });
+  }, []);
+
+  // Logout dengan animasi toast
   const logout = () => {
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.href = "/";
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = "/";
+    }, 1800);
   };
 
-  // ==================================================
-  // 🔹 MENU NAVIGASI OPERATOR
-  // ==================================================
+  // Tutup dropdown jika klik di luar
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Sidebar menu
   const navItems = [
     { label: "Dashboard", to: "/operator", icon: LayoutDashboard },
     {
@@ -42,84 +73,76 @@ const OperatorLayout = ({ children }) => {
     },
     { label: "Data Klien", to: "/operator/klien", icon: Users },
     { label: "Sebaran Wilayah", to: "/operator/sebaran", icon: MapPin },
+    { label: "Verifikasi Data", to: "/operator/verifikasi", icon: ShieldCheck },
   ];
 
   const isActive = (path) =>
     path === "/operator" ? current === "/operator" : current.startsWith(path);
 
-  // ==================================================
-  // 🔹 BREADCRUMB + TITLE OTOMATIS
-  // ==================================================
   const getPageMeta = (path) => {
-    if (path === "/operator") {
+    if (path === "/operator")
       return { breadcrumb: ["Dashboard"], title: "Dashboard Operator" };
-    }
-
-    if (path.startsWith("/operator/manajemen-lks")) {
-      return { breadcrumb: ["Operator", "LKS", "Manajemen LKS"], title: "Manajemen Akun LKS Kecamatan" };
-    }
-
-    if (path.startsWith("/operator/lks-list")) {
-      return { breadcrumb: ["Operator", "LKS", "Daftar LKS"], title: "Daftar LKS di Kecamatan" };
-    }
-
-    if (path.startsWith("/operator/klien")) {
+    if (path.startsWith("/operator/manajemen-lks"))
+      return { breadcrumb: ["Operator", "LKS", "Manajemen LKS"], title: "Manajemen Akun LKS" };
+    if (path.startsWith("/operator/lks-list"))
+      return { breadcrumb: ["Operator", "LKS", "Daftar LKS"], title: "Daftar LKS Kecamatan" };
+    if (path.startsWith("/operator/klien"))
       return { breadcrumb: ["Operator", "Data Klien"], title: "Data Klien Kecamatan" };
-    }
-
-    if (path.startsWith("/operator/sebaran")) {
-      return { breadcrumb: ["Operator", "Sebaran Wilayah"], title: "Sebaran Wilayah LKS & Klien" };
-    }
-
+    if (path.startsWith("/operator/sebaran"))
+      return { breadcrumb: ["Operator", "Sebaran Wilayah"], title: "Sebaran Wilayah" };
+    if (path.startsWith("/operator/verifikasi"))
+      return { breadcrumb: ["Operator", "Verifikasi Data"], title: "Verifikasi Data LKS" };
     return { breadcrumb: ["Dashboard"], title: "Dashboard Operator" };
   };
 
   const pageMeta = getPageMeta(current);
 
-  // ==================================================
-  // 🔹 RENDER
-  // ==================================================
+  // Ambil inisial nama
+  const getInitials = (name = "") => {
+    const parts = name.trim().split(" ");
+    if (parts.length === 1) return parts[0]?.substring(0, 2).toUpperCase() || "OP";
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-100">
       {/* Sidebar */}
       <aside
-        className={`relative flex flex-col bg-sky-900 text-sky-50 border-r border-sky-800 shadow-lg transition-all duration-300
-        ${isCollapsed ? "w-20" : "w-64"}`}
+        className={`relative flex flex-col bg-sky-900 text-sky-50 shadow-lg transition-all duration-300 ${
+          isCollapsed ? "w-20" : "w-64"
+        }`}
       >
-        {/* Tombol collapse */}
+        {/* Tombol toggle */}
         <button
           onClick={() => setIsCollapsed((prev) => !prev)}
-          className="absolute right-0 top-8 z-30 w-7 h-7 translate-x-1/2
-            rounded-full bg-white/95 border border-sky-300 flex items-center justify-center
-            text-sky-700 shadow-md hover:bg-sky-50 hover:border-sky-400 transition"
+          className="absolute right-0 top-8 z-30 w-7 h-7 translate-x-1/2 rounded-full bg-white/95 border border-sky-300 flex items-center justify-center text-sky-700 shadow-md hover:bg-sky-50 transition"
         >
           {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
 
-        {/* Logo + Title */}
+        {/* Logo */}
         <div className="flex items-center gap-3 px-7 py-5 border-b border-sky-800">
           <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
           {!isCollapsed && (
-            <div className="flex flex-col">
+            <div>
               <span className="text-[11px] tracking-[0.25em] text-emerald-200 uppercase">
                 SIDALEKAS
               </span>
-              <span className="text-sm tracking-[0.20em] font-semibold text-sky-50">
+              <p className="text-sm font-semibold text-sky-50 tracking-wide">
                 Panel Operator
-              </span>
+              </p>
             </div>
           )}
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+        {/* Menu Navigasi */}
+        <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-4">
           {!isCollapsed && (
             <p className="px-2 text-[11px] tracking-wide uppercase text-sky-200">
               Menu Operator
             </p>
           )}
-
-          <ul className="space-y-1">
+          <ul className="space-y-1 text-sm">
             {navItems.map(({ label, to, icon: Icon, submenu }) => {
               if (!submenu) {
                 const active = isActive(to);
@@ -127,38 +150,27 @@ const OperatorLayout = ({ children }) => {
                   <li key={to}>
                     <Link
                       to={to}
-                      className={`group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all
-                        ${
-                          active
-                            ? "bg-sky-800 text-white shadow-sm"
-                            : "text-sky-100 hover:bg-sky-800/80 hover:text-white"
-                        }`}
+                      className={`group flex items-center gap-3 rounded-xl px-3 py-2 transition-all ${
+                        active
+                          ? "bg-sky-800 text-white"
+                          : "text-sky-100 hover:bg-sky-800/80 hover:text-white"
+                      }`}
                     >
                       {active && (
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 h-7 w-1 rounded-full bg-emerald-400" />
+                        <span className="w-1 h-6 bg-emerald-400 rounded-full" />
                       )}
-                      <Icon
-                        size={18}
-                        className={`shrink-0 ${
-                          active
-                            ? "text-white"
-                            : "text-sky-200 group-hover:text-white"
-                        }`}
-                      />
+                      <Icon size={18} className="text-sky-200 group-hover:text-white" />
                       {!isCollapsed && <span>{label}</span>}
                     </Link>
                   </li>
                 );
               } else {
-                // 🔹 MENU DENGAN SUBMENU
-                const isSubActive = submenu.some((s) =>
-                  current.startsWith(s.to)
-                );
+                const isSubActive = submenu.some((s) => current.startsWith(s.to));
                 return (
                   <li key={label}>
                     <button
                       onClick={() => setOpenSubmenu((prev) => !prev)}
-                      className={`flex items-center justify-between w-full rounded-xl px-3 py-2 text-sm transition-all ${
+                      className={`flex items-center justify-between w-full rounded-xl px-3 py-2 transition-all ${
                         isSubActive
                           ? "bg-sky-800 text-white"
                           : "text-sky-100 hover:bg-sky-800/80 hover:text-white"
@@ -167,22 +179,18 @@ const OperatorLayout = ({ children }) => {
                       <div className="flex items-center gap-3">
                         <Icon
                           size={18}
-                          className={`shrink-0 ${
-                            isSubActive ? "text-white" : "text-sky-200"
-                          }`}
+                          className={`shrink-0 ${isSubActive ? "text-white" : "text-sky-200"}`}
                         />
                         {!isCollapsed && <span>{label}</span>}
                       </div>
-                      {!isCollapsed && (
-                        openSubmenu ? (
+                      {!isCollapsed &&
+                        (openSubmenu ? (
                           <ChevronUp size={14} className="text-sky-200" />
                         ) : (
                           <ChevronDown size={14} className="text-sky-200" />
-                        )
-                      )}
+                        ))}
                     </button>
 
-                    {/* Submenu list */}
                     {openSubmenu && !isCollapsed && (
                       <ul className="mt-1 ml-5 space-y-1 border-l border-sky-800/60 pl-3">
                         {submenu.map(({ label: subLabel, to: subTo, icon: SubIcon }) => {
@@ -191,7 +199,7 @@ const OperatorLayout = ({ children }) => {
                             <li key={subTo}>
                               <Link
                                 to={subTo}
-                                className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition ${
+                                className={`flex items-center gap-2 rounded-lg px-2 py-1.5 transition ${
                                   subActive
                                     ? "bg-sky-800 text-white"
                                     : "text-sky-100 hover:bg-sky-800/60 hover:text-white"
@@ -212,11 +220,11 @@ const OperatorLayout = ({ children }) => {
           </ul>
         </nav>
 
-        {/* Logout */}
-        <div className="border-t border-sky-800 px-3 py-3 bg-sky-900/90">
+        {/* Tombol Logout di Sidebar */}
+        <div className="border-t border-sky-800 px-3 py-4">
           <button
-            onClick={logout}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-500 px-3 py-2 text-xs font-medium text-white shadow hover:bg-red-600 transition-colors"
+            onClick={() => setShowLogoutConfirm(true)}
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-500 hover:bg-red-600 transition text-sm font-semibold text-white py-2.5 shadow-md"
           >
             <LogOut size={16} />
             {!isCollapsed && <span>Logout</span>}
@@ -224,53 +232,136 @@ const OperatorLayout = ({ children }) => {
         </div>
       </aside>
 
-      {/* Konten utama */}
+      {/* Main */}
       <div className="flex-1 flex flex-col">
-        <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-slate-100">
-          <div className="pr-3 py-2 pl-10 flex items-center justify-between">
-            <div className="space-y-1">
+        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-slate-200 shadow-sm">
+          <div className="flex justify-between items-center px-8 py-3">
+            <div>
               <p className="text-[11px] font-semibold tracking-[0.18em] text-emerald-600 uppercase">
                 Sistem Informasi Data Lembaga Kesejahteraan Sosial
               </p>
-
-              {/* Breadcrumb */}
-              <div className="flex items-center gap-1 text-xs md:text-sm text-slate-500">
-                {pageMeta.breadcrumb.map((item, idx) => (
-                  <span key={idx} className="flex items-center gap-1">
-                    {idx > 0 && <span className="text-slate-400">›</span>}
-                    <span
-                      className={
-                        idx === pageMeta.breadcrumb.length - 1
-                          ? "font-semibold text-sky-800"
-                          : "text-slate-500"
-                      }
-                    >
-                      {item}
-                    </span>
-                  </span>
-                ))}
-              </div>
-
-              <h1 className="text-lg md:text-xl font-semibold text-sky-900">
+              <h1 className="text-lg md:text-xl font-semibold text-sky-900 mt-0.5">
                 {pageMeta.title}
               </h1>
             </div>
 
-            {/* Info user kanan */}
-            <div className="hidden md:flex items-center gap-3">
-              <div className="text-right">
-                <p className="text-[11px] text-slate-400">Peran aktif</p>
-                <p className="text-sm font-medium text-slate-700">Operator</p>
-              </div>
-              <div className="w-9 h-9 rounded-full bg-sky-100 flex items-center justify-center text-sky-700 text-xs font-semibold">
-                OP
-              </div>
+            {/* Profil Dropdown */}
+            <div ref={dropdownRef} className="relative">
+              <motion.div
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="flex items-center gap-4 bg-gradient-to-r from-sky-50 to-blue-50 rounded-2xl px-5 py-2.5 shadow-inner border border-blue-100 cursor-pointer hover:shadow-lg transition-all"
+              >
+                <div className="flex flex-col text-right leading-tight">
+                  <p className="text-[11px] text-slate-400 font-medium">Peran aktif</p>
+                  <p className="text-sm font-semibold text-sky-700 capitalize">
+                    {userInfo.role}
+                  </p>
+                  <p className="text-[12px] text-slate-600 font-medium truncate max-w-[140px]">
+                    {userInfo.name}
+                  </p>
+                </div>
+                <div className="relative w-11 h-11 rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 text-white flex items-center justify-center text-sm font-bold shadow-md">
+                  <span>{getInitials(userInfo.name)}</span>
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-400 border-2 border-white rounded-full" />
+                </div>
+              </motion.div>
+
+              {/* Dropdown cuma Keluar */}
+              <AnimatePresence>
+                {dropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.25 }}
+                    className="absolute right-0 mt-3 w-48 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50"
+                  >
+                    <button
+                      onClick={() => {
+                        setShowLogoutConfirm(true);
+                        setDropdownOpen(false);
+                      }}
+                      className="flex items-center gap-2 w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition font-medium"
+                    >
+                      <LogOut size={18} className="text-red-500" />
+                      Keluar
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </header>
 
         <main className="p-6 bg-slate-50 flex-1 overflow-y-auto">{children}</main>
       </div>
+
+      {/* Modal Konfirmasi Logout */}
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <motion.div
+            className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-md z-[999]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 200, damping: 20 }}
+              className="bg-white rounded-2xl shadow-2xl p-8 w-[90%] max-w-sm text-center border border-slate-200 relative"
+            >
+              <X
+                size={20}
+                onClick={() => setShowLogoutConfirm(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 cursor-pointer transition"
+              />
+              <UserCircle2 size={48} className="mx-auto mb-3 text-sky-500" />
+              <h3 className="text-lg font-semibold text-slate-800 mb-1">
+                Konfirmasi Keluar
+              </h3>
+              <p className="text-sm text-slate-500 mb-6">
+                Apakah Anda yakin ingin keluar dari akun operator?
+              </p>
+              <div className="flex justify-center gap-3">
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={logout}
+                  className="px-4 py-2 text-sm font-semibold rounded-lg bg-red-500 hover:bg-red-600 text-white shadow transition"
+                >
+                  Ya, Keluar
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast Notifikasi */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            transition={{ duration: 0.3 }}
+            className="fixed bottom-6 right-6 flex items-center gap-3 bg-white/90 backdrop-blur-lg border border-slate-200 rounded-xl shadow-lg px-4 py-3 text-slate-700 z-[1000]"
+          >
+            <CheckCircle2 className="text-emerald-500" size={22} />
+            <span className="text-sm font-medium">
+              Anda telah keluar dari sistem.
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

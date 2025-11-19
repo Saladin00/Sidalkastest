@@ -7,9 +7,14 @@ use App\Http\Controllers\LKSController;
 use App\Http\Controllers\KlienController;
 use App\Http\Controllers\LaporanKunjunganController;
 use App\Http\Controllers\DokumenLKSController;
-use App\Http\Controllers\VerifikasiController;
 use App\Http\Controllers\LksApprovalController;
 use App\Http\Controllers\KecamatanController;
+
+// 🔹 Import Verifikasi Controllers per Role
+use App\Http\Controllers\Verifikasi\AdminVerifikasiController;
+use App\Http\Controllers\Verifikasi\OperatorVerifikasiController;
+use App\Http\Controllers\Verifikasi\PetugasVerifikasiController;
+use App\Http\Controllers\Verifikasi\LksVerifikasiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,90 +33,107 @@ Route::get('/lks/{id}/cetak-pdf', [LKSController::class, 'cetakProfil']);
 */
 Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
 
-    // AUTH
+    // 🔹 AUTH
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
     /*
-    |--------------------------------------------------------
-    | UNIVERSAL: PROFILE VIEW (SEMUA ROLE BISA AKSES)
-    |--------------------------------------------------------
+    |--------------------------------------------------------------------------
+    | UNIVERSAL PROFILE (SEMUA ROLE)
+    |--------------------------------------------------------------------------
     */
     Route::get('/lks/profile-view', [LKSController::class, 'profileView']);
     Route::get('/lks/me', [LKSController::class, 'me']);
 
     /*
-    |--------------------------------------------------------
-    | UPDATE PROFILE (HANYA ADMIN & LKS)
-    |--------------------------------------------------------
+    |--------------------------------------------------------------------------
+    | LKS PROFILE UPDATE (LKS & ADMIN)
+    |--------------------------------------------------------------------------
     */
     Route::middleware(['role:lks|admin'])->group(function () {
         Route::put('/lks/me/update', [LKSController::class, 'updateMe']);
     });
 
     /*
-    |--------------------------------------------------------
-    | CUSTOM ROUTE LKS → HARUS DI ATAS apiResource!
-    |--------------------------------------------------------
+    |--------------------------------------------------------------------------
+    | LKS - DOKUMEN & KUNJUNGAN
+    |--------------------------------------------------------------------------
     */
     Route::post('/lks/{id}/upload-dokumen', [LKSController::class, 'uploadDokumen']);
     Route::get('/lks/by-kecamatan/{id}', [LKSController::class, 'getByKecamatan']);
     Route::get('/lks/{id}/dokumen', [DokumenLKSController::class, 'index']);
     Route::post('/lks/dokumen', [DokumenLKSController::class, 'store']);
     Route::delete('/lks/dokumen/{id}', [DokumenLKSController::class, 'destroy']);
-
     Route::get('/lks/{id}/kunjungan', [LaporanKunjunganController::class, 'index']);
     Route::post('/lks/{id}/kunjungan', [LaporanKunjunganController::class, 'store']);
 
     /*
-    |--------------------------------------------------------
-    | VERIFIKASI
-    |--------------------------------------------------------
+    |--------------------------------------------------------------------------
+    | VERIFIKASI (PER ROLE)
+    |--------------------------------------------------------------------------
     */
-    Route::get('/verifikasi', [VerifikasiController::class, 'index']);
-    Route::post('/verifikasi', [VerifikasiController::class, 'store']);
-    Route::get('/verifikasi/{id}', [VerifikasiController::class, 'show']);
-    Route::get('/verifikasi/{id}/logs', [VerifikasiController::class, 'logs']);
-    Route::put('/verifikasi/{id}/status', [VerifikasiController::class, 'updateStatus']);
 
-    /*
-    |--------------------------------------------------------
-    | USER CRUD (ADMIN)
-    |--------------------------------------------------------
-    */
+    // 🧩 ADMIN
     Route::prefix('admin')->middleware('role:admin')->group(function () {
+        Route::prefix('verifikasi')->group(function () {
+            Route::get('/', [AdminVerifikasiController::class, 'index']); // daftar verifikasi
+            Route::get('/{id}', [AdminVerifikasiController::class, 'show']); // detail
+            Route::put('/{id}/validasi', [AdminVerifikasiController::class, 'validasiAkhir']); // validasi akhir
+            Route::get('/{id}/logs', [AdminVerifikasiController::class, 'logs']); // histori log
+        });
+
+        // 🔹 Manajemen User
         Route::apiResource('users', UserController::class);
         Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus']);
 
+        // 🔹 LKS Approval
         Route::get('/lks/pending', [LksApprovalController::class, 'index']);
         Route::patch('/lks/{id}/approve', [LksApprovalController::class, 'approve']);
         Route::patch('/lks/{id}/reject', [LksApprovalController::class, 'reject']);
     });
 
-    /*
-    |--------------------------------------------------------
-    | USER MANAGEMENT UNTUK OPERATOR
-    |--------------------------------------------------------
-    */
+    // 🧩 OPERATOR
     Route::prefix('operator')->middleware('role:operator')->group(function () {
-        // Operator: melihat akun LKS di kecamatannya
-        Route::get('/users', [UserController::class, 'index']);
+        Route::prefix('verifikasi')->group(function () {
+            Route::get('/', [OperatorVerifikasiController::class, 'index']); // daftar verifikasi per kecamatan
+            Route::get('/{id}', [OperatorVerifikasiController::class, 'show']); // detail
+            Route::post('/{id}/kirim-ke-petugas', [OperatorVerifikasiController::class, 'kirimKePetugas']); // kirim ke petugas
+        });
 
-        // Operator: aktif/nonaktif akun LKS di kecamatannya
+        // 🔹 Operator hanya bisa aktifkan LKS di kecamatan-nya
+        Route::get('/users', [UserController::class, 'index']);
         Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus']);
     });
 
+    // 🧩 PETUGAS
+    Route::prefix('petugas')->middleware('role:petugas')->group(function () {
+        Route::prefix('verifikasi')->group(function () {
+            Route::get('/', [PetugasVerifikasiController::class, 'index']); // daftar tugas survei
+            Route::get('/{id}', [PetugasVerifikasiController::class, 'show']); // detail LKS untuk disurvei
+            Route::put('/{id}/kirim-admin', [PetugasVerifikasiController::class, 'kirimKeAdmin']); // kirim hasil ke admin
+        });
+    });
+
+    // 🧩 LKS
+    Route::prefix('lks')->middleware('role:lks')->group(function () {
+        Route::prefix('verifikasi')->group(function () {
+            Route::get('/', [LksVerifikasiController::class, 'index']); // status pengajuan
+            Route::get('/{id}', [LksVerifikasiController::class, 'show']); // detail hasil verifikasi
+            Route::post('/pengajuan', [LksVerifikasiController::class, 'pengajuan']); // kirim pengajuan verifikasi
+        });
+    });
+
     /*
-    |--------------------------------------------------------
-    | KLIEN
-    |--------------------------------------------------------
+    |--------------------------------------------------------------------------
+    | KLIEN (SEMUA ROLE SESUAI IZIN)
+    |--------------------------------------------------------------------------
     */
     Route::apiResource('klien', KlienController::class);
 
     /*
-    |--------------------------------------------------------
-    | ⚠️ PENTING: apiResource LKS HARUS PALING BAWAH
-    |--------------------------------------------------------
+    |--------------------------------------------------------------------------
+    | ⚠️ API RESOURCE LKS (HARUS DI AKHIR)
+    |--------------------------------------------------------------------------
     */
     Route::apiResource('lks', LKSController::class);
 });

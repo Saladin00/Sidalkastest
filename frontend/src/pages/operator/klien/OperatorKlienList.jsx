@@ -1,3 +1,4 @@
+// src/pages/operator/klien/OperatorKlienList.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../utils/api";
@@ -57,7 +58,7 @@ export default function OperatorKlienList() {
     fetchKlien();
   };
 
-  // Filter pencarian & filter dropdown
+  // 🔍 Filter pencarian & dropdown
   const searchFiltered = klien.filter((item) => {
     const q = searchTerm.toLowerCase();
     if (!q) return true;
@@ -147,23 +148,12 @@ export default function OperatorKlienList() {
               className="h-9 pl-7 pr-3 text-sm border rounded-full"
             />
           </div>
-          <button
-            onClick={fetchKlien}
-            className="flex items-center gap-1 text-sm border rounded-md px-3 py-1.5 bg-white hover:bg-gray-100"
-          >
-            <RotateCw size={14} />
-            Muat Ulang
-          </button>
         </div>
       </div>
 
       {/* TABLE */}
       <div className="overflow-x-auto bg-white shadow rounded-xl">
-        {loading ? (
-          <div className="py-10 text-center text-gray-500">
-            Memuat data klien...
-          </div>
-        ) : pageData.length === 0 ? (
+        {pageData.length === 0 ? (
           <div className="py-10 text-center text-gray-400 italic">
             Tidak ada data ditemukan.
           </div>
@@ -185,7 +175,7 @@ export default function OperatorKlienList() {
             </thead>
             <tbody>
               {pageData.map((item, index) => (
-                <tr key={item.id} className="hover:bg-slate-50">
+                <tr key={item.id} className="hover:bg-slate-50 transition">
                   <td className="border px-3 py-2 text-center">
                     {startIndex + index + 1}
                   </td>
@@ -202,9 +192,9 @@ export default function OperatorKlienList() {
                       onClick={() =>
                         navigate(`/operator/klien/detail/${item.id}`)
                       }
-                      className="flex items-center justify-center gap-1 px-3 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs rounded hover:bg-blue-100 transition-all"
+                      className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow transition"
                     >
-                      <Eye size={14} /> Lihat
+                      <Eye size={16} /> Lihat
                     </button>
                   </td>
                 </tr>

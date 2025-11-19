@@ -1,223 +1,229 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import api from "../../../utils/api";
 import {
-  getVerifikasiDetail,
-  updateStatusVerifikasi,
-} from "@/services/verifikasiApi";
-import VerificationBadge from "@/components/shared/VerificationBadge";
-import VerifikasiLog from "@/components/verifikasi/VerifikasiLog";
-import { ArrowLeft, Save } from "lucide-react";
+  Loader2,
+  ArrowLeft,
+  CheckCircle2,
+  XCircle,
+  ClipboardList,
+  AlertCircle,
+} from "lucide-react";
 
-export default function VerifikasiReview() {
+const VerifikasiReview = () => {
   const { id } = useParams();
-  const [data, setData] = useState(null);
-  const [status, setStatus] = useState("valid");
-  const [catatanAdmin, setCatatanAdmin] = useState("");
-  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState("menunggu");
+  const [catatan, setCatatan] = useState("");
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (!id) return;
-    load();
-  }, [id]);
-
-  async function load() {
+  const loadData = async () => {
     try {
-      const result = await getVerifikasiDetail(id);
-      setData(result);
-      setStatus(result.status || "menunggu");
+      const res = await api.get(`/admin/verifikasi/${id}`);
+      const detail = res.data?.data;
+      setData(detail);
+      setStatus(detail?.status || "menunggu");
+      setCatatan(detail?.catatan || "");
     } catch (err) {
-      console.error("Gagal memuat data verifikasi:", err);
-      alert("Gagal memuat data verifikasi!");
+      console.error("❌ Gagal ambil detail verifikasi:", err);
+      alert("Gagal memuat data verifikasi.");
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
-  async function save() {
+  const handleSubmit = async () => {
+    if (!status) {
+      setError("Silakan pilih status verifikasi terlebih dahulu.");
+      return;
+    }
+    if (!catatan.trim()) {
+      setError("Catatan tidak boleh kosong. Mohon isi alasan atau penjelasan review.");
+      return;
+    }
+
+    const confirmSave = window.confirm(
+      "Apakah Anda yakin ingin menyimpan hasil review ini?"
+    );
+    if (!confirmSave) return;
+
+    setError("");
+    setSaving(true);
     try {
-      setSaving(true);
-      await updateStatusVerifikasi(id, {
-        status,
-        catatan_admin: catatanAdmin,
-      });
-      alert("✅ Status berhasil diperbarui!");
+      await api.put(`/admin/verifikasi/${id}/status`, { status, catatan });
+      alert("✅ Status verifikasi berhasil diperbarui!");
       navigate("/admin/verifikasi");
     } catch (err) {
-      console.error(err);
-      alert("❌ Gagal menyimpan status. Periksa koneksi atau server!");
+      console.error("❌ Gagal update status:", err);
+      alert("Terjadi kesalahan saat menyimpan hasil review.");
     } finally {
       setSaving(false);
     }
-  }
+  };
 
-  const storage =
-    import.meta.env.VITE_STORAGE_URL || import.meta.env.VITE_API_URL;
+  useEffect(() => {
+    loadData();
+  }, [id]);
 
-  if (!data) {
+  if (loading)
     return (
-      <div className="min-h-screen bg-gray-50 px-4 py-6">
-        <div className="mx-auto max-w-5xl rounded-xl border border-slate-200 bg-white px-6 py-8 text-sm text-gray-600 shadow-sm">
-          Memuat data verifikasi…
-        </div>
+      <div className="flex justify-center items-center py-20 text-gray-500">
+        <Loader2 className="animate-spin mr-2" /> Memuat form review...
       </div>
     );
-  }
 
-  const fotoList = Array.isArray(data.foto_bukti) ? data.foto_bukti : [];
+  if (!data)
+    return (
+      <div className="text-center py-20 text-gray-500">
+        Data verifikasi tidak ditemukan.
+      </div>
+    );
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-6">
-      <div className="mx-auto max-w-5xl space-y-6">
-        {/* HEADER */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-100"
+    <div className="max-w-3xl mx-auto bg-white shadow-2xl border border-slate-200 rounded-2xl p-8 relative overflow-hidden">
+      {/* Background Accent */}
+      <div className="absolute top-0 right-0 w-80 h-80 bg-sky-100/50 rounded-full blur-3xl -z-10 translate-x-20 -translate-y-10"></div>
+
+      {/* Header */}
+      <div className="mb-8 border-b pb-4">
+        <h2 className="text-2xl font-semibold text-sky-900 flex items-center gap-2">
+          <ClipboardList className="text-sky-600" size={24} />
+          Review Verifikasi LKS
+        </h2>
+        <p className="text-sm text-slate-500 mt-1">
+          Pastikan hasil verifikasi dan catatan admin sudah akurat sebelum disimpan.
+        </p>
+      </div>
+
+      {/* Info LKS */}
+      <div className="bg-gradient-to-r from-slate-50 to-sky-50 border border-slate-200 rounded-xl p-5 mb-8">
+        <div className="grid sm:grid-cols-2 gap-y-3 text-[15px] text-slate-700">
+          <div>
+            <p className="font-semibold text-slate-600 mb-1">Nama LKS</p>
+            <p className="bg-white border border-slate-200 rounded-md px-3 py-2 shadow-inner">
+              {data.lks?.nama || "-"}
+            </p>
+          </div>
+
+          <div>
+            <p className="font-semibold text-slate-600 mb-1">Petugas</p>
+            <p className="bg-white border border-slate-200 rounded-md px-3 py-2 shadow-inner">
+              {data.petugas?.name || "Belum Ditugaskan"}
+            </p>
+          </div>
+
+          <div className="col-span-2 mt-3">
+            <p className="font-semibold text-slate-600 mb-1">Status Saat Ini</p>
+            <span
+              className={`inline-block px-4 py-1.5 rounded-full text-xs font-semibold uppercase ${
+                data.status === "valid"
+                  ? "bg-green-100 text-green-700"
+                  : data.status === "tidak_valid"
+                  ? "bg-red-100 text-red-700"
+                  : "bg-yellow-100 text-yellow-700"
+              }`}
             >
-              <ArrowLeft size={14} />
-              Kembali
-            </button>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold text-gray-900">
-                Review Verifikasi
-              </h1>
-              <VerificationBadge status={data.status} />
-            </div>
+              {data.status || "MENUNGGU"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Form Section */}
+      <div className="space-y-6">
+        {/* Ubah Status */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1">
+            Ubah Status
+          </label>
+          <div className="relative w-full">
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="w-full appearance-none bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-700 shadow-sm 
+              focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all duration-200
+              hover:border-sky-300 hover:shadow-md"
+            >
+              <option value="">-- Pilih Status --</option>
+              <option value="menunggu">Menunggu</option>
+              <option value="valid">Valid</option>
+              <option value="tidak_valid">Tidak Valid</option>
+            </select>
+
+            {/* Custom Arrow */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
           </div>
         </div>
 
-        {/* INFO ATAS: DATA LKS + HASIL PETUGAS */}
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* Data LKS */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Data LKS
-            </div>
-            <div className="space-y-1">
-              <div className="text-base font-semibold text-gray-900">
-                {data.lks?.nama || "-"}
-              </div>
-              <div className="text-sm text-gray-600">
-                {data.lks?.alamat || "-"}
-              </div>
-              {data.lks?.jenis_layanan && (
-                <div className="mt-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-                  {data.lks.jenis_layanan}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Hasil Petugas */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Hasil Petugas
-            </div>
-            <div className="space-y-2 text-sm text-gray-800">
-              <p className="whitespace-pre-wrap">
-                {data.penilaian || "Menunggu proses verifikasi."}
-              </p>
-              {data.catatan && (
-                <p className="text-gray-600">{data.catatan}</p>
-              )}
-            </div>
-          </div>
+        {/* Catatan Admin */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1">
+            Catatan Admin
+          </label>
+          <textarea
+            value={catatan}
+            onChange={(e) => setCatatan(e.target.value)}
+            placeholder="Tuliskan catatan hasil review dengan lengkap dan jelas..."
+            className="border border-slate-300 rounded-lg px-4 py-2.5 w-full text-sm focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition min-h-[120px] resize-none bg-white shadow-sm"
+          />
         </div>
 
-        {/* FOTO BUKTI */}
-        {fotoList.length > 0 && (
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Dokumentasi / Foto Bukti
-            </div>
-            <div className="flex flex-wrap gap-3">
-              {fotoList.map((p, i) => (
-                <a
-                  key={i}
-                  href={`${storage}/storage/${p.replace(/^storage\//, "")}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group block"
-                >
-                  <img
-                    src={`${storage}/storage/${p.replace(/^storage\//, "")}`}
-                    alt={`Foto ${i + 1}`}
-                    className="h-28 w-28 rounded-lg border border-slate-200 object-cover transition group-hover:ring-2 group-hover:ring-emerald-500"
-                  />
-                </a>
-              ))}
-            </div>
+        {/* Error Message */}
+        {error && (
+          <div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2 text-sm">
+            <AlertCircle size={16} /> {error}
           </div>
         )}
+      </div>
 
-        {/* FORM STATUS ADMIN */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
-          <div className="text-sm font-semibold text-gray-900">
-            Keputusan Admin
-          </div>
+      {/* Tombol */}
+      <div className="mt-10 flex justify-between items-center flex-wrap gap-3">
+        <Link
+          to={`/admin/verifikasi/detail/${id}`}
+          className="flex items-center gap-2 bg-slate-100 text-slate-700 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-200 transition shadow-sm"
+        >
+          <ArrowLeft size={16} /> Kembali
+        </Link>
 
-          <div className="grid gap-4 md:grid-cols-[220px,1fr]">
-            {/* Select status */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">
-                Status Verifikasi
-              </label>
-              <select
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                <option value="valid">Valid</option>
-                <option value="tidak_valid">Tidak Valid</option>
-                <option value="menunggu">Menunggu</option>
-              </select>
-            </div>
+        <div className="flex gap-3">
+          <button
+            onClick={() => navigate("/admin/verifikasi")}
+            className="border border-slate-300 text-slate-600 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-100 transition shadow-sm"
+          >
+            Batal
+          </button>
 
-            {/* Catatan admin */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">
-                Catatan Admin <span className="text-gray-400">(opsional)</span>
-              </label>
-              <textarea
-                className="min-h-[90px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                placeholder="Tulis catatan jika diperlukan, misalnya alasan status tidak valid."
-                value={catatanAdmin}
-                onChange={(e) => setCatatanAdmin(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => navigate("/admin/verifikasi")}
-              className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
-            >
-              Batal
-            </button>
-            <button
-              type="button"
-              onClick={save}
-              disabled={saving}
-              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              <Save size={16} />
-              {saving ? "Menyimpan..." : "Simpan Status"}
-            </button>
-          </div>
-        </div>
-
-        {/* LOG AKTIVITAS */}
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 px-5 py-3 text-sm font-semibold text-gray-900">
-            Log Aktivitas
-          </div>
-          <div className="p-5">
-            <VerifikasiLog verifikasiId={data.id} />
-          </div>
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className={`px-6 py-2.5 rounded-lg text-sm font-semibold text-white shadow-md transition flex items-center gap-2 ${
+              saving
+                ? "bg-slate-400 cursor-not-allowed"
+                : "bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700"
+            }`}
+          >
+            {saving ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <ClipboardList size={16} />
+            )}
+            {saving ? "Menyimpan..." : "Simpan Review"}
+          </button>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default VerifikasiReview;
