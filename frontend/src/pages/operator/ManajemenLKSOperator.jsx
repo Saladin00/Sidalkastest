@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import API from "../../utils/api";
 import { RotateCw, Loader2, Search } from "lucide-react";
+import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const ManajemenLKSOperator = () => {
   const [users, setUsers] = useState([]);
@@ -9,9 +13,6 @@ const ManajemenLKSOperator = () => {
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
-
-  // Pagination (tanpa tombol prev/next)
-  const [page] = useState(1);
   const [perPage, setPerPage] = useState(10);
 
   // 🔹 Ambil data akun LKS di kecamatan operator
@@ -27,6 +28,7 @@ const ManajemenLKSOperator = () => {
       });
 
       setUsers(res.data.users || []);
+      // ✅ Tidak ada toast sukses/gagal
     } catch (err) {
       console.error("Gagal memuat data:", err);
       setError("Gagal memuat data pengguna.");
@@ -46,8 +48,25 @@ const ManajemenLKSOperator = () => {
   };
 
   // 🔹 Toggle status aktif / nonaktif
-  const toggleStatus = async (id) => {
-    if (!window.confirm("Ubah status akun LKS ini?")) return;
+  const toggleStatus = async (id, status_aktif) => {
+    const result = await Swal.fire({
+      title: "Ubah Status Akun?",
+      text: `Akun ini akan ${
+        status_aktif ? "dinonaktifkan" : "diaktifkan"
+      }. Lanjutkan?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#0ea5e9",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Ya, Lanjutkan",
+      cancelButtonText: "Batal",
+      reverseButtons: true,
+      background: "#fff",
+      color: "#374151",
+      backdrop: "rgba(0,0,0,0.4)",
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       const token = sessionStorage.getItem("token");
@@ -56,10 +75,10 @@ const ManajemenLKSOperator = () => {
       });
 
       await loadUsers();
-      alert("Status akun berhasil diperbarui.");
+      toast.success("Status akun berhasil diperbarui.", { autoClose: 2000 });
     } catch (err) {
       console.error("Gagal ubah status:", err);
-      alert("Gagal mengubah status akun.");
+      toast.error("Gagal mengubah status akun.", { autoClose: 2500 });
     }
   };
 
@@ -76,10 +95,8 @@ const ManajemenLKSOperator = () => {
     return matchSearch && matchStatus;
   });
 
-  // 🔹 Pagination sederhana (tanpa tombol navigasi)
   const paginated = filtered.slice(0, perPage);
 
-  // 🔹 Reset filter
   const handleReset = () => {
     setSearch("");
     setStatusFilter("");
@@ -95,7 +112,6 @@ const ManajemenLKSOperator = () => {
 
         {/* FILTER BAR */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Filter Status Akun */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -106,15 +122,8 @@ const ManajemenLKSOperator = () => {
             <option value="nonaktif">Nonaktif</option>
           </select>
 
-          {/* Reset */}
-          <button
-            onClick={handleReset}
-            className="h-9 px-3 text-sm bg-white border border-slate-300 rounded-md hover:bg-gray-100"
-          >
-            Reset
-          </button>
+        
 
-          {/* Search */}
           <div className="relative">
             <Search
               size={16}
@@ -129,10 +138,9 @@ const ManajemenLKSOperator = () => {
             />
           </div>
 
-          {/* Refresh */}
           <button
             onClick={handleRefresh}
-            className="flex items-center gap-1 border border-slate-300 text-slate-700 px-3 py-1.5 rounded-md hover:bg-slate-100 text-sm transition"
+            className="flex items-center gap-1 border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-700 px-3 py-1.5 rounded-md text-sm transition"
           >
             {refreshing ? (
               <Loader2 size={14} className="animate-spin" />
@@ -161,13 +169,19 @@ const ManajemenLKSOperator = () => {
           <table className="min-w-full text-sm text-slate-700">
             <thead className="bg-slate-100 border-b text-xs font-semibold text-slate-600">
               <tr>
-                <th className="px-4 py-3 text-center w-12 border-r">No</th>
-                <th className="px-4 py-3 border-r">Username</th>
-                <th className="px-4 py-3 border-r">Nama</th>
-                <th className="px-4 py-3 border-r">Email</th>
-                <th className="px-4 py-3 border-r text-center">Status Akun</th>
-                <th className="px-4 py-3 border-r text-center">Kecamatan</th>
-                <th className="px-4 py-3 text-center">Aksi</th>
+                {[
+                  "No",
+                  "Username",
+                  "Nama",
+                  "Email",
+                  "Status Akun",
+                  "Kecamatan",
+                  "Aksi",
+                ].map((h) => (
+                  <th key={h} className="px-4 py-3 border-r text-center">
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -196,10 +210,10 @@ const ManajemenLKSOperator = () => {
                     <td className="px-4 py-3 border-r">{u.email}</td>
                     <td className="px-4 py-3 text-center border-r">
                       <span
-                        className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                        className={`px-3 py-1 text-xs font-semibold rounded-full border ${
                           u.status_aktif
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            : "bg-rose-50 text-rose-700 border border-rose-200"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "bg-rose-50 text-rose-700 border-rose-200"
                         }`}
                       >
                         {u.status_aktif ? "Aktif" : "Nonaktif"}
@@ -210,11 +224,11 @@ const ManajemenLKSOperator = () => {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
-                        onClick={() => toggleStatus(u.id)}
-                        className={`px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+                        onClick={() => toggleStatus(u.id, u.status_aktif)}
+                        className={`px-3 py-1.5 rounded-md text-xs font-semibold transition border ${
                           u.status_aktif
-                            ? "text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100"
-                            : "text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100"
+                            ? "text-rose-700 bg-rose-50 border-rose-200 hover:bg-rose-100"
+                            : "text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
                         }`}
                       >
                         {u.status_aktif ? "Nonaktifkan" : "Aktifkan"}
@@ -230,7 +244,6 @@ const ManajemenLKSOperator = () => {
 
       {/* FOOTER */}
       <div className="flex justify-between items-center text-sm text-slate-600 mt-3">
-        {/* Show per page */}
         <div className="flex items-center gap-2">
           <label htmlFor="perPage">Tampilkan</label>
           <select
@@ -239,21 +252,21 @@ const ManajemenLKSOperator = () => {
             onChange={(e) => setPerPage(Number(e.target.value))}
             className="border rounded px-2 py-1 text-sm"
           >
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="20">20</option>
-            <option value="40">40</option>
-            <option value="60">60</option>
-            <option value="100">100</option>
+            {[5, 10, 20, 40, 60, 100].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
           </select>
           <span>data per halaman</span>
         </div>
 
-        {/* Info jumlah data */}
         <p>
           Menampilkan {Math.min(filtered.length, perPage)} dari {filtered.length} data
         </p>
       </div>
+
+      <ToastContainer position="top-right" autoClose={2500} theme="light" />
     </div>
   );
 };

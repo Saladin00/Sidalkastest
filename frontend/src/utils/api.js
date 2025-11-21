@@ -1,5 +1,6 @@
 // src/utils/api.js
 import axios from "axios";
+import { showError } from "./toast";
 
 const API = axios.create({
   // 🔹 Gunakan environment variable agar fleksibel antara dev dan production
@@ -27,11 +28,8 @@ API.interceptors.request.use(
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      console.warn("⚠️ Token expired atau tidak valid, melakukan logout otomatis...");
-      sessionStorage.clear();
-      window.location.href = "/"; // arahkan ke login
-    }
+    const message = error.response?.data?.message || "Terjadi kesalahan server.";
+    showError(message);
     return Promise.reject(error);
   }
 );

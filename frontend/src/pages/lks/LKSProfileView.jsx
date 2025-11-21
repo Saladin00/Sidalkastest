@@ -1,3 +1,4 @@
+// src/pages/lks/LKSProfileView.jsx
 import React, { useEffect, useState } from "react";
 import API from "../../utils/api";
 import LKSLayout from "../../components/LKSLayout";
@@ -16,7 +17,9 @@ import {
 import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
+import { toast, ToastContainer } from "react-toastify";
 import "leaflet/dist/leaflet.css";
+import "react-toastify/dist/ReactToastify.css";
 
 const markerIcon = new L.Icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/854/854878.png",
@@ -35,17 +38,29 @@ const LKSProfileView = () => {
   const username = user.username || "-";
 
   useEffect(() => {
-    API.get("/lks/profile-view")
-      .then((res) => setData(res.data.data))
-      .catch(() => alert("Gagal memuat data LKS"))
-      .finally(() => setLoading(false));
+    const loadData = async () => {
+      try {
+        const res = await API.get("/lks/profile-view");
+        setData(res.data.data);
+      } catch (err) {
+        console.error("❌ Gagal memuat data LKS:", err);
+        toast.error("Gagal memuat data profil LKS!", { autoClose: 2500 });
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
   if (loading) {
+    // Skeleton shimmer loading
     return (
       <LKSLayout>
-        <div className="p-10 text-center text-gray-600 text-lg animate-pulse">
-          Memuat data profil...
+        <div className="max-w-5xl mx-auto p-10 animate-pulse space-y-6">
+          <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-64 bg-gray-200 rounded-xl"></div>
         </div>
       </LKSLayout>
     );
@@ -147,7 +162,12 @@ const LKSProfileView = () => {
 
             {position && (
               <div className="mt-6 rounded-3xl border border-blue-100 shadow-lg overflow-hidden">
-                <MapContainer center={position} zoom={14} scrollWheelZoom className="h-[400px] w-full">
+                <MapContainer
+                  center={position}
+                  zoom={14}
+                  scrollWheelZoom
+                  className="h-[400px] w-full"
+                >
                   <TileLayer url="https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png" />
                   <Marker position={position} icon={markerIcon}>
                     <Popup>
@@ -185,6 +205,9 @@ const LKSProfileView = () => {
           </Section>
         </div>
       </div>
+
+      {/* Toast Container */}
+      <ToastContainer position="top-right" autoClose={2500} theme="light" />
     </LKSLayout>
   );
 };

@@ -1,0 +1,17 @@
+.react-confirm-alert-overlay {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(3px);
+}
+
+.react-confirm-alert {
+  border-radius: 12px;
+  background: white;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+.react-confirm-alert-button-group > button {
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 500;
+}

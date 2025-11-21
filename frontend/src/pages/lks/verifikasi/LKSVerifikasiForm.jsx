@@ -3,6 +3,11 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, Upload, AlertTriangle, Trash2 } from "lucide-react";
 import api from "../../../utils/api";
+import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
+import { showSuccess, showError, showInfo } from "../../../utils/toast";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const LKSVerifikasiForm = () => {
   const [catatan, setCatatan] = useState("");
@@ -20,7 +25,7 @@ const LKSVerifikasiForm = () => {
       const res = await api.get("/lks/me");
       setLksData(res.data.data);
     } catch {
-      alert("Gagal mengambil data LKS. Pastikan profil sudah dilengkapi.");
+      showError("Gagal mengambil data LKS. Pastikan profil sudah dilengkapi.");
     } finally {
       setFetching(false);
     }
@@ -37,12 +42,14 @@ const LKSVerifikasiForm = () => {
 
     if (combined.length > 5) {
       setFileError("Maksimal 5 file yang dapat diupload.");
+      showError("Maksimal 5 file yang dapat diupload.");
       return;
     }
 
     const oversized = combined.filter((f) => f.size > 5 * 1024 * 1024);
     if (oversized.length > 0) {
       setFileError("Ukuran file tidak boleh melebihi 5MB per file.");
+      showError("Ukuran file tidak boleh melebihi 5MB per file.");
       return;
     }
 
@@ -53,12 +60,30 @@ const LKSVerifikasiForm = () => {
   // 🔹 Hapus file
   const handleRemoveFile = (index) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
+    showInfo("File bukti dihapus.");
   };
 
-  // 🔹 Kirim form
+  // 🔹 Kirim form dengan konfirmasi SweetAlert
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading || fileError) return;
+
+    const result = await Swal.fire({
+      title: "Kirim Pengajuan Verifikasi?",
+      text: "Pastikan semua data dan dokumen sudah benar sebelum dikirim.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#16a34a",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Ya, Kirim",
+      cancelButtonText: "Batal",
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) {
+      showInfo("Pengajuan dibatalkan.");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("catatan", catatan);
@@ -69,10 +94,21 @@ const LKSVerifikasiForm = () => {
       await api.post("/lks/verifikasi/pengajuan", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      alert("✅ Pengajuan berhasil dikirim!");
-      navigate("/lks/verifikasi");
+
+      Swal.fire({
+        title: "Berhasil!",
+        text: "Pengajuan berhasil dikirim.",
+        icon: "success",
+        confirmButtonColor: "#16a34a",
+        confirmButtonText: "OK",
+      }).then(() => navigate("/lks/verifikasi"));
     } catch {
-      alert("Gagal mengirim pengajuan verifikasi.");
+      Swal.fire({
+        title: "Gagal!",
+        text: "Terjadi kesalahan saat mengirim pengajuan.",
+        icon: "error",
+        confirmButtonColor: "#e02424",
+      });
     } finally {
       setLoading(false);
     }
@@ -166,13 +202,13 @@ const LKSVerifikasiForm = () => {
             </p>
           )}
 
-          {/* PREVIEW FILE */}
+          {/* PREVIEW FILE + NAMA FILE */}
           {files.length > 0 && (
             <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
               {files.map((file, i) => (
                 <div
                   key={i}
-                  className="relative group border border-slate-300 rounded-lg overflow-hidden"
+                  className="relative group border border-slate-300 rounded-lg overflow-hidden bg-gray-50"
                 >
                   <img
                     src={URL.createObjectURL(file)}
@@ -186,6 +222,9 @@ const LKSVerifikasiForm = () => {
                   >
                     <Trash2 size={14} />
                   </button>
+                  <div className="p-1.5 text-xs text-center text-gray-600 border-t truncate bg-white">
+                    {file.name}
+                  </div>
                 </div>
               ))}
             </div>
@@ -194,7 +233,6 @@ const LKSVerifikasiForm = () => {
 
         {/* ======== BUTTON AREA ======== */}
         <div className="flex justify-between items-center pt-6 border-t border-slate-200">
-          {/* Tombol Kembali */}
           <button
             type="button"
             onClick={() => navigate("/lks/verifikasi")}
@@ -203,7 +241,6 @@ const LKSVerifikasiForm = () => {
             <ArrowLeft size={18} /> Kembali
           </button>
 
-          {/* Tombol Kirim */}
           <button
             type="submit"
             disabled={loading}
@@ -221,6 +258,15 @@ const LKSVerifikasiForm = () => {
           </button>
         </div>
       </form>
+
+      {/* Toast Container */}
+      <ToastContainer
+        position="top-right"
+        autoClose={2500}
+        hideProgressBar
+        newestOnTop
+        theme="light"
+      />
     </div>
   );
 };

@@ -2,12 +2,19 @@ import React, { useEffect, useState } from "react";
 import api from "../../utils/api";
 import { useNavigate } from "react-router-dom";
 import { Loader2, ArrowLeft, Save } from "lucide-react";
+import { toast } from "react-toastify";
+import {
+  showSuccess,
+  showError,
+} from "../../utils/toast";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const LKSKlienForm = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [kecamatanList, setKecamatanList] = useState([]);
-  const [metaLKS, setMetaLKS] = useState({}); // ➕ dari versi bawah
+  const [metaLKS, setMetaLKS] = useState({});
 
   const [form, setForm] = useState({
     nik: "",
@@ -20,7 +27,7 @@ const LKSKlienForm = () => {
     status_pembinaan: "",
   });
 
-  // 🔁 Ambil daftar kecamatan dari API (optional, untuk tampilkan info)
+  // 🔁 Ambil daftar kecamatan
   useEffect(() => {
     const fetchKecamatan = async () => {
       try {
@@ -28,12 +35,14 @@ const LKSKlienForm = () => {
         setKecamatanList(res.data.data || []);
       } catch (err) {
         console.error("❌ Gagal memuat kecamatan:", err);
+        toast.dismiss();
+        showError("Gagal memuat data kecamatan!");
       }
     };
     fetchKecamatan();
   }, []);
 
-  // 🏢 Ambil info meta LKS (biar tahu kecamatan_id otomatis)
+  // 🏢 Ambil meta LKS
   useEffect(() => {
     const fetchMetaLKS = async () => {
       const lksId = sessionStorage.getItem("lks_id");
@@ -43,6 +52,8 @@ const LKSKlienForm = () => {
         setMetaLKS(res.data.data || {});
       } catch (err) {
         console.error("❌ Gagal memuat meta LKS:", err);
+        toast.dismiss();
+        showError("Gagal memuat informasi LKS!");
       }
     };
     fetchMetaLKS();
@@ -53,28 +64,28 @@ const LKSKlienForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    toast.dismiss(); // pastikan tidak spam
     setLoading(true);
 
     try {
       const lksId = sessionStorage.getItem("lks_id");
       if (!lksId) {
-        alert("❌ Gagal: LKS belum login atau lks_id tidak ditemukan.");
+        showError("LKS belum login atau ID tidak ditemukan!");
         setLoading(false);
         return;
       }
 
-      // Kirim data lengkap dengan kecamatan dari metaLKS
       await api.post("/klien", {
         ...form,
         lks_id: lksId,
         kecamatan_id: metaLKS.kecamatan_id,
       });
 
-      alert("✅ Klien berhasil ditambahkan!");
-      navigate("/lks/klien");
+      showSuccess("Klien berhasil ditambahkan!");
+      setTimeout(() => navigate("/lks/klien"), 1000);
     } catch (err) {
       console.error("❌ Gagal menyimpan klien:", err);
-      alert("Gagal menyimpan klien, periksa kembali data.");
+      showError("Gagal menyimpan data klien!");
     } finally {
       setLoading(false);
     }
@@ -82,7 +93,6 @@ const LKSKlienForm = () => {
 
   return (
     <div className="max-w-5xl mx-auto bg-white shadow-xl rounded-2xl border border-gray-100 p-8 mt-4">
-      {/* Header */}
       <h1 className="text-2xl font-bold text-emerald-700 mb-2">
         Tambah Data Klien
       </h1>
@@ -156,7 +166,7 @@ const LKSKlienForm = () => {
           />
         </div>
 
-        {/* Kecamatan (readonly otomatis dari metaLKS) */}
+        {/* Kecamatan otomatis */}
         <div>
           <label className="block font-semibold text-gray-700 mb-1">
             5. Kecamatan (otomatis)
@@ -245,8 +255,7 @@ const LKSKlienForm = () => {
         >
           {loading ? (
             <>
-              <Loader2 className="animate-spin" size={16} />
-              Menyimpan...
+              <Loader2 className="animate-spin" size={16} /> Menyimpan...
             </>
           ) : (
             <>
@@ -255,6 +264,14 @@ const LKSKlienForm = () => {
           )}
         </button>
       </div>
+
+      <ToastContainer
+        position="top-right"
+        autoClose={2500}
+        hideProgressBar
+        newestOnTop
+        theme="light"
+      />
     </div>
   );
 };

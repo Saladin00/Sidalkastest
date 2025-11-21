@@ -12,11 +12,16 @@ import {
   MapPinIcon,
 } from "@heroicons/react/24/outline";
 import VerificationBadge from "../../../components/shared/VerificationBadge";
+import {
+  showSuccess,
+  showError,
+  showInfo,
+} from "../../../utils/toast"; // ✅ Import sistem toast kamu
 
 // Marker Custom
 const markerIcon = new L.Icon({
   iconUrl:
-    "https://cdn-icons-png.flaticon.com/512/854/854878.png", // marker biru lucu & lembut
+    "https://cdn-icons-png.flaticon.com/512/854/854878.png", // marker biru lembut
   iconSize: [36, 36],
   iconAnchor: [18, 36],
 });
@@ -26,21 +31,25 @@ const LKSDetail = () => {
   const navigate = useNavigate();
   const [lks, setLks] = useState(null);
 
+  // 🔹 Ambil data LKS
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await API.get(`/lks/${id}`);
         setLks(res.data.data);
+        showSuccess("Data LKS berhasil dimuat");
       } catch (err) {
-        console.error("Gagal Mengambil data", err);
-        alert("Gagal mengambil data");
+        console.error("Gagal mengambil data:", err);
+        showError("Gagal mengambil data LKS");
         navigate("/admin/lks");
       }
     };
     fetchData();
   }, [id, navigate]);
 
+  // 🔹 Cetak PDF
   const printPDF = () => {
+    showInfo("Membuka tampilan cetak PDF...");
     window.open(
       `${import.meta.env.VITE_API_BASE_URL}/lks/${id}/cetak-profil`,
       "_blank"
@@ -128,11 +137,12 @@ const LKSDetail = () => {
             </div>
           ))}
 
-          {/* Nomor 21: Lokasi */}
+          {/* Lokasi Peta */}
           {position && (
             <div className="sm:col-span-2 bg-gradient-to-tr from-gray-50 to-white rounded-2xl border border-gray-100 shadow-lg p-5 hover:shadow-xl transition-all duration-300">
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
                 21. Lokasi LKS
+                <MapPinIcon className="w-4 h-4 text-blue-500" />
               </h2>
 
               <div className="relative rounded-2xl overflow-hidden border border-blue-100 shadow-inner">
@@ -163,31 +173,20 @@ const LKSDetail = () => {
         {/* Tombol Aksi */}
         <div className="flex flex-col sm:flex-row justify-between items-center mt-12 gap-4 print:hidden">
           <button
-            onClick={() => navigate("/admin/lks")}
-            className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all shadow-sm"
+            onClick={() => {
+              showInfo("Kembali ke daftar LKS");
+              navigate("/admin/lks");
+            }}
+            className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-sm"
           >
             <ArrowLeftIcon className="h-4 w-4" />
             Kembali ke Daftar
           </button>
 
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            {lks.verifikasi_terbaru?.id ? (
-              <button
-                onClick={() =>
-                  navigate(`/admin/verifikasi/${lks.verifikasi_terbaru.id}`)
-                }
-                className="flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition-all"
-              >
-                Review Verifikasi
-              </button>
-            ) : (
-              <p className="text-gray-500 text-sm italic text-center sm:text-left">
-                Belum ada data verifikasi.
-              </p>
-            )}
             <button
               onClick={printPDF}
-              className="flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-xl shadow-sm transition-all"
+              className="flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm transition-all"
             >
               <PrinterIcon className="h-4 w-4" /> Cetak Profil (PDF)
             </button>

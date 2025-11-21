@@ -10,11 +10,13 @@ const LKSVerifikasiDetail = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // 🔹 Ambil data detail verifikasi
   const loadData = async () => {
     try {
       const res = await api.get(`/lks/verifikasi/${id}`);
       const result = res.data?.data;
 
+      // pastikan foto_bukti berupa array
       if (typeof result.foto_bukti === "string") {
         try {
           result.foto_bukti = JSON.parse(result.foto_bukti);
@@ -23,6 +25,7 @@ const LKSVerifikasiDetail = () => {
         }
       }
       if (!Array.isArray(result.foto_bukti)) result.foto_bukti = [];
+
       setData(result);
     } catch (err) {
       console.error("❌ Gagal ambil detail verifikasi:", err);
@@ -36,12 +39,13 @@ const LKSVerifikasiDetail = () => {
     loadData();
   }, [id]);
 
+  // 🔹 Warna status diseragamkan semua role
   const getStatusStyle = (status) => {
     switch (status?.toLowerCase()) {
       case "menunggu":
-        return "bg-blue-100 text-blue-700 border border-blue-300";
-      case "proses_survei":
         return "bg-yellow-100 text-yellow-700 border border-yellow-300";
+      case "proses_survei":
+        return "bg-blue-100 text-blue-700 border border-blue-300";
       case "valid":
         return "bg-green-100 text-green-700 border border-green-300";
       case "tidak_valid":
@@ -49,6 +53,13 @@ const LKSVerifikasiDetail = () => {
       default:
         return "bg-slate-100 text-slate-700 border border-slate-300";
     }
+  };
+
+  // 🔹 Deteksi nama otomatis
+  const getNamaFile = (url, index) => {
+    const ext = url.split(".").pop()?.toLowerCase() || "";
+    const isImage = ["jpg", "jpeg", "png", "gif", "webp", "bmp"].includes(ext);
+    return isImage ? `Foto ${index + 1}` : `Dokumen ${index + 1}`;
   };
 
   if (loading)
@@ -67,7 +78,6 @@ const LKSVerifikasiDetail = () => {
 
   return (
     <div className="max-w-5xl mx-auto p-8">
-      {/* Card utama */}
       <div className="bg-white shadow-xl rounded-2xl border border-slate-200 p-8 relative overflow-hidden">
         {/* Accent background */}
         <div className="absolute top-0 right-0 w-72 h-72 bg-sky-100/40 rounded-full blur-3xl -z-10 translate-x-16 -translate-y-10"></div>
@@ -77,7 +87,7 @@ const LKSVerifikasiDetail = () => {
           Detail Verifikasi
         </h2>
 
-        {/* Detail Table */}
+        {/* Tabel Detail */}
         <div className="overflow-hidden border border-slate-200 rounded-xl">
           <table className="w-full text-sm">
             <tbody className="divide-y divide-slate-200">
@@ -105,7 +115,7 @@ const LKSVerifikasiDetail = () => {
                       data.status
                     )}`}
                   >
-                    {data.status?.toUpperCase() || "MENUNGGU"}
+                    {data.status?.replace("_", " ")?.toUpperCase() || "MENUNGGU"}
                   </span>
                 </td>
               </tr>
@@ -127,7 +137,7 @@ const LKSVerifikasiDetail = () => {
           </table>
         </div>
 
-        {/* Foto Bukti */}
+        {/* Dokumen / Foto Bukti */}
         <div className="mt-8">
           <h3 className="text-base font-semibold text-slate-700 mb-3">
             Dokumen / Foto Bukti
@@ -136,20 +146,31 @@ const LKSVerifikasiDetail = () => {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {data.foto_bukti.map((foto, i) => {
                 const src = foto.url || foto;
+                const namaFile = getNamaFile(src, i);
                 return (
-                  <a
+                  <div
                     key={i}
-                    href={src}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition"
+                    className="border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition bg-white"
                   >
-                    <img
-                      src={src}
-                      alt={`Foto ${i + 1}`}
-                      className="object-cover w-full h-36"
-                    />
-                  </a>
+                    <a
+                      href={src}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block"
+                    >
+                      <img
+                        src={src}
+                        alt={namaFile}
+                        className="object-cover w-full h-36"
+                      />
+                    </a>
+                    <div
+                      className="p-2 border-t text-center bg-slate-50 text-xs text-slate-600 font-medium truncate"
+                      title={namaFile}
+                    >
+                      {namaFile}
+                    </div>
+                  </div>
                 );
               })}
             </div>

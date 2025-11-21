@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 // Auth
 import Register from "./pages/Register";
 import Login from "./pages/Login";
@@ -33,6 +34,7 @@ import KlienEditForm from "./pages/admin/klien/KlienEditForm";
 
 // User
 import ManajemenUser from "./pages/admin/ManajemenUser";
+import TambahUser from "./pages/admin/TambahUser";
 
 // Verifikasi
 import AdminVerifikasiList from "./pages/admin/verifikasi/VerifikasiList";
@@ -107,6 +109,17 @@ function App() {
             </ProtectedRoute>
           }
         />
+        {/* ✅ Tambah route baru untuk Tambah User */}
+        <Route
+          path="/admin/users/tambah"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminLayout>
+                <TambahUser />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
         {/* ADMIN: LKS */}
         <Route
           path="/admin/lks"
@@ -120,9 +133,9 @@ function App() {
           path="/admin/lks/tambah"
           element={
             <ProtectedRoute allowedRoles={["admin", "operator"]}>
-              <AdminLayout>
+              
                 <LKSForm />
-              </AdminLayout>
+              
             </ProtectedRoute>
           }
         />
@@ -130,9 +143,9 @@ function App() {
           path="/admin/lks/detail/:id"
           element={
             <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
-              <AdminLayout>
+      
                 <LKSDetail />
-              </AdminLayout>
+            
             </ProtectedRoute>
           }
         />
@@ -140,9 +153,9 @@ function App() {
           path="/admin/lks/edit/:id"
           element={
             <ProtectedRoute allowedRoles={["admin", "operator"]}>
-              <AdminLayout>
+          
                 <LKSEditForm />
-              </AdminLayout>
+            
             </ProtectedRoute>
           }
         />
@@ -454,7 +467,18 @@ function App() {
           }
         />
       </Routes>
+      <ToastContainer
+        position="top-right"
+        autoClose={2500}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
     </BrowserRouter>
+    
   );
 }
 

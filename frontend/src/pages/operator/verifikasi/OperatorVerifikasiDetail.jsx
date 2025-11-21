@@ -1,8 +1,12 @@
 // src/pages/operator/verifikasi/OperatorVerifikasiDetail.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Send } from "lucide-react";
+import { ArrowLeft, Loader2, Send, FileImage } from "lucide-react";
 import api from "../../../utils/api";
+import Swal from "sweetalert2";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import "sweetalert2/dist/sweetalert2.min.css";
 
 const OperatorVerifikasiDetail = () => {
   const { id } = useParams();
@@ -15,25 +19,65 @@ const OperatorVerifikasiDetail = () => {
   const loadData = async () => {
     try {
       const res = await api.get(`/operator/verifikasi/${id}`);
-      setData(res.data?.data);
+      const result = res.data?.data || null;
+
+      if (typeof result.foto_bukti === "string") {
+        try {
+          result.foto_bukti = JSON.parse(result.foto_bukti);
+        } catch {
+          result.foto_bukti = [];
+        }
+      }
+      if (!Array.isArray(result.foto_bukti)) result.foto_bukti = [];
+
+      setData(result);
     } catch (err) {
       console.error("❌ Gagal ambil detail:", err);
-      alert("Gagal memuat detail verifikasi.");
+      toast.error("Gagal memuat detail verifikasi.", { autoClose: 2500 });
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [id]);
+  const handleKirimKePetugas = async () => {
+    const result = await Swal.fire({
+      title: "Kirim ke Petugas?",
+      text: "Data ini akan dikirim ke petugas survei untuk proses selanjutnya.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Kirim",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#059669",
+      cancelButtonColor: "#6b7280",
+      background: "#fff",
+      color: "#374151",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setSending(true);
+      await api.post(`/operator/verifikasi/${id}/kirim-ke-petugas`);
+      toast.success("Pengajuan berhasil dikirim ke petugas survei!", {
+        autoClose: 2500,
+      });
+      setTimeout(() => navigate("/operator/verifikasi"), 2000);
+    } catch (err) {
+      console.error("❌ Gagal kirim ke petugas:", err);
+      toast.error("Terjadi kesalahan saat mengirim ke petugas survei.", {
+        autoClose: 2500,
+      });
+    } finally {
+      setSending(false);
+    }
+  };
 
   const getStatusStyle = (status) => {
     switch (status?.toLowerCase()) {
       case "menunggu":
-        return "bg-blue-100 text-blue-700 border border-blue-300";
-      case "proses_survei":
         return "bg-yellow-100 text-yellow-700 border border-yellow-300";
+      case "proses_survei":
+        return "bg-blue-100 text-blue-700 border border-blue-300";
       case "valid":
         return "bg-green-100 text-green-700 border border-green-300";
       case "tidak_valid":
@@ -42,6 +86,16 @@ const OperatorVerifikasiDetail = () => {
         return "bg-slate-100 text-slate-700 border border-slate-300";
     }
   };
+
+  const getNamaFile = (url, index) => {
+    const ext = url.split(".").pop()?.toLowerCase() || "";
+    const isImage = ["jpg", "jpeg", "png", "gif", "webp", "bmp"].includes(ext);
+    return isImage ? `Foto ${index + 1}` : `Dokumen ${index + 1}`;
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [id]);
 
   if (loading)
     return (
@@ -58,131 +112,146 @@ const OperatorVerifikasiDetail = () => {
     );
 
   return (
-    <div className="max-w-5xl mx-auto p-8">
-      {/* Card utama */}
-      <div className="bg-white shadow-xl rounded-2xl border border-slate-200 p-8 relative overflow-hidden">
-        {/* Accent background */}
-        <div className="absolute top-0 right-0 w-72 h-72 bg-sky-100/40 rounded-full blur-3xl -z-10 translate-x-16 -translate-y-10"></div>
-
-        {/* Header */}
-        <h2 className="text-2xl font-semibold text-sky-900 mb-6">
-          Detail Verifikasi
+    <div className="max-w-5xl mx-auto bg-white border border-slate-100 rounded-2xl shadow-xl p-10 transition-all">
+      {/* Header */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-semibold text-sky-900 tracking-tight">
+          Detail Verifikasi LKS
         </h2>
-
-        {/* Tabel detail */}
-        <div className="overflow-hidden border border-slate-200 rounded-xl">
-          <table className="w-full text-sm">
-            <tbody className="divide-y divide-slate-200">
-              <tr className="bg-slate-50/60">
-                <td className="p-4 font-semibold text-slate-700 w-1/3">
-                  1. Nama LKS
-                </td>
-                <td className="p-4 text-slate-800">{data.lks?.nama || "-"}</td>
-              </tr>
-              <tr>
-                <td className="p-4 font-semibold text-slate-700">
-                  2. Tanggal Verifikasi
-                </td>
-                <td className="p-4 text-slate-800">
-                  {data.tanggal_verifikasi
-                    ? new Date(data.tanggal_verifikasi).toLocaleString("id-ID")
-                    : "-"}
-                </td>
-              </tr>
-              <tr className="bg-slate-50/60">
-                <td className="p-4 font-semibold text-slate-700">
-                  3. Petugas Verifikasi
-                </td>
-                <td className="p-4 text-slate-800">
-                  {data.petugas?.name || "-"}
-                </td>
-              </tr>
-              <tr>
-                <td className="p-4 font-semibold text-slate-700">4. Status</td>
-                <td className="p-4">
-                  <span
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-full ${getStatusStyle(
-                      data.status
-                    )}`}
-                  >
-                    {data.status?.toUpperCase() || "MENUNGGU"}
-                  </span>
-                </td>
-              </tr>
-              <tr className="bg-slate-50/60">
-                <td className="p-4 font-semibold text-slate-700">
-                  5. Penilaian
-                </td>
-                <td className="p-4 text-slate-800">
-                  {data.penilaian || "-"}
-                </td>
-              </tr>
-              <tr>
-                <td className="p-4 font-semibold text-slate-700">
-                  6. Catatan
-                </td>
-                <td className="p-4 text-slate-800">
-                  {data.catatan || "-"}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Foto Bukti */}
-        <div className="mt-8">
-          <h3 className="text-base font-semibold text-slate-700 mb-3">
-            Dokumen / Foto Bukti
-          </h3>
-          {(() => {
-            let fotoBukti = [];
-
-            if (typeof data.foto_bukti === "string") {
-              try {
-                fotoBukti = JSON.parse(data.foto_bukti);
-              } catch (e) {
-                console.error("⚠️ Gagal parse foto_bukti:", e);
-              }
-            } else if (Array.isArray(data.foto_bukti)) {
-              fotoBukti = data.foto_bukti;
-            }
-
-            return fotoBukti.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {fotoBukti.map((foto, i) => (
-                  <a
-                    key={i}
-                    href={foto.url || foto}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition"
-                  >
-                    <img
-                      src={foto.url || foto}
-                      alt={`Foto ${i + 1}`}
-                      className="object-cover w-full h-36"
-                    />
-                  </a>
-                ))}
-              </div>
-            ) : (
-              <p className="text-slate-500 text-sm italic">
-                Tidak ada dokumen pendukung.
-              </p>
-            );
-          })()}
-        </div>
-
-        {/* Tombol kembali bawah dalam card */}
-        <div className="mt-10">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-base font-semibold px-6 py-3 rounded-lg shadow-lg transition"
-          >
-            <ArrowLeft size={20} /> Kembali
-          </button>
-        </div>
       </div>
+
+      {/* Informasi Verifikasi */}
+      <div className="overflow-hidden rounded-xl border border-slate-100 shadow-sm mb-8">
+        <table className="w-full text-[15px] text-slate-700">
+          <tbody>
+            {[
+              ["Nama LKS", data.lks?.nama],
+              ["Jenis Layanan", data.lks?.jenis_layanan],
+              ["Petugas Verifikasi", data.petugas?.name],
+              [
+                "Tanggal Verifikasi",
+                data.tanggal_verifikasi
+                  ? new Date(data.tanggal_verifikasi).toLocaleString("id-ID")
+                  : "-",
+              ],
+              [
+                "Status",
+                <span
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusStyle(
+                    data.status
+                  )}`}
+                >
+                  {data.status?.toUpperCase()}
+                </span>,
+              ],
+              ["Catatan", data.catatan || "-"],
+            ].map(([label, value], i) => (
+              <tr
+                key={i}
+                className="hover:bg-slate-50 transition-colors border-b border-slate-100"
+              >
+                <td className="p-4 pl-8 font-medium text-slate-600 w-56 align-top">
+                  {label}
+                </td>
+                <td className="p-4 pr-8 text-slate-800">{value || "-"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Dokumen / Foto Bukti */}
+      <div className="mb-8">
+        <h3 className="text-base font-semibold text-slate-700 mb-4">
+          Dokumen / Foto Bukti
+        </h3>
+        {(() => {
+          let fotoBukti = [];
+
+          if (typeof data.foto_bukti === "string") {
+            try {
+              fotoBukti = JSON.parse(data.foto_bukti);
+            } catch (e) {
+              console.error("⚠️ Gagal parse foto_bukti:", e);
+            }
+          } else if (Array.isArray(data.foto_bukti)) {
+            fotoBukti = data.foto_bukti;
+          }
+
+          return fotoBukti.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
+              {fotoBukti.map((foto, i) => {
+                const url = foto.url || foto;
+                const namaFile = getNamaFile(url, i);
+
+                return (
+                  <div
+                    key={i}
+                    className="border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.02] transition-all bg-white"
+                  >
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block"
+                    >
+                      <img
+                        src={url}
+                        alt={namaFile}
+                        className="object-cover w-full h-40"
+                      />
+                    </a>
+                    <div className="p-2 border-t text-center bg-slate-50 text-xs text-slate-600 font-medium truncate">
+                      {namaFile}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-slate-500 text-sm italic flex items-center gap-2">
+              <FileImage size={16} /> Tidak ada dokumen pendukung.
+            </p>
+          );
+        })()}
+      </div>
+
+      {/* Tombol Aksi */}
+      <div className="flex justify-between items-center mt-10 border-t pt-6">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white font-medium text-sm px-6 py-2.5 rounded-md shadow transition"
+        >
+          <ArrowLeft size={16} /> Kembali
+        </button>
+
+        {data.status === "menunggu" && (
+          <button
+            onClick={handleKirimKePetugas}
+            disabled={sending}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm px-6 py-2.5 rounded-md shadow transition"
+          >
+            {sending ? (
+              <>
+                <Loader2 size={16} className="animate-spin" /> Mengirim...
+              </>
+            ) : (
+              <>
+                <Send size={16} /> Kirim ke Petugas
+              </>
+            )}
+          </button>
+        )}
+      </div>
+
+      {/* Toast container */}
+      <ToastContainer
+        position="top-right"
+        autoClose={2500}
+        hideProgressBar
+        newestOnTop
+        theme="light"
+      />
     </div>
   );
 };

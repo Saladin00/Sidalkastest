@@ -1,8 +1,12 @@
 // src/pages/petugas/verifikasi/PetugasVerifikasiDetail.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Check, X, FileImage } from "lucide-react";
+import { ArrowLeft, Loader2, Check, FileImage } from "lucide-react";
 import api from "../../../utils/api";
+import Swal from "sweetalert2";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import "sweetalert2/dist/sweetalert2.min.css";
 
 const PetugasVerifikasiDetail = () => {
   const { id } = useParams();
@@ -18,7 +22,6 @@ const PetugasVerifikasiDetail = () => {
       const res = await api.get(`/petugas/verifikasi/${id}`);
       const result = res.data?.data;
 
-      // pastikan foto_bukti terbaca baik dari string maupun array
       if (typeof result.foto_bukti === "string") {
         try {
           result.foto_bukti = JSON.parse(result.foto_bukti);
@@ -33,15 +36,26 @@ const PetugasVerifikasiDetail = () => {
       setCatatan(result?.catatan || "");
     } catch (err) {
       console.error("❌ Gagal ambil detail:", err);
-      alert("Gagal memuat data verifikasi.");
+      toast.error("Gagal memuat data verifikasi.", { autoClose: 2500 });
     } finally {
       setLoading(false);
     }
   };
 
   const handleSubmit = async (status) => {
-    if (!window.confirm(`Kirim hasil survei dan tandai sebagai ${status}?`))
-      return;
+    const confirm = await Swal.fire({
+      title: "Kirim Hasil Survei?",
+      text: `Data akan dikirim ke admin dan ditandai sebagai ${status.toUpperCase()}.`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Kirim",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#16a34a",
+      cancelButtonColor: "#6b7280",
+    });
+
+    if (!confirm.isConfirmed) return;
+
     try {
       setSubmitting(true);
       await api.put(`/petugas/verifikasi/${id}`, {
@@ -49,11 +63,13 @@ const PetugasVerifikasiDetail = () => {
         penilaian,
         catatan,
       });
-      alert("✅ Hasil survei berhasil dikirim ke admin!");
-      navigate("/petugas/verifikasi");
+      toast.success("Hasil survei berhasil dikirim ke admin!", {
+        autoClose: 2500,
+      });
+      setTimeout(() => navigate("/petugas/verifikasi"), 2000);
     } catch (err) {
       console.error("❌ Gagal kirim hasil survei:", err);
-      alert("Gagal mengirim hasil survei.");
+      toast.error("Gagal mengirim hasil survei.", { autoClose: 2500 });
     } finally {
       setSubmitting(false);
     }
@@ -66,9 +82,9 @@ const PetugasVerifikasiDetail = () => {
   const getStatusStyle = (status) => {
     switch (status?.toLowerCase()) {
       case "menunggu":
-        return "bg-blue-100 text-blue-700 border border-blue-300";
-      case "proses_survei":
         return "bg-yellow-100 text-yellow-700 border border-yellow-300";
+      case "proses_survei":
+        return "bg-blue-100 text-blue-700 border border-blue-300";
       case "valid":
         return "bg-green-100 text-green-700 border border-green-300";
       case "tidak_valid":
@@ -76,6 +92,12 @@ const PetugasVerifikasiDetail = () => {
       default:
         return "bg-slate-100 text-slate-700 border border-slate-300";
     }
+  };
+
+  const getNamaFile = (url, index) => {
+    const ext = url.split(".").pop()?.toLowerCase() || "";
+    const isImage = ["jpg", "jpeg", "png", "gif", "webp", "bmp"].includes(ext);
+    return isImage ? `Foto ${index + 1}` : `Dokumen ${index + 1}`;
   };
 
   if (loading)
@@ -191,20 +213,29 @@ const PetugasVerifikasiDetail = () => {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {data.foto_bukti.map((foto, i) => {
                 const src = foto.url || foto;
+                const namaFile = getNamaFile(src, i);
+
                 return (
-                  <a
+                  <div
                     key={i}
-                    href={src}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition"
+                    className="border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition bg-white"
                   >
-                    <img
-                      src={src}
-                      alt={`Foto ${i + 1}`}
-                      className="object-cover w-full h-36"
-                    />
-                  </a>
+                    <a
+                      href={src}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block"
+                    >
+                      <img
+                        src={src}
+                        alt={namaFile}
+                        className="object-cover w-full h-36"
+                      />
+                    </a>
+                    <div className="p-2 text-center border-t text-xs text-slate-600 bg-slate-50 truncate">
+                      {namaFile}
+                    </div>
+                  </div>
                 );
               })}
             </div>
@@ -224,30 +255,28 @@ const PetugasVerifikasiDetail = () => {
             <ArrowLeft size={16} /> Kembali
           </button>
 
-          <div className="flex gap-3">
-            <button
-              onClick={() => handleSubmit("tidak_valid")}
-              disabled={submitting}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-5 py-2.5 rounded-md shadow transition"
-            >
-              <X size={16} />
-              Tandai Tidak Valid
-            </button>
-            <button
-              onClick={() => handleSubmit("valid")}
-              disabled={submitting}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-5 py-2.5 rounded-md shadow transition"
-            >
-              {submitting ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Check size={16} />
-              )}
-              Kirim ke Admin
-            </button>
-          </div>
+          <button
+            onClick={() => handleSubmit("valid")}
+            disabled={submitting}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-5 py-2.5 rounded-md shadow transition"
+          >
+            {submitting ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Check size={16} />
+            )}
+            Kirim ke Admin
+          </button>
         </div>
       </div>
+
+      {/* Toast */}
+      <ToastContainer
+        position="top-right"
+        autoClose={2500}
+        hideProgressBar
+        theme="light"
+      />
     </div>
   );
 };

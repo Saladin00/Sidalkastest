@@ -1,8 +1,19 @@
-// src/pages/lks/LKSKlienList.jsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../utils/api";
-import { Plus, Eye, Pencil, Trash2, Loader2, RotateCcw, Search } from "lucide-react";
+import {
+  Plus,
+  Eye,
+  Pencil,
+  Trash2,
+  Loader2,
+  RotateCcw,
+  Search,
+} from "lucide-react";
+import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const LKSKlienList = () => {
   const [loading, setLoading] = useState(false);
@@ -14,7 +25,6 @@ const LKSKlienList = () => {
   });
   const [perPage, setPerPage] = useState(10);
 
-  // Fungsi bantu ekstrak data dari respons API (karena struktur kadang berubah)
   const extractList = (res) => {
     if (!res) return [];
     if (Array.isArray(res)) return res;
@@ -24,7 +34,6 @@ const LKSKlienList = () => {
     return [];
   };
 
-  // Ambil data dari API
   const loadKlien = async (customFilters = filters, customSearch = search) => {
     try {
       setLoading(true);
@@ -33,32 +42,30 @@ const LKSKlienList = () => {
       const params = {
         lks_id: lksId,
         search: customSearch?.trim() || undefined,
-        jenis_kebutuhan:
-          customFilters.jenis_kebutuhan || undefined,
-        status_bantuan:
-          customFilters.status_bantuan || undefined,
+        jenis_kebutuhan: customFilters.jenis_kebutuhan || undefined,
+        status_bantuan: customFilters.status_bantuan || undefined,
       };
 
       const res = await api.get("/klien", { params });
-      setKlien(extractList(res));
+      const data = extractList(res);
+      setKlien(data);
     } catch (err) {
       console.error("❌ Gagal ambil data klien:", err);
+      toast.error("Gagal memuat data klien.", { autoClose: 2000 });
       setKlien([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Ambil data pertama kali
   useEffect(() => {
     loadKlien();
   }, []);
 
-  // 🔹 Realtime filter & search (auto jalan tiap ketik / ubah filter)
   useEffect(() => {
     const delay = setTimeout(() => {
       loadKlien(filters, search);
-    }, 400); // nunggu 0.4 detik biar gak spam API
+    }, 500);
     return () => clearTimeout(delay);
   }, [search, filters]);
 
@@ -71,18 +78,38 @@ const LKSKlienList = () => {
     setFilters(reset);
     setSearch("");
     loadKlien(reset, "");
+    toast.info("Filter dan pencarian telah direset.", { autoClose: 2000 });
   };
 
   const handleDelete = async (id, nama) => {
-    if (!window.confirm(`Hapus klien "${nama}"?`)) return;
+    const result = await Swal.fire({
+      title: "Hapus Klien?",
+      text: `Data klien "${nama}" akan dihapus secara permanen.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#e02424",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Ya, Hapus",
+      cancelButtonText: "Batal",
+      reverseButtons: true,
+      background: "#fff",
+      color: "#374151",
+      backdrop: `rgba(0,0,0,0.4)`,
+    });
+
+    if (!result.isConfirmed) {
+      toast.info("Aksi dibatalkan.", { autoClose: 1500 });
+      return;
+    }
+
     try {
       setLoading(true);
       await api.delete(`/klien/${id}`);
-      alert(`Klien "${nama}" berhasil dihapus.`);
+      toast.success(`Klien "${nama}" berhasil dihapus!`, { autoClose: 2000 });
       loadKlien(filters, search);
     } catch (err) {
       console.error("❌ Gagal hapus:", err);
-      alert("Terjadi kesalahan saat menghapus data.");
+      toast.error("Gagal menghapus data klien!", { autoClose: 2000 });
     } finally {
       setLoading(false);
     }
@@ -104,9 +131,8 @@ const LKSKlienList = () => {
 
   return (
     <div className="max-w-7xl mx-auto bg-white shadow-xl rounded-2xl border border-gray-100 overflow-hidden">
-      {/* ===================== HEADER ===================== */}
+      {/* ======= HEADER ======= */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-5 border-b bg-gradient-to-r from-sky-50 to-white gap-4">
-        {/* Filter kiri */}
         <div className="flex flex-wrap gap-3 items-center">
           <select
             value={filters.status_bantuan}
@@ -169,7 +195,7 @@ const LKSKlienList = () => {
         </div>
       </div>
 
-      {/* ===================== TABLE ===================== */}
+      {/* ======= TABLE ======= */}
       <div className="overflow-x-auto">
         {loading ? (
           <div className="flex justify-center items-center py-16 text-gray-500">
@@ -220,30 +246,30 @@ const LKSKlienList = () => {
                     <td className="px-4 py-3 text-center border border-gray-300">
                       {index + 1}
                     </td>
-                    <td className="px-4 py-3 border border-gray-300">{item.nik}</td>
+                    <td className="px-4 py-3 border border-gray-300">
+                      {item.nik}
+                    </td>
                     <td className="px-4 py-3 border border-gray-300 font-semibold text-gray-800">
                       {item.nama}
                     </td>
-                    <td className="px-4 py-3 border border-gray-300">{item.alamat}</td>
-
+                    <td className="px-4 py-3 border border-gray-300">
+                      {item.alamat}
+                    </td>
                     <td className="px-4 py-3 text-center border border-gray-300">
                       {item.kelurahan?.nama || item.kelurahan || "-"}
                     </td>
                     <td className="px-4 py-3 text-center border border-gray-300">
                       {item.kecamatan?.nama || "-"}
                     </td>
-
                     <td className="px-4 py-3 text-center border border-gray-300">
                       {item.jenis_kebutuhan || "-"}
                     </td>
                     <td className="px-4 py-3 text-center border border-gray-300">
                       {item.status_bantuan || "-"}
                     </td>
-
                     <td className="px-4 py-3 text-center border border-gray-300">
                       {renderStatusBadge(item.status_pembinaan)}
                     </td>
-
                     <td className="px-4 py-3 text-center border border-gray-300">
                       <div className="flex justify-center gap-2">
                         <Link
@@ -255,7 +281,6 @@ const LKSKlienList = () => {
                             Lihat
                           </span>
                         </Link>
-
                         <Link
                           to={`/lks/klien/edit/${item.id}`}
                           className="p-1.5 rounded-md bg-amber-100 text-amber-600 hover:bg-amber-200 transition flex items-center gap-1"
@@ -265,7 +290,6 @@ const LKSKlienList = () => {
                             Edit
                           </span>
                         </Link>
-
                         <button
                           onClick={() => handleDelete(item.id, item.nama)}
                           className="p-1.5 rounded-md bg-rose-100 text-rose-600 hover:bg-rose-200 transition flex items-center gap-1"
@@ -285,7 +309,7 @@ const LKSKlienList = () => {
         )}
       </div>
 
-      {/* ===================== FOOTER ===================== */}
+      {/* ======= FOOTER ======= */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-3 px-5 py-4 border-t text-sm bg-gray-50">
         <div className="flex items-center gap-2">
           <label className="text-gray-600">Tampilkan</label>
@@ -301,6 +325,14 @@ const LKSKlienList = () => {
           <span className="text-gray-600">data per halaman</span>
         </div>
       </div>
+
+      <ToastContainer
+        position="top-right"
+        autoClose={2500}
+        hideProgressBar
+        newestOnTop
+        theme="light"
+      />
     </div>
   );
 };

@@ -1,7 +1,10 @@
+// src/pages/operator/lks/OperatorLKSList.jsx
 import React, { useEffect, useState } from "react";
 import API from "../../../utils/api";
 import { Eye, Search, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const OperatorLKSList = () => {
   const [data, setData] = useState([]);
@@ -35,7 +38,8 @@ const OperatorLKSList = () => {
       setData(hasil);
       setFiltered(hasil);
     } catch (err) {
-      console.error("❌ Gagal ambil data LKS:", err);
+      console.error("Gagal ambil data LKS:", err);
+      toast.error("Gagal memuat data LKS.", { autoClose: 2000 });
     } finally {
       setLoading(false);
     }
@@ -48,6 +52,7 @@ const OperatorLKSList = () => {
     setJenisLayanan("");
     setStatusFilter("");
     setFiltered(data);
+    toast.info("Filter dan pencarian telah direset.", { autoClose: 2000 });
   };
 
   // 🔍 Filter dan pencarian
@@ -84,13 +89,11 @@ const OperatorLKSList = () => {
     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
       {/* FILTER BAR */}
       <div className="flex flex-wrap justify-between items-center gap-3 mb-5">
-        {/* Filter kiri */}
         <div className="flex flex-wrap gap-2">
-          {/* Jenis Layanan */}
           <select
             value={jenisLayanan}
             onChange={(e) => setJenisLayanan(e.target.value)}
-            className="h-9 px-3 text-sm border border-gray-300 rounded-md bg-white w-full sm:w-auto"
+            className="h-9 px-3 text-sm border border-gray-300 rounded-md bg-white"
           >
             <option value="">Semua Jenis</option>
             <option value="lansia">Lansia</option>
@@ -100,11 +103,10 @@ const OperatorLKSList = () => {
             <option value="kesejahteraan sosial">Kesejahteraan Sosial</option>
           </select>
 
-          {/* Status */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-9 px-3 text-sm border border-gray-300 rounded-md bg-white w-full sm:w-auto"
+            className="h-9 px-3 text-sm border border-gray-300 rounded-md bg-white"
           >
             <option value="">Semua Status</option>
             <option value="disetujui">Disetujui</option>
@@ -112,10 +114,9 @@ const OperatorLKSList = () => {
             <option value="ditolak">Ditolak</option>
           </select>
 
-          {/* Reset */}
           <button
             onClick={handleReset}
-            className="h-9 px-3 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100 w-full sm:w-auto"
+            className="h-9 px-3 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100 transition"
           >
             Reset
           </button>
@@ -123,7 +124,6 @@ const OperatorLKSList = () => {
 
         {/* Filter kanan */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Search */}
           <div className="relative w-full sm:w-60">
             <Search
               size={16}
@@ -138,40 +138,40 @@ const OperatorLKSList = () => {
             />
           </div>
 
-          {/* Refresh */}
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center justify-center gap-1 border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-700 text-sm px-3 py-2 rounded-md transition w-full sm:w-auto"
+            className="flex items-center justify-center gap-1 border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-700 text-sm px-3 py-2 rounded-md transition"
           >
-            <RefreshCw size={14} />
+            <RefreshCw
+              size={14}
+              className={loading ? "animate-spin text-sky-500" : ""}
+            />
             Refresh
           </button>
         </div>
       </div>
 
       {/* TABEL DATA */}
-      <div className="overflow-x-auto bg-white shadow-md rounded-xl ring-1 ring-slate-200/60">
+      <div className="overflow-x-auto bg-white shadow-md rounded-xl border border-gray-200">
         {loading ? (
-          <p className="text-center text-gray-500 p-4">Memuat data...</p>
+          <div className="p-6 text-center text-gray-500 flex items-center justify-center gap-2">
+            <RefreshCw className="animate-spin" size={18} /> Memuat data LKS...
+          </div>
         ) : displayedData.length > 0 ? (
           <table className="min-w-full text-sm text-slate-700 border border-slate-200">
             <thead className="bg-slate-100 text-slate-800 border-b border-slate-300">
               <tr>
-                <th className="px-4 py-3 text-center border border-slate-200">
-                  No
-                </th>
-                <th className="px-4 py-3 border border-slate-200">Nama LKS</th>
-                <th className="px-4 py-3 border border-slate-200">
-                  Jenis Layanan
-                </th>
-                <th className="px-4 py-3 border border-slate-200">Kecamatan</th>
-                <th className="px-4 py-3 text-center border border-slate-200">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-center border border-slate-200">
-                  Aksi
-                </th>
+                {["No", "Nama LKS", "Jenis Layanan", "Kecamatan", "Status", "Aksi"].map(
+                  (h) => (
+                    <th
+                      key={h}
+                      className="px-4 py-3 text-center border border-slate-200"
+                    >
+                      {h}
+                    </th>
+                  )
+                )}
               </tr>
             </thead>
             <tbody>
@@ -194,12 +194,12 @@ const OperatorLKSList = () => {
                   </td>
                   <td className="px-4 py-3 text-center border border-slate-200">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      className={`px-3 py-1 rounded-full text-xs font-semibold border ${
                         lks.status === "disetujui"
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                           : lks.status === "pending"
-                          ? "bg-amber-50 text-amber-700 border border-amber-200"
-                          : "bg-rose-50 text-rose-700 border border-rose-200"
+                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          : "bg-rose-50 text-rose-700 border-rose-200"
                       }`}
                     >
                       {(lks.status || "TIDAK DIKETAHUI").toUpperCase()}
@@ -235,18 +235,20 @@ const OperatorLKSList = () => {
             onChange={(e) => setPerPage(Number(e.target.value))}
             className="border rounded px-2 py-1 text-sm"
           >
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="20">20</option>
-            <option value="40">40</option>
+            {[5, 10, 20, 40].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
           </select>
           <span>data per halaman</span>
         </div>
-
         <p>
           Menampilkan {Math.min(filtered.length, perPage)} dari {filtered.length} data
         </p>
       </div>
+
+      <ToastContainer position="top-right" autoClose={2500} hideProgressBar theme="light" />
     </div>
   );
 };
