@@ -1,10 +1,12 @@
+// src/pages/lks/verifikasi/LKSVerifikasiDetail.jsx
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, FileImage } from "lucide-react";
 import api from "../../../utils/api";
 
 const LKSVerifikasiDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -13,7 +15,7 @@ const LKSVerifikasiDetail = () => {
       const res = await api.get(`/lks/verifikasi/${id}`);
       const result = res.data?.data;
 
-      // ✅ Pastikan foto_bukti bisa dibaca baik dari JSON string, array string, atau array objek
+      // Pastikan foto_bukti terbaca baik dari JSON string, array string, atau array objek
       if (typeof result.foto_bukti === "string") {
         try {
           result.foto_bukti = JSON.parse(result.foto_bukti);
@@ -22,10 +24,7 @@ const LKSVerifikasiDetail = () => {
         }
       }
 
-      if (!Array.isArray(result.foto_bukti)) {
-        result.foto_bukti = [];
-      }
-
+      if (!Array.isArray(result.foto_bukti)) result.foto_bukti = [];
       setData(result);
     } catch (err) {
       console.error("❌ Gagal ambil detail verifikasi:", err);
@@ -38,6 +37,21 @@ const LKSVerifikasiDetail = () => {
   useEffect(() => {
     loadData();
   }, [id]);
+
+  const getStatusStyle = (status) => {
+    switch (status?.toLowerCase()) {
+      case "menunggu":
+        return "bg-blue-100 text-blue-700 border border-blue-300";
+      case "proses_survei":
+        return "bg-yellow-100 text-yellow-700 border border-yellow-300";
+      case "valid":
+        return "bg-green-100 text-green-700 border border-green-300";
+      case "tidak_valid":
+        return "bg-red-100 text-red-700 border border-red-300";
+      default:
+        return "bg-slate-100 text-slate-700 border border-slate-300";
+    }
+  };
 
   if (loading)
     return (
@@ -53,126 +67,129 @@ const LKSVerifikasiDetail = () => {
       </div>
     );
 
-  // ✅ Warna status
-  const statusClass =
-    data.status === "valid"
-      ? "bg-green-100 text-green-700 border-green-200"
-      : data.status === "tidak_valid"
-      ? "bg-red-100 text-red-700 border-red-200"
-      : "bg-yellow-100 text-yellow-700 border-yellow-200";
-
   return (
-    <div className="max-w-3xl mx-auto bg-white border border-slate-200 rounded-xl shadow-md p-6">
-      {/* ====== HEADER ====== */}
-      <h2 className="text-xl font-semibold text-slate-800 mb-6">
-        Detail Verifikasi
-      </h2>
+    <div className="max-w-5xl mx-auto p-8">
+      {/* Card utama */}
+      <div className="bg-white shadow-xl rounded-2xl border border-slate-200 p-8 relative overflow-hidden">
+        {/* Accent background */}
+        <div className="absolute top-0 right-0 w-72 h-72 bg-sky-100/40 rounded-full blur-3xl -z-10 translate-x-16 -translate-y-10"></div>
 
-      {/* ====== INFO TABEL ====== */}
-      <div className="border border-slate-200 rounded-lg overflow-hidden mb-6">
-        <div className="divide-y divide-slate-200 text-sm">
-          {/* 1 */}
-          <div className="flex bg-slate-50">
-            <div className="w-52 font-semibold text-slate-700 px-4 py-3 border-r">
-              1. Tanggal Verifikasi
-            </div>
-            <div className="flex-1 px-4 py-3">
-              {data.tanggal_verifikasi
-                ? new Date(data.tanggal_verifikasi).toLocaleString("id-ID")
-                : "-"}
-            </div>
-          </div>
+        {/* Header */}
+        <h2 className="text-2xl font-semibold text-sky-900 mb-6">
+          Detail Verifikasi
+        </h2>
 
-          {/* 2 */}
-          <div className="flex">
-            <div className="w-52 font-semibold text-slate-700 px-4 py-3 border-r">
-              2. Petugas Verifikasi
-            </div>
-            <div className="flex-1 px-4 py-3">{data.petugas?.name || "-"}</div>
-          </div>
+        {/* Detail Table */}
+        <div className="overflow-hidden border border-slate-200 rounded-xl">
+          <table className="w-full text-sm">
+            <tbody className="divide-y divide-slate-200">
+              <tr className="bg-slate-50/60">
+                <td className="p-4 font-semibold text-slate-700 w-1/3">
+                  1. Tanggal Verifikasi
+                </td>
+                <td className="p-4 text-slate-800">
+                  {data.tanggal_verifikasi
+                    ? new Date(data.tanggal_verifikasi).toLocaleString("id-ID")
+                    : "-"}
+                </td>
+              </tr>
 
-          {/* 3 */}
-          <div className="flex bg-slate-50">
-            <div className="w-52 font-semibold text-slate-700 px-4 py-3 border-r">
-              3. Status
-            </div>
-            <div className="flex-1 px-4 py-3">
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusClass}`}
-              >
-                {data.status?.toUpperCase()}
-              </span>
-            </div>
-          </div>
+              <tr>
+                <td className="p-4 font-semibold text-slate-700">
+                  2. Petugas Verifikasi
+                </td>
+                <td className="p-4 text-slate-800">
+                  {data.petugas?.name || "-"}
+                </td>
+              </tr>
 
-          {/* 4 */}
-          <div className="flex">
-            <div className="w-52 font-semibold text-slate-700 px-4 py-3 border-r">
-              4. Penilaian
-            </div>
-            <div className="flex-1 px-4 py-3">
-              {data.penilaian || (
-                <span className="italic text-slate-500">
-                  Menunggu review dari operator kecamatan.
-                </span>
-              )}
-            </div>
-          </div>
+              <tr className="bg-slate-50/60">
+                <td className="p-4 font-semibold text-slate-700">3. Status</td>
+                <td className="p-4">
+                  <span
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-full ${getStatusStyle(
+                      data.status
+                    )}`}
+                  >
+                    {data.status?.toUpperCase() || "MENUNGGU"}
+                  </span>
+                </td>
+              </tr>
 
-          {/* 5 */}
-          <div className="flex bg-slate-50">
-            <div className="w-52 font-semibold text-slate-700 px-4 py-3 border-r">
-              5. Catatan
-            </div>
-            <div className="flex-1 px-4 py-3">{data.catatan || "-"}</div>
-          </div>
+              <tr>
+                <td className="p-4 font-semibold text-slate-700">
+                  4. Penilaian
+                </td>
+                <td className="p-4 text-slate-800">
+                  {data.penilaian || (
+                    <span className="italic text-slate-500">
+                      Menunggu review dari operator kecamatan.
+                    </span>
+                  )}
+                </td>
+              </tr>
+
+              <tr className="bg-slate-50/60">
+                <td className="p-4 font-semibold text-slate-700">
+                  5. Catatan Admin
+                </td>
+                <td className="p-4 text-slate-800">
+                  {data.status === "valid" || data.status === "tidak_valid" ? (
+                    data.catatan || "-"
+                  ) : (
+                    <span className="italic text-slate-500">
+                      Belum ada catatan admin.
+                    </span>
+                  )}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </div>
 
-      {/* ====== FOTO BUKTI ====== */}
-      <div className="mb-8">
-        <h3 className="text-sm font-semibold text-slate-700 mb-3">
-          Dokumen / Foto Bukti
-        </h3>
+        {/* Foto Bukti */}
+        <div className="mt-8">
+          <h3 className="text-base font-semibold text-slate-700 mb-3">
+            Dokumen / Foto Bukti
+          </h3>
 
-        {data.foto_bukti?.length ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {data.foto_bukti.map((foto, i) => {
-              const src = foto.url || foto; // handle dua jenis data
-              return (
-                <a
-                  key={i}
-                  href={src}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group relative block border border-slate-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition"
-                >
-                  <img
-                    src={src}
-                    alt={`Foto ${i + 1}`}
-                    className="object-cover w-full h-36 group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition"></div>
-                </a>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-slate-500 text-sm italic flex items-center gap-2">
-            <FileImage size={16} /> Tidak ada foto atau dokumen bukti.
-          </p>
-        )}
-      </div>
+          {data.foto_bukti?.length ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {data.foto_bukti.map((foto, i) => {
+                const src = foto.url || foto;
+                return (
+                  <a
+                    key={i}
+                    href={src}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition"
+                  >
+                    <img
+                      src={src}
+                      alt={`Foto ${i + 1}`}
+                      className="object-cover w-full h-36"
+                    />
+                  </a>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-slate-500 text-sm italic flex items-center gap-2">
+              <FileImage size={16} /> Tidak ada foto atau dokumen bukti.
+            </p>
+          )}
+        </div>
 
-      {/* ====== TOMBOL KEMBALI ====== */}
-      <div className="pt-3">
-        <Link
-          to="/lks/verifikasi"
-          className="inline-flex items-center gap-2 bg-gray-200 hover:bg-gray-300 
-          text-gray-700 px-4 py-2 rounded-md text-sm transition shadow-sm"
-        >
-          <ArrowLeft size={16} /> Kembali
-        </Link>
+        {/* Tombol Kembali */}
+        <div className="mt-10">
+          <button
+            onClick={() => navigate("/lks/verifikasi")}
+            className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-base font-semibold px-6 py-3 rounded-lg shadow-lg transition"
+          >
+            <ArrowLeft size={20} /> Kembali
+          </button>
+        </div>
       </div>
     </div>
   );

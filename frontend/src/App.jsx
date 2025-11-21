@@ -76,6 +76,10 @@ import LKSVerifikasiDetail from "./pages/lks/verifikasi/LKSVerifikasiDetail";
 import LKSVerifikasiList from "./pages/lks/verifikasi/LKSVerifikasiList";
 import LKSVerifikasiForm from "./pages/lks/verifikasi/LKSVerifikasiForm"; // ✅ import di atas
 
+// Laporan
+import LaporanAdmin from "./pages/admin/laporan/LaporanAdmin";
+import LaporanOperator from "./pages/operator/Laporan/LaporanOperator";
+
 function App() {
   return (
     <BrowserRouter>
@@ -94,7 +98,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* ADMIN: USERS */}
+        {/* --- ADMIN: USERS --- */}
         <Route
           path="/admin/users"
           element={
@@ -110,9 +114,7 @@ function App() {
           path="/admin/lks"
           element={
             <ProtectedRoute allowedRoles={["admin", "operator"]}>
-              <AdminLayout>
-                <LKSList />
-              </AdminLayout>
+              <LKSList />
             </ProtectedRoute>
           }
         />
@@ -453,6 +455,12 @@ function App() {
             </ProtectedRoute>
           }
         />
+        {/* Laporan  */}
+
+        {/* ADMIN */}
+        <Route path="/admin/laporan" element={<LaporanAdmin />} />
+        {/* OPERATOR */}
+        <Route path="/operator/laporan" element={<LaporanOperator />} />
       </Routes>
     </BrowserRouter>
   );

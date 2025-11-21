@@ -1,277 +1,226 @@
+// src/pages/operator/klien/OperatorKlienList.jsx
 import React, { useEffect, useState } from "react";
-import { RotateCw, Loader2 } from "lucide-react";
-import api from "../../../utils/api";
 import { useNavigate } from "react-router-dom";
+import api from "../../../utils/api";
+import { Search, Eye, RotateCw } from "lucide-react";
 
-const OperatorKlienList = () => {
-  const [klienList, setKlienList] = useState([]);
-  const [pagination, setPagination] = useState({
-    current_page: 1,
-    last_page: 1,
-    total: 0,
-  });
-  const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
-  const [lksList, setLksList] = useState([]);
+export default function OperatorKlienList() {
   const navigate = useNavigate();
-  // 🔹 Filter manual
+
+  const [klien, setKlien] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   const [filters, setFilters] = useState({
-    kelurahan: "",
-    lks_id: "",
+    status_bantuan: "",
+    jenis_kebutuhan: "",
   });
 
-  // =============================================
-  // Ambil Data Klien
-  // =============================================
-  const loadKlien = async (page = 1) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [perPage, setPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const extractList = (res) => {
+    if (!res) return [];
+    if (Array.isArray(res)) return res;
+    if (Array.isArray(res.data)) return res.data;
+    if (Array.isArray(res.data?.data)) return res.data.data;
+    if (Array.isArray(res.data?.data?.data)) return res.data.data.data;
+    return [];
+  };
+
+  useEffect(() => {
+    fetchKlien();
+  }, []);
+
+  const fetchKlien = async () => {
     setLoading(true);
     try {
       const token = sessionStorage.getItem("token");
       const res = await api.get("/klien", {
-        params: {
-          search,
-          page,
-          kelurahan: filters.kelurahan || undefined,
-          lks_id: filters.lks_id || undefined,
-        },
+        params: filters,
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      const data = res.data?.data;
-
-      if (Array.isArray(data)) {
-        setKlienList(data);
-        setPagination({ current_page: 1, last_page: 1, total: data.length });
-      } else {
-        setKlienList(data?.data || []);
-        setPagination({
-          current_page: data?.current_page || 1,
-          last_page: data?.last_page || 1,
-          total: data?.total || data?.data?.length || 0,
-        });
-      }
-    } catch (error) {
-      console.error("❌ Gagal mengambil data klien:", error);
-      alert(
-        error.response?.data?.message ||
-          "Terjadi kesalahan saat memuat data klien."
-      );
+      setKlien(extractList(res));
+    } catch (err) {
+      console.error("Gagal ambil klien:", err);
+      setKlien([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // =============================================
-  // Ambil Data LKS untuk Dropdown Filter
-  // =============================================
-  const loadLKS = async () => {
-    try {
-      const token = sessionStorage.getItem("token");
-      const res = await api.get("/lks", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setLksList(res.data?.data?.data || res.data?.data || []);
-    } catch (err) {
-      console.error("Gagal memuat LKS:", err);
-    }
+  const handleResetFilters = () => {
+    setFilters({
+      status_bantuan: "",
+      jenis_kebutuhan: "",
+    });
+    setSearchTerm("");
+    fetchKlien();
   };
 
-  useEffect(() => {
-    loadLKS();
-    loadKlien();
-  }, []);
+  // 🔍 Filter pencarian & dropdown
+  const searchFiltered = klien.filter((item) => {
+    const q = searchTerm.toLowerCase();
+    if (!q) return true;
+    return (
+      item?.nik?.toLowerCase().includes(q) ||
+      item?.nama?.toLowerCase().includes(q) ||
+      item?.alamat?.toLowerCase().includes(q) ||
+      item?.kelurahan?.toLowerCase().includes(q) ||
+      item?.kecamatan?.nama?.toLowerCase().includes(q) ||
+      item?.lks?.nama?.toLowerCase().includes(q)
+    );
+  });
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") loadKlien(1);
-  };
+  const fullyFiltered = searchFiltered.filter((item) => {
+    return (
+      (!filters.status_bantuan ||
+        item.status_bantuan === filters.status_bantuan) &&
+      (!filters.jenis_kebutuhan ||
+        item.jenis_kebutuhan === filters.jenis_kebutuhan)
+    );
+  });
 
-  const handleFilterChange = (e) => {
-    setFilters((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
+  const uniqueFiltered = Array.from(
+    new Map(fullyFiltered.map((i) => [i.id, i])).values()
+  );
 
-  // =============================================
-  // RENDER
-  // =============================================
+  const totalPages = Math.max(1, Math.ceil(uniqueFiltered.length / perPage));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * perPage;
+  const pageData = uniqueFiltered.slice(startIndex, startIndex + perPage);
+
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-      {/* Header */}
-      <div className="flex flex-wrap justify-between items-center p-4 border-b border-slate-100 gap-2">
-        <h2 className="text-lg font-semibold text-slate-800">
-          Daftar Klien di Kecamatan Anda
-        </h2>
-
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Filter Kelurahan (input teks) */}
-          <input
-            type="text"
-            name="kelurahan"
-            value={filters.kelurahan}
-            onChange={handleFilterChange}
-            placeholder="Filter Kelurahan..."
-            className="border border-slate-300 rounded-md text-sm px-2 py-1.5 w-40"
-          />
-
-          {/* Filter LKS */}
+    <div className="p-6 bg-gray-50 min-h-screen">
+      {/* FILTER BAR */}
+      <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
+        <div className="flex flex-wrap gap-2">
+          {/* Status Bantuan */}
           <select
-            name="lks_id"
-            value={filters.lks_id}
-            onChange={handleFilterChange}
-            className="border border-slate-300 rounded-md text-sm px-2 py-1.5"
+            className="h-8 px-3 text-xs border rounded-full"
+            value={filters.status_bantuan}
+            onChange={(e) =>
+              setFilters({ ...filters, status_bantuan: e.target.value })
+            }
           >
-            <option value="">Semua LKS</option>
-            {lksList.map((lks) => (
-              <option key={lks.id} value={lks.id}>
-                {lks.nama}
-              </option>
-            ))}
+            <option value="">Status Bantuan</option>
+            <option value="PKH">PKH</option>
+            <option value="BPNT">BPNT</option>
+            <option value="BLT">BLT</option>
           </select>
 
-          {/* Search */}
-          <div className="flex items-center border border-slate-300 rounded-md overflow-hidden bg-white">
+          {/* Jenis Kebutuhan */}
+          <select
+            className="h-8 px-3 text-xs border rounded-full"
+            value={filters.jenis_kebutuhan}
+            onChange={(e) =>
+              setFilters({ ...filters, jenis_kebutuhan: e.target.value })
+            }
+          >
+            <option value="">Jenis Kebutuhan</option>
+            <option value="anak">Anak</option>
+            <option value="disabilitas">Disabilitas</option>
+            <option value="lansia">Lansia</option>
+            <option value="fakir_miskin">Fakir Miskin</option>
+          </select>
+
+          {/* Reset */}
+          <button
+            className="h-8 px-3 text-xs bg-white border rounded-full"
+            onClick={handleResetFilters}
+          >
+            Reset
+          </button>
+        </div>
+
+        {/* SEARCH */}
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-2 top-2 text-gray-400" size={16} />
             <input
               type="text"
-              placeholder="Cari nama klien..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="px-3 py-1.5 text-sm outline-none w-44"
+              placeholder="Cari klien..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="h-9 pl-7 pr-3 text-sm border rounded-full"
             />
-            <button
-              onClick={() => loadKlien(1)}
-              className="bg-slate-100 px-3 py-1.5 text-slate-600 hover:bg-slate-200 transition"
-            >
-              🔍
-            </button>
           </div>
-
-          {/* Refresh */}
-          <button
-            onClick={() => loadKlien(pagination.current_page)}
-            className="flex items-center gap-1 border border-slate-300 text-slate-700 px-3 py-1.5 rounded-md hover:bg-slate-100 text-sm transition"
-          >
-            {loading ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <RotateCw size={14} />
-            )}
-            {loading ? "Memuat..." : "Refresh"}
-          </button>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        {loading ? (
-          <div className="flex justify-center items-center py-20 text-gray-500">
-            <Loader2 size={24} className="animate-spin mr-2" />
-            Memuat data klien...
+      {/* TABLE */}
+      <div className="overflow-x-auto bg-white shadow rounded-xl">
+        {pageData.length === 0 ? (
+          <div className="py-10 text-center text-gray-400 italic">
+            Tidak ada data ditemukan.
           </div>
         ) : (
-          <table className="min-w-full text-sm text-gray-700">
-            <thead className="bg-slate-50 text-xs font-medium text-slate-600 border-b">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-100">
               <tr>
-                <th className="px-4 py-3 text-center w-12 border-r">No</th>
-                <th className="px-4 py-3 border-r">NIK</th>
-                <th className="px-4 py-3 border-r">Nama Klien</th>
-                <th className="px-4 py-3 border-r">Kelurahan</th>
-                <th className="px-4 py-3 border-r">Alamat</th>
-                <th className="px-4 py-3 border-r">Kecamatan</th>
-                <th className="px-4 py-3 border-r">LKS</th>
-                <th className="px-4 py-3 text-center">Status Pembinaan</th>
-                <th className="px-4 py-3 text-center border-r">Aksi</th>
+                <th className="px-3 py-2 border">No</th>
+                <th className="px-3 py-2 border">NIK</th>
+                <th className="px-3 py-2 border">Nama</th>
+                <th className="px-3 py-2 border">Alamat</th>
+                <th className="px-3 py-2 border">Kelurahan</th>
+                <th className="px-3 py-2 border">Kecamatan</th>
+                <th className="px-3 py-2 border">Kebutuhan</th>
+                <th className="px-3 py-2 border">Bantuan</th>
+                <th className="px-3 py-2 border">LKS</th>
+                <th className="px-3 py-2 border text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
-              {klienList.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan="8"
-                    className="text-center py-6 text-slate-400 italic"
-                  >
-                    Tidak ada data klien ditemukan.
+              {pageData.map((item, index) => (
+                <tr key={item.id} className="hover:bg-slate-50 transition">
+                  <td className="border px-3 py-2 text-center">
+                    {startIndex + index + 1}
+                  </td>
+                  <td className="border px-3 py-2">{item.nik}</td>
+                  <td className="border px-3 py-2">{item.nama}</td>
+                  <td className="border px-3 py-2">{item.alamat}</td>
+                  <td className="border px-3 py-2">{item.kelurahan}</td>
+                  <td className="border px-3 py-2">{item.kecamatan?.nama}</td>
+                  <td className="border px-3 py-2">{item.jenis_kebutuhan}</td>
+                  <td className="border px-3 py-2">{item.status_bantuan}</td>
+                  <td className="border px-3 py-2">{item.lks?.nama}</td>
+                  <td className="border px-3 py-2 text-center">
+                    <button
+                      onClick={() =>
+                        navigate(`/operator/klien/detail/${item.id}`)
+                      }
+                      className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow transition"
+                    >
+                      <Eye size={16} /> Lihat
+                    </button>
                   </td>
                 </tr>
-              ) : (
-                klienList.map((klien,) => (
-                  <tr
-                    key={klien.id}
-                    className="border-t hover:bg-slate-50 transition"
-                  >
-                    <td className="px-4 py-3 text-center border-r">
-                      <button
-                        onClick={() =>
-                          navigate(`/operator/klien/detail/${klien.id}`)
-                        }
-                        className="text-sky-600 hover:underline text-sm font-medium"
-                      >
-                        Lihat
-                      </button>
-                    </td>
-
-                    <td className="px-4 py-3 border-r">{klien.nik || "-"}</td>
-                    <td className="px-4 py-3 border-r font-medium text-slate-800">
-                      {klien.nama}
-                    </td>
-                    <td className="px-4 py-3 border-r">
-                      {klien.kelurahan || "-"}
-                    </td>
-                    <td className="px-4 py-3 border-r">
-                      {klien.alamat || "-"}
-                    </td>
-                    <td className="px-4 py-3 border-r">
-                      {klien.kecamatan?.nama || "-"}
-                    </td>
-                    <td className="px-4 py-3 border-r">
-                      {klien.lks?.nama || "-"}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span
-                        className={`px-3 py-1 text-xs rounded-full ${
-                          klien.status_pembinaan === "aktif"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        {klien.status_pembinaan || "-"}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         )}
       </div>
 
-      {/* Pagination */}
-      <div className="flex justify-between items-center p-4 text-sm text-slate-600">
-        <p>
-          Halaman {pagination.current_page} dari {pagination.last_page} — Total{" "}
-          {pagination.total} data
-        </p>
-        <div className="flex gap-2">
-          <button
-            disabled={pagination.current_page <= 1}
-            onClick={() => loadKlien(pagination.current_page - 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            ⬅️ Prev
-          </button>
-          <button
-            disabled={pagination.current_page >= pagination.last_page}
-            onClick={() => loadKlien(pagination.current_page + 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Next ➡️
-          </button>
-        </div>
+      {/* SHOW PER PAGE */}
+      <div className="flex items-center mt-4">
+        <label className="text-sm mr-2">Tampilkan</label>
+        <select
+          value={perPage}
+          onChange={(e) => setPerPage(Number(e.target.value))}
+          className="border rounded px-2 py-1 text-sm"
+        >
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="40">40</option>
+          <option value="60">60</option>
+          <option value="100">100</option>
+        </select>
+        <span className="text-sm ml-2">data per halaman</span>
       </div>
     </div>
   );
-};
-
-export default OperatorKlienList;
+}

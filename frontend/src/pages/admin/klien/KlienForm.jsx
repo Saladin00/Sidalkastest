@@ -35,12 +35,14 @@ export default function KlienForm() {
 
   // === ADMIN: Dapat semua LKS ===
   useEffect(() => {
-    if (role === "admin") {
-      api.get("/lks").then((res) => {
-        setLksList(res.data.data.data || []);
-      });
-    }
-  }, [role]);
+  if (role === "admin") {
+    api.get("/lks").then((res) => {
+      const raw = res.data?.data;
+      setLksList(Array.isArray(raw) ? raw : raw?.data || []);
+    });
+  }
+}, [role]);
+
 
   // === Filter LKS by Kecamatan (ADMIN ONLY) ===
   useEffect(() => {

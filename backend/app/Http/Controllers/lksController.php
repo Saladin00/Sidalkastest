@@ -16,7 +16,11 @@ class LKSController extends Controller
 {
     try {
         $user = $request->user();
-        $query = Lks::with(['verifikasiTerbaru', 'kecamatan']);
+        $query = Lks::with(['verifikasiTerbaru', 'kecamatan'])
+    ->whereHas('verifikasiTerbaru', function($q) {
+        $q->where('status', 'valid');
+    });
+
 
         // 🔹 Jika operator / petugas → hanya tampilkan LKS di kecamatan-nya
         if ($user->hasAnyRole(['operator', 'petugas'])) {

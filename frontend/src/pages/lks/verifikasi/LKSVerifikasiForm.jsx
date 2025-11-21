@@ -1,6 +1,7 @@
+// src/pages/lks/verifikasi/LKSVerifikasiForm.jsx
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Loader2, Upload } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Loader2, Upload, AlertTriangle, Trash2 } from "lucide-react";
 import api from "../../../utils/api";
 
 const LKSVerifikasiForm = () => {
@@ -9,15 +10,16 @@ const LKSVerifikasiForm = () => {
   const [loading, setLoading] = useState(false);
   const [lksData, setLksData] = useState(null);
   const [fetching, setFetching] = useState(true);
+  const [fileError, setFileError] = useState("");
+
   const navigate = useNavigate();
 
-  // 🔹 Ambil data profil LKS login
+  // 🔹 Ambil data LKS login
   const loadLKSData = async () => {
     try {
       const res = await api.get("/lks/me");
       setLksData(res.data.data);
-    } catch (err) {
-      console.error("❌ Gagal memuat data LKS:", err);
+    } catch {
       alert("Gagal mengambil data LKS. Pastikan profil sudah dilengkapi.");
     } finally {
       setFetching(false);
@@ -28,13 +30,35 @@ const LKSVerifikasiForm = () => {
     loadLKSData();
   }, []);
 
+  // 🔹 Tambah file (append), validasi 5 file & 5MB
   const handleFileChange = (e) => {
-    setFiles(Array.from(e.target.files));
+    const selected = Array.from(e.target.files);
+    const combined = [...files, ...selected];
+
+    if (combined.length > 5) {
+      setFileError("Maksimal 5 file yang dapat diupload.");
+      return;
+    }
+
+    const oversized = combined.filter((f) => f.size > 5 * 1024 * 1024);
+    if (oversized.length > 0) {
+      setFileError("Ukuran file tidak boleh melebihi 5MB per file.");
+      return;
+    }
+
+    setFileError("");
+    setFiles(combined);
   };
 
+  // 🔹 Hapus file
+  const handleRemoveFile = (index) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // 🔹 Kirim form
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (loading) return;
+    if (loading || fileError) return;
 
     const formData = new FormData();
     formData.append("catatan", catatan);
@@ -45,117 +69,153 @@ const LKSVerifikasiForm = () => {
       await api.post("/lks/verifikasi/pengajuan", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      alert("✅ Pengajuan berhasil dikirim ke operator kecamatan!");
+      alert("✅ Pengajuan berhasil dikirim!");
       navigate("/lks/verifikasi");
-    } catch (err) {
-      console.error("❌ Gagal kirim pengajuan:", err);
+    } catch {
       alert("Gagal mengirim pengajuan verifikasi.");
     } finally {
       setLoading(false);
     }
   };
 
-  if (fetching) {
+  if (fetching)
     return (
       <div className="flex justify-center items-center py-20 text-gray-500">
-        <Loader2 className="animate-spin mr-2" /> Memuat data profil LKS...
+        <Loader2 className="animate-spin mr-2" /> Memuat data...
       </div>
     );
-  }
 
   return (
-    <div className="max-w-4xl mx-auto bg-white border border-slate-200 rounded-md shadow-md p-6">
-      <div className="flex justify-between items-center mb-5">
-        <h2 className="text-lg font-semibold text-slate-800">
-          Form Pengajuan Verifikasi
-        </h2>
-        <Link
-          to="/lks/verifikasi"
-          className="text-slate-600 hover:text-sky-600 text-sm"
-        >
-          <ArrowLeft size={16} className="inline mr-1" /> Kembali
-        </Link>
+    <div className="max-w-4xl mx-auto bg-white border border-gray-200 shadow-lg rounded-xl p-6">
+      {/* ======== JUDUL ======== */}
+      <h2 className="text-2xl font-semibold text-slate-800 mb-6">
+        Form Pengajuan Verifikasi
+      </h2>
+
+      {/* ======== INFORMASI LKS ======== */}
+      <div className="border border-gray-200 rounded-lg shadow-sm mb-6 overflow-hidden">
+        <div className="bg-gray-50 p-3 border-b text-sm font-semibold text-gray-700">
+          Informasi Pengajuan
+        </div>
+
+        <div className="divide-y divide-gray-200">
+          {[
+            ["Nama LKS", lksData?.nama],
+            ["Jenis Layanan", lksData?.jenis_layanan],
+            ["Petugas Verifikasi", "Belum ditugaskan"],
+            ["Tanggal Pengajuan", new Date().toLocaleString("id-ID")],
+            ["Status", "MENUNGGU"],
+          ].map((row, index) => (
+            <div key={index} className="flex p-3 text-sm">
+              <div className="w-56 font-semibold text-gray-700">
+                {index + 1}. {row[0]}
+              </div>
+              <div className="flex-1">
+                {row[0] === "Status" ? (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-300">
+                    MENUNGGU
+                  </span>
+                ) : (
+                  row[1] || "-"
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Info table — ambil otomatis dari profil LKS */}
-      <table className="w-full text-sm border border-slate-200 rounded-lg mb-5">
-        <tbody>
-          <tr>
-            <td className="p-3 font-medium w-40 border-b">Nama LKS</td>
-            <td className="p-3 border-b">{lksData?.nama || "-"}</td>
-          </tr>
-          <tr>
-            <td className="p-3 font-medium border-b">Jenis Layanan</td>
-            <td className="p-3 border-b">{lksData?.jenis_layanan || "-"}</td>
-          </tr>
-          <tr>
-            <td className="p-3 font-medium border-b">Petugas Verifikasi</td>
-            <td className="p-3 border-b">
-              <span className="text-slate-500 italic">Belum ditugaskan</span>
-            </td>
-          </tr>
-          <tr>
-            <td className="p-3 font-medium border-b">Tanggal Pengajuan</td>
-            <td className="p-3 border-b">
-              {new Date().toLocaleString("id-ID")}
-            </td>
-          </tr>
-          <tr>
-            <td className="p-3 font-medium border-b">Status</td>
-            <td className="p-3 border-b">
-              <span className="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">
-                MENUNGGU
-              </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      {/* Form catatan dan upload */}
-      <form onSubmit={handleSubmit} className="space-y-5">
+      {/* ======== FORM ======== */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* CATATAN */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Catatan Tambahan
           </label>
           <textarea
             value={catatan}
             onChange={(e) => setCatatan(e.target.value)}
             rows={3}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-sky-500 outline-none"
-            placeholder="Tuliskan catatan tambahan (opsional)..."
-          ></textarea>
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-sky-500 outline-none"
+            placeholder="Tambahkan catatan (opsional)..."
+          />
         </div>
 
+        {/* FILE UPLOAD */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Dokumen / Foto Bukti
           </label>
+
           <input
             type="file"
             multiple
+            accept="image/*"
             onChange={handleFileChange}
-            className="block w-full text-sm text-slate-600 border border-slate-300 rounded-lg p-2 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:bg-sky-600 file:text-white hover:file:bg-sky-700"
+            className="block w-full text-sm text-gray-600 border border-gray-300 rounded-lg p-2
+            file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0
+            file:bg-sky-600 file:text-white hover:file:bg-sky-700"
           />
-          {files.length > 0 && (
-            <p className="text-xs text-slate-500 mt-1">
-              {files.length} file dipilih
+
+          <p className="text-xs text-gray-500 mt-1">
+            Maksimal 5 file, ukuran maksimal <strong>5MB</strong> per file.
+          </p>
+
+          {fileError && (
+            <p className="text-red-600 text-xs flex items-center gap-1 mt-2">
+              <AlertTriangle size={14} /> {fileError}
             </p>
+          )}
+
+          {/* PREVIEW FILE */}
+          {files.length > 0 && (
+            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {files.map((file, i) => (
+                <div
+                  key={i}
+                  className="relative group border border-slate-300 rounded-lg overflow-hidden"
+                >
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={`preview-${i}`}
+                    className="object-cover w-full h-32"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFile(i)}
+                    className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
-        <div className="flex justify-end">
+        {/* ======== BUTTON AREA ======== */}
+        <div className="flex justify-between items-center pt-6 border-t border-slate-200">
+          {/* Tombol Kembali */}
+          <button
+            type="button"
+            onClick={() => navigate("/lks/verifikasi")}
+            className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-base font-semibold px-6 py-3 rounded-lg shadow-lg transition"
+          >
+            <ArrowLeft size={18} /> Kembali
+          </button>
+
+          {/* Tombol Kirim */}
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-md text-sm transition"
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-base font-semibold px-6 py-3 rounded-lg shadow-lg transition"
           >
             {loading ? (
               <>
-                <Loader2 size={16} className="animate-spin" /> Mengirim...
+                <Loader2 size={18} className="animate-spin" /> Mengirim...
               </>
             ) : (
               <>
-                <Upload size={16} /> Kirim Pengajuan
+                <Upload size={18} /> Kirim Pengajuan
               </>
             )}
           </button>

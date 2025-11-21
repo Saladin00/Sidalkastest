@@ -8,6 +8,9 @@ const OperatorLKSList = () => {
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [jenisLayanan, setJenisLayanan] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [perPage, setPerPage] = useState(10);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,7 +26,6 @@ const OperatorLKSList = () => {
       });
 
       let hasil = [];
-
       if (Array.isArray(res.data)) hasil = res.data;
       else if (Array.isArray(res.data.data)) hasil = res.data.data;
       else if (Array.isArray(res.data.lks)) hasil = res.data.lks;
@@ -39,39 +41,90 @@ const OperatorLKSList = () => {
     }
   };
 
-  // 🧭 Fungsi untuk refresh manual
-  const handleRefresh = () => {
-    fetchLKS();
+  const handleRefresh = () => fetchLKS();
+
+  const handleReset = () => {
+    setSearch("");
+    setJenisLayanan("");
+    setStatusFilter("");
+    setFiltered(data);
   };
 
-  // 🔍 Filter pencarian
+  // 🔍 Filter dan pencarian
   useEffect(() => {
-    if (!Array.isArray(data)) return;
-    const q = search.toLowerCase();
-    const filteredData = data.filter(
-      (item) =>
-        item.nama?.toLowerCase().includes(q) ||
-        item.jenis_layanan?.toLowerCase().includes(q) ||
-        item.kecamatan?.nama?.toLowerCase().includes(q)
-    );
-    setFiltered(filteredData);
-  }, [search, data]);
+    let result = data;
+
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (item) =>
+          item.nama?.toLowerCase().includes(q) ||
+          item.kecamatan?.nama?.toLowerCase().includes(q)
+      );
+    }
+
+    if (jenisLayanan) {
+      result = result.filter(
+        (item) => item.jenis_layanan?.toLowerCase() === jenisLayanan
+      );
+    }
+
+    if (statusFilter) {
+      result = result.filter(
+        (item) => item.status?.toLowerCase() === statusFilter
+      );
+    }
+
+    setFiltered(result);
+  }, [search, jenisLayanan, statusFilter, data]);
+
+  const displayedData = filtered.slice(0, perPage);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header dan Filter */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
-        <div>
-          <h2 className="text-lg font-semibold text-sky-900">
-            Daftar LKS di Kecamatan
-          </h2>
-          <p className="text-sm text-gray-500">
-            Lihat seluruh lembaga kesejahteraan sosial yang terdaftar di wilayah Anda.
-          </p>
+    <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+      {/* FILTER BAR */}
+      <div className="flex flex-wrap justify-between items-center gap-3 mb-5">
+        {/* Filter kiri */}
+        <div className="flex flex-wrap gap-2">
+          {/* Jenis Layanan */}
+          <select
+            value={jenisLayanan}
+            onChange={(e) => setJenisLayanan(e.target.value)}
+            className="h-9 px-3 text-sm border border-gray-300 rounded-md bg-white w-full sm:w-auto"
+          >
+            <option value="">Semua Jenis</option>
+            <option value="lansia">Lansia</option>
+            <option value="disabilitas">Disabilitas</option>
+            <option value="anak">Anak</option>
+            <option value="fakir_miskin">Fakir Miskin</option>
+            <option value="kesejahteraan sosial">Kesejahteraan Sosial</option>
+          </select>
+
+          {/* Status */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="h-9 px-3 text-sm border border-gray-300 rounded-md bg-white w-full sm:w-auto"
+          >
+            <option value="">Semua Status</option>
+            <option value="disetujui">Disetujui</option>
+            <option value="pending">Pending</option>
+            <option value="ditolak">Ditolak</option>
+          </select>
+
+          {/* Reset */}
+          <button
+            onClick={handleReset}
+            className="h-9 px-3 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100 w-full sm:w-auto"
+          >
+            Reset
+          </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        {/* Filter kanan */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Search */}
+          <div className="relative w-full sm:w-60">
             <Search
               size={16}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -81,15 +134,15 @@ const OperatorLKSList = () => {
               placeholder="Cari nama LKS atau kecamatan..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-sky-500 bg-white"
+              className="pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-sky-500 bg-white w-full"
             />
           </div>
 
-          {/* Tombol Refresh */}
+          {/* Refresh */}
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center gap-1 border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-700 text-sm px-3 py-2 rounded-md transition"
+            className="flex items-center justify-center gap-1 border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-700 text-sm px-3 py-2 rounded-md transition w-full sm:w-auto"
           >
             <RefreshCw size={14} />
             Refresh
@@ -97,48 +150,62 @@ const OperatorLKSList = () => {
         </div>
       </div>
 
-      {/* Tabel Data */}
+      {/* TABEL DATA */}
       <div className="overflow-x-auto bg-white shadow-md rounded-xl ring-1 ring-slate-200/60">
         {loading ? (
           <p className="text-center text-gray-500 p-4">Memuat data...</p>
-        ) : Array.isArray(filtered) && filtered.length > 0 ? (
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="bg-slate-100 text-slate-800">
-                <th className="px-4 py-3 w-14 font-semibold">No</th>
-                <th className="px-4 py-3 font-semibold">Nama LKS</th>
-                <th className="px-4 py-3 font-semibold">Jenis Layanan</th>
-                <th className="px-4 py-3 font-semibold">Kecamatan</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 text-center font-semibold">Aksi</th>
+        ) : displayedData.length > 0 ? (
+          <table className="min-w-full text-sm text-slate-700 border border-slate-200">
+            <thead className="bg-slate-100 text-slate-800 border-b border-slate-300">
+              <tr>
+                <th className="px-4 py-3 text-center border border-slate-200">
+                  No
+                </th>
+                <th className="px-4 py-3 border border-slate-200">Nama LKS</th>
+                <th className="px-4 py-3 border border-slate-200">
+                  Jenis Layanan
+                </th>
+                <th className="px-4 py-3 border border-slate-200">Kecamatan</th>
+                <th className="px-4 py-3 text-center border border-slate-200">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-center border border-slate-200">
+                  Aksi
+                </th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((lks, index) => (
+              {displayedData.map((lks, index) => (
                 <tr
                   key={lks.id}
-                  className="border-b border-slate-200/60 last:border-b-0 hover:bg-slate-50 transition-colors"
+                  className="hover:bg-slate-50 transition border-t border-slate-200"
                 >
-                  <td className="px-4 py-3">{index + 1}</td>
-                  <td className="px-4 py-3 font-medium text-slate-800">
+                  <td className="px-4 py-3 text-center border border-slate-200">
+                    {index + 1}
+                  </td>
+                  <td className="px-4 py-3 border border-slate-200 font-medium text-slate-800">
                     {lks.nama || "-"}
                   </td>
-                  <td className="px-4 py-3">{lks.jenis_layanan || "-"}</td>
-                  <td className="px-4 py-3">{lks.kecamatan?.nama || "-"}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 border border-slate-200">
+                    {lks.jenis_layanan || "-"}
+                  </td>
+                  <td className="px-4 py-3 border border-slate-200">
+                    {lks.kecamatan?.nama || "-"}
+                  </td>
+                  <td className="px-4 py-3 text-center border border-slate-200">
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold ${
                         lks.status === "disetujui"
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                           : lks.status === "pending"
-                          ? "bg-amber-50 text-amber-700 border border-amber-100"
-                          : "bg-rose-50 text-rose-700 border border-rose-100"
+                          ? "bg-amber-50 text-amber-700 border border-amber-200"
+                          : "bg-rose-50 text-rose-700 border border-rose-200"
                       }`}
                     >
-                      {(lks.status || "tidak diketahui").toUpperCase()}
+                      {(lks.status || "TIDAK DIKETAHUI").toUpperCase()}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-4 py-3 text-center border border-slate-200">
                     <button
                       onClick={() => navigate(`/operator/lks/detail/${lks.id}`)}
                       className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs text-sky-700 border border-sky-200 hover:bg-sky-50 transition"
@@ -156,6 +223,29 @@ const OperatorLKSList = () => {
             Tidak ada data LKS ditemukan.
           </p>
         )}
+      </div>
+
+      {/* SHOW PER PAGE */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4 text-sm text-gray-600">
+        <div className="flex items-center gap-2">
+          <label htmlFor="perPage">Tampilkan</label>
+          <select
+            id="perPage"
+            value={perPage}
+            onChange={(e) => setPerPage(Number(e.target.value))}
+            className="border rounded px-2 py-1 text-sm"
+          >
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="40">40</option>
+          </select>
+          <span>data per halaman</span>
+        </div>
+
+        <p>
+          Menampilkan {Math.min(filtered.length, perPage)} dari {filtered.length} data
+        </p>
       </div>
     </div>
   );
