@@ -1,3 +1,4 @@
+// src/pages/lks/LKSProfileEdit.jsx
 import React, { useEffect, useState, useRef, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../utils/api";
@@ -14,6 +15,8 @@ import {
   ArrowLeftIcon,
   ClipboardDocumentCheckIcon,
 } from "@heroicons/react/24/outline";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // 🧭 Marker leaflet
 const markerIcon = new L.Icon({
@@ -29,6 +32,7 @@ const LocationMarker = ({ position, setPosition, setFormData }) => {
       const { lat, lng } = e.latlng;
       setPosition([lat, lng]);
       setFormData((prev) => ({ ...prev, koordinat: `${lat},${lng}` }));
+      toast.info("📍 Lokasi diperbarui", { autoClose: 1500 });
     },
   });
   return <Marker position={position} icon={markerIcon} />;
@@ -88,7 +92,6 @@ const LKSProfileEdit = () => {
   const [loading, setLoading] = useState(false);
   const [position, setPosition] = useState([-6.3264, 108.32]);
   const [kecamatanList, setKecamatanList] = useState([]);
-
   const [formData, setFormData] = useState({
     nama: "",
     alamat: "",
@@ -111,21 +114,25 @@ const LKSProfileEdit = () => {
   });
 
   useEffect(() => {
-    API.get("/kecamatan").then((res) => setKecamatanList(res.data.data));
-    API.get("/lks/profile-view")
-      .then((res) => {
-        const data = res.data.data;
-        setFormData((prev) => ({
-          ...prev,
-          ...data,
-          jumlah_pengurus: data.jumlah_pengurus ?? "",
-        }));
+    const fetchData = async () => {
+      try {
+        const [resKec, resProfile] = await Promise.all([
+          API.get("/kecamatan"),
+          API.get("/lks/profile-view"),
+        ]);
+        setKecamatanList(resKec.data.data || []);
+        const data = resProfile.data.data;
+        setFormData((prev) => ({ ...prev, ...data }));
         if (data.koordinat) {
           const [lat, lng] = data.koordinat.split(",").map(Number);
           if (!isNaN(lat) && !isNaN(lng)) setPosition([lat, lng]);
         }
-      })
-      .catch(() => alert("Gagal memuat data untuk diedit"));
+      } catch (err) {
+        console.error(err);
+        toast.error("Gagal memuat data untuk diedit!", { autoClose: 2500 });
+      }
+    };
+    fetchData();
   }, []);
 
   const handleChange = (e) => {
@@ -138,13 +145,14 @@ const LKSProfileEdit = () => {
     setLoading(true);
     try {
       await API.put("/lks/me/update", formData);
-      alert("✅ Perubahan berhasil disimpan!");
-      navigate("/lks/profile", { replace: true });
+      toast.success("✅ Perubahan berhasil disimpan!", { autoClose: 2000 });
+      setTimeout(() => navigate("/lks/profile", { replace: true }), 1500);
     } catch (err) {
       console.error(err);
-      alert("❌ Gagal menyimpan perubahan");
+      toast.error("❌ Gagal menyimpan perubahan!", { autoClose: 2500 });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const SectionHeader = ({ icon: Icon, title, color }) => (
@@ -177,7 +185,6 @@ const LKSProfileEdit = () => {
             <Field label="Nama LKS" index={fieldIndex++} name="nama" value={formData.nama} onChange={handleChange} />
             <Field label="Jenis Layanan" index={fieldIndex++} name="jenis_layanan" value={formData.jenis_layanan} onChange={handleChange} />
             <AutoResizeTextarea label="Alamat Lengkap" index={fieldIndex++} name="alamat" value={formData.alamat} onChange={handleChange} />
-
             <div>
               <label className="block mb-1 text-sm font-semibold text-gray-700">
                 <span className="text-blue-600 font-bold mr-1">{fieldIndex++}.</span> Kecamatan
@@ -196,7 +203,6 @@ const LKSProfileEdit = () => {
                 ))}
               </select>
             </div>
-
             <Field label="Kelurahan / Desa" index={fieldIndex++} name="kelurahan" value={formData.kelurahan} onChange={handleChange} />
             <Field label="NPWP" index={fieldIndex++} name="npwp" value={formData.npwp} onChange={handleChange} />
             <Field label="Kontak Pengurus" index={fieldIndex++} name="kontak_pengurus" value={formData.kontak_pengurus} onChange={handleChange} />
@@ -252,7 +258,6 @@ const LKSProfileEdit = () => {
           >
             <ArrowLeftIcon className="h-4 w-4" /> Kembali
           </button>
-
           <button
             type="submit"
             disabled={loading}
@@ -264,6 +269,8 @@ const LKSProfileEdit = () => {
           </button>
         </div>
       </form>
+
+      <ToastContainer position="top-right" autoClose={2500} theme="light" />
     </LKSLayout>
   );
 };

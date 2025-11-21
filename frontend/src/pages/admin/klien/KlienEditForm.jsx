@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../../utils/api";
+import {
+  showSuccess,
+  showError,
+  showInfo,
+} from "../../../utils/toast";
 import { ArrowDownTrayIcon, ArrowLeftIcon } from "@heroicons/react/24/solid";
 
 export default function KlienEditForm() {
@@ -52,7 +57,7 @@ export default function KlienEditForm() {
           setLksList(lksRes.data.data || []);
         }
       } catch (err) {
-        alert("Data klien tidak ditemukan");
+        showError("Data klien tidak ditemukan!");
         navigate("/admin/klien");
       }
     };
@@ -68,8 +73,10 @@ export default function KlienEditForm() {
       try {
         const res = await api.get(`/lks/by-kecamatan/${form.kecamatan_id}`);
         setLksList(res.data.data || []);
+        showInfo("Daftar LKS diperbarui berdasarkan kecamatan");
       } catch {
-        setLksList([]);
+        setLksList(Array.isArray(raw) ? raw : raw?.data || []);
+        showError("Gagal memuat daftar LKS berdasarkan kecamatan");
       }
     };
     loadLKS();
@@ -83,14 +90,13 @@ export default function KlienEditForm() {
     setLoading(true);
 
     try {
-      await api.put(`/klien/${id}`, form);
-      alert("Data klien berhasil diperbarui!");
-      navigate("/admin/klien");
-    } catch (error) {
-      alert("Gagal memperbarui klien");
-    } finally {
-      setLoading(false);
-    }
+  await api.put(`/klien/${id}`, form);
+  showSuccess("Data klien berhasil diperbarui!");
+  setTimeout(() => navigate("/admin/klien"), 1200);
+} catch (error) {
+  console.error("❌ Error saat update:", error);
+  showError("Gagal memperbarui data klien. Periksa kembali input Anda.");
+}
   };
 
   const fields = [
@@ -257,7 +263,7 @@ export default function KlienEditForm() {
             <button
               type="button"
               onClick={() => navigate("/admin/klien")}
-              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition"
+              className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-sm"
             >
               <ArrowLeftIcon className="h-5 w-5" />
               Kembali

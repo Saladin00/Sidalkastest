@@ -2,6 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowDownTrayIcon, ArrowLeftIcon } from "@heroicons/react/24/solid";
 import api from "../../../utils/api";
+import {
+  showSuccess,
+  showError,
+} from "../../../utils/toast";
 
 export default function KlienForm() {
   const navigate = useNavigate();
@@ -34,13 +38,17 @@ export default function KlienForm() {
   }, []);
 
   // === ADMIN: Dapat semua LKS ===
-  useEffect(() => {
-    if (role === "admin") {
-      api.get("/lks").then((res) => {
-        setLksList(res.data.data.data || []);
-      });
-    }
-  }, [role]);
+ useEffect(() => {
+  if (role === "admin") {
+    api.get("/lks")
+      .then((res) => {
+        const raw = res.data?.data;
+      setLksList(Array.isArray(raw) ? raw : raw?.data || []);
+      })
+      .catch(() => showError("Gagal memuat data LKS"));
+  }
+}, [role]);
+
 
   // === Filter LKS by Kecamatan (ADMIN ONLY) ===
   useEffect(() => {
@@ -63,14 +71,15 @@ export default function KlienForm() {
 
     try {
       await api.post("/klien", form);
-      alert("Klien berhasil ditambahkan!");
-      if (role === "admin") navigate("/admin/klien");
-      else navigate("/lks/klien");
-    } catch (err) {
-      alert("Gagal menambahkan klien");
-    } finally {
-      setLoading(false);
-    }
+  showSuccess("Klien berhasil ditambahkan!");
+  setTimeout(() => {
+    if (role === "admin") navigate("/admin/klien");
+    else navigate("/lks/klien");
+  }, 1200);
+} catch (err) {
+  console.error("❌ Error:", err);
+  showError("Gagal menambahkan klien. Periksa kembali input Anda.");
+}
   };
 
   const inputStyle =
@@ -233,7 +242,7 @@ export default function KlienForm() {
             onClick={() =>
               navigate(role === "admin" ? "/admin/klien" : "/lks/klien")
             }
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100 transition"
+            className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-sm"
           >
             <ArrowLeftIcon className="h-5 w-5" />
             Kembali
