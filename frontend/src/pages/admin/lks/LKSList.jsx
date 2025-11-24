@@ -21,6 +21,7 @@ import { showSuccess, showError, showInfo } from "../../../utils/toast";
 
 const LKSList = () => {
   const [lksList, setLksList] = useState([]);
+  const [daftarKecamatan, setDaftarKecamatan] = useState([]); // 🔹 Tambah state untuk semua kecamatan
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [pageSize, setPageSize] = useState(10);
@@ -29,7 +30,7 @@ const LKSList = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const location = useLocation();
 
-  // 🔹 Fetch data
+  // 🔹 Fetch data LKS
   const loadLKS = async () => {
     setLoading(true);
     try {
@@ -54,15 +55,24 @@ const LKSList = () => {
     }
   };
 
+  // 🔹 Fetch semua kecamatan dari backend
+  const loadKecamatan = async () => {
+    try {
+      const res = await API.get("/kecamatan");
+      setDaftarKecamatan(res.data.data || []);
+    } catch (err) {
+      console.error("❌ Gagal memuat kecamatan:", err);
+      showError("Gagal memuat daftar kecamatan!");
+    }
+  };
+
   useEffect(() => {
     loadLKS();
+    loadKecamatan(); // 🔹 Muat kecamatan dari backend saat pertama kali
   }, [location]);
 
   const jenisOptions = Array.from(
     new Set(lksList.map((item) => item.jenis_layanan).filter(Boolean))
-  );
-  const kecamatanOptions = Array.from(
-    new Set(lksList.map((item) => item.kecamatan?.nama).filter(Boolean))
   );
 
   const statusDisplay = (raw) => {
@@ -160,15 +170,16 @@ const LKSList = () => {
             ))}
           </select>
 
+          {/* 🔹 Kecamatan dari backend (semua Indramayu) */}
           <select
             value={kecamatanFilter}
             onChange={(e) => setKecamatanFilter(e.target.value)}
             className="h-9 rounded-full border border-gray-300 bg-white px-4 text-xs md:text-sm focus:outline-none"
           >
             <option value="">Kecamatan: Semua</option>
-            {kecamatanOptions.map((k) => (
-              <option key={k} value={k}>
-                {k}
+            {daftarKecamatan.map((k) => (
+              <option key={k.id} value={k.nama}>
+                {k.nama}
               </option>
             ))}
           </select>
@@ -248,106 +259,105 @@ const LKSList = () => {
           </div>
         ) : (
           <table className="min-w-full text-sm text-slate-700 border border-slate-200 rounded-lg overflow-hidden shadow-md">
-  <thead className="bg-gradient-to-r from-slate-100 to-slate-50 text-xs font-semibold text-slate-600 uppercase tracking-wide">
-    <tr>
-      <th className="w-12 sm:w-16 px-3 sm:px-4 py-3 text-center border-b border-slate-200">
-        No
-      </th>
-      <th className="px-3 sm:px-4 py-3 text-left border-b border-slate-200">
-        Nama
-      </th>
-      <th className="hidden sm:table-cell px-3 sm:px-4 py-3 text-left border-b border-slate-200">
-        Jenis Layanan
-      </th>
-      <th className="hidden md:table-cell px-3 sm:px-4 py-3 text-left border-b border-slate-200">
-        Kecamatan
-      </th>
-      <th className="hidden md:table-cell px-3 sm:px-4 py-3 text-left border-b border-slate-200">
-        Status Verifikasi
-      </th>
-      <th className="w-32 sm:w-40 px-3 sm:px-4 py-3 text-center border-b border-slate-200">
-        Aksi
-      </th>
-    </tr>
-  </thead>
+            <thead className="bg-gradient-to-r from-slate-100 to-slate-50 text-xs font-semibold text-slate-600 uppercase tracking-wide">
+              <tr>
+                <th className="w-12 sm:w-16 px-3 sm:px-4 py-3 text-center border-b border-slate-200">
+                  No
+                </th>
+                <th className="px-3 sm:px-4 py-3 text-left border-b border-slate-200">
+                  Nama
+                </th>
+                <th className="hidden sm:table-cell px-3 sm:px-4 py-3 text-left border-b border-slate-200">
+                  Jenis Layanan
+                </th>
+                <th className="hidden md:table-cell px-3 sm:px-4 py-3 text-left border-b border-slate-200">
+                  Kecamatan
+                </th>
+                <th className="hidden md:table-cell px-3 sm:px-4 py-3 text-left border-b border-slate-200">
+                  Status Verifikasi
+                </th>
+                <th className="w-32 sm:w-40 px-3 sm:px-4 py-3 text-center border-b border-slate-200">
+                  Aksi
+                </th>
+              </tr>
+            </thead>
 
-  <tbody>
-    {displayedList.length === 0 ? (
-      <tr>
-        <td
-          colSpan="6"
-          className="py-10 text-center text-slate-400 italic border-t border-slate-100 bg-slate-50"
-        >
-          Tidak ada data ditemukan.
-        </td>
-      </tr>
-    ) : (
-      displayedList.map((lks, index) => {
-        const rawStatus = lks.verifikasi_terbaru?.status;
-        const lower = rawStatus?.toLowerCase() || "";
-        const badgeClass =
-          lower === "valid"
-            ? "bg-green-100 text-green-700"
-            : lower === "tidak_valid"
-            ? "bg-red-100 text-red-700"
-            : "bg-yellow-100 text-yellow-700";
+            <tbody>
+              {displayedList.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan="6"
+                    className="py-10 text-center text-slate-400 italic border-t border-slate-100 bg-slate-50"
+                  >
+                    Tidak ada data ditemukan.
+                  </td>
+                </tr>
+              ) : (
+                displayedList.map((lks, index) => {
+                  const rawStatus = lks.verifikasi_terbaru?.status;
+                  const lower = rawStatus?.toLowerCase() || "";
+                  const badgeClass =
+                    lower === "valid"
+                      ? "bg-green-100 text-green-700"
+                      : lower === "tidak_valid"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-yellow-100 text-yellow-700";
 
-        return (
-          <tr
-            key={lks.id}
-            className="hover:bg-sky-50/70 transition-all border-t border-slate-100"
-          >
-            <td className="px-3 sm:px-4 py-3 text-center font-medium text-slate-700 border-x border-slate-100 bg-white">
-              {index + 1}
-            </td>
-            <td className="px-3 sm:px-4 py-3 font-semibold text-slate-800 border-x border-slate-100 bg-white">
-              {lks.nama}
-            </td>
-            <td className="hidden sm:table-cell px-3 sm:px-4 py-3 border-x border-slate-100 bg-white">
-              {lks.jenis_layanan}
-            </td>
-            <td className="hidden md:table-cell px-3 sm:px-4 py-3 border-x border-slate-100 bg-white">
-              {lks.kecamatan?.nama || "-"}
-            </td>
-            <td className="hidden md:table-cell px-3 sm:px-4 py-3 border-x border-slate-100 bg-white">
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-medium shadow-sm ${badgeClass}`}
-              >
-                {statusDisplay(rawStatus).toUpperCase()}
-              </span>
-            </td>
-            <td className="px-3 sm:px-4 py-3 text-center border-x border-slate-100 bg-white">
-              <div className="flex justify-center gap-3 text-xs sm:text-[11px]">
-                <Link
-                  to={`/admin/lks/detail/${lks.id}`}
-                  className="flex flex-col items-center text-blue-600 hover:text-blue-800 transition-colors"
-                >
-                  <Eye size={18} className="mb-0.5" />
-                  <span>Detail</span>
-                </Link>
-                <Link
-                  to={`/admin/lks/edit/${lks.id}`}
-                  className="flex flex-col items-center text-amber-500 hover:text-amber-600 transition-colors"
-                >
-                  <Pencil size={18} className="mb-0.5" />
-                  <span>Edit</span>
-                </Link>
-                <button
-                  onClick={() => handleDelete(lks.id)}
-                  className="flex flex-col items-center text-red-600 hover:text-red-700 transition-colors"
-                >
-                  <Trash2 size={18} className="mb-0.5" />
-                  <span>Hapus</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-        );
-      })
-    )}
-  </tbody>
-</table>
-
+                  return (
+                    <tr
+                      key={lks.id}
+                      className="hover:bg-sky-50/70 transition-all border-t border-slate-100"
+                    >
+                      <td className="px-3 sm:px-4 py-3 text-center font-medium text-slate-700 border-x border-slate-100 bg-white">
+                        {index + 1}
+                      </td>
+                      <td className="px-3 sm:px-4 py-3 font-semibold text-slate-800 border-x border-slate-100 bg-white">
+                        {lks.nama}
+                      </td>
+                      <td className="hidden sm:table-cell px-3 sm:px-4 py-3 border-x border-slate-100 bg-white">
+                        {lks.jenis_layanan}
+                      </td>
+                      <td className="hidden md:table-cell px-3 sm:px-4 py-3 border-x border-slate-100 bg-white">
+                        {lks.kecamatan?.nama || "-"}
+                      </td>
+                      <td className="hidden md:table-cell px-3 sm:px-4 py-3 border-x border-slate-100 bg-white">
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-medium shadow-sm ${badgeClass}`}
+                        >
+                          {statusDisplay(rawStatus).toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-3 sm:px-4 py-3 text-center border-x border-slate-100 bg-white">
+                        <div className="flex justify-center gap-3 text-xs sm:text-[11px]">
+                          <Link
+                            to={`/admin/lks/detail/${lks.id}`}
+                            className="flex flex-col items-center text-blue-600 hover:text-blue-800 transition-colors"
+                          >
+                            <Eye size={18} className="mb-0.5" />
+                            <span>Detail</span>
+                          </Link>
+                          <Link
+                            to={`/admin/lks/edit/${lks.id}`}
+                            className="flex flex-col items-center text-amber-500 hover:text-amber-600 transition-colors"
+                          >
+                            <Pencil size={18} className="mb-0.5" />
+                            <span>Edit</span>
+                          </Link>
+                          <button
+                            onClick={() => handleDelete(lks.id)}
+                            className="flex flex-col items-center text-red-600 hover:text-red-700 transition-colors"
+                          >
+                            <Trash2 size={18} className="mb-0.5" />
+                            <span>Hapus</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         )}
       </div>
 
