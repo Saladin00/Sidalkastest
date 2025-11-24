@@ -67,7 +67,7 @@ const LKSVerifikasiList = () => {
     }
   };
 
-  // 🔹 Warna status (disamakan dengan admin/operator/petugas)
+  // 🔹 Warna status
   const getStatusStyle = (status) => {
     switch (status?.toLowerCase()) {
       case "menunggu":
@@ -147,6 +147,7 @@ const LKSVerifikasiList = () => {
                 <th className="px-3 py-3 text-center">Aksi</th>
               </tr>
             </thead>
+
             <tbody>
               {filteredData.map((item, i) => (
                 <tr
@@ -156,6 +157,7 @@ const LKSVerifikasiList = () => {
                   <td className="px-3 py-2 text-center border-r border-slate-300">
                     {i + 1}
                   </td>
+
                   <td className="px-3 py-2 border-r border-slate-300 text-center text-slate-700">
                     {item.tanggal_verifikasi
                       ? new Date(item.tanggal_verifikasi).toLocaleDateString(
@@ -163,6 +165,7 @@ const LKSVerifikasiList = () => {
                         )
                       : "-"}
                   </td>
+
                   <td className="px-3 py-2 border-r border-slate-300 text-center">
                     <span
                       className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusStyle(
@@ -173,9 +176,11 @@ const LKSVerifikasiList = () => {
                         "MENUNGGU"}
                     </span>
                   </td>
+
                   <td className="px-3 py-2 border-r border-slate-300 text-slate-700">
                     {item.catatan || "-"}
                   </td>
+
                   <td className="px-3 py-2 text-center">
                     <div className="flex justify-center gap-2">
                       <Link
@@ -184,6 +189,7 @@ const LKSVerifikasiList = () => {
                       >
                         <Eye size={14} /> Detail
                       </Link>
+
                       <button
                         onClick={() => handleDelete(item.id)}
                         className="inline-flex items-center gap-1 px-3 py-1.5 text-rose-600 border border-rose-300 rounded-md hover:bg-rose-50 transition text-xs font-medium"
@@ -195,6 +201,7 @@ const LKSVerifikasiList = () => {
                 </tr>
               ))}
             </tbody>
+
           </table>
         </div>
       )}

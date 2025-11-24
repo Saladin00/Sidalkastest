@@ -19,7 +19,6 @@ class Verifikasi extends Model
         'catatan',
         'foto_bukti',
         'tanggal_verifikasi',
-        'hasil_survei', // tambahan
     ];
 
     protected $casts = [

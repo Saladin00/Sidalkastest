@@ -11,8 +11,10 @@ import "sweetalert2/dist/sweetalert2.min.css";
 const PetugasVerifikasiDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+
   const [penilaian, setPenilaian] = useState("");
   const [catatan, setCatatan] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -42,6 +44,11 @@ const PetugasVerifikasiDetail = () => {
     }
   };
 
+  useEffect(() => {
+    loadData();
+  }, [id]);
+
+  // SUBMIT HASIL SURVEI → versi baru
   const handleSubmit = async (status) => {
     const confirm = await Swal.fire({
       title: "Kirim Hasil Survei?",
@@ -58,26 +65,25 @@ const PetugasVerifikasiDetail = () => {
 
     try {
       setSubmitting(true);
+
       await api.put(`/petugas/verifikasi/${id}`, {
         status,
         penilaian,
         catatan,
       });
+
       toast.success("Hasil survei berhasil dikirim ke admin!", {
         autoClose: 2500,
       });
+
       setTimeout(() => navigate("/petugas/verifikasi"), 2000);
     } catch (err) {
-      console.error("❌ Gagal kirim hasil survei:", err);
+      console.error("❌ Gagal mengirim hasil survei:", err);
       toast.error("Gagal mengirim hasil survei.", { autoClose: 2500 });
     } finally {
       setSubmitting(false);
     }
   };
-
-  useEffect(() => {
-    loadData();
-  }, [id]);
 
   const getStatusStyle = (status) => {
     switch (status?.toLowerCase()) {
@@ -117,7 +123,7 @@ const PetugasVerifikasiDetail = () => {
   return (
     <div className="max-w-5xl mx-auto p-8">
       <div className="bg-white shadow-xl rounded-2xl border border-slate-200 p-8 relative overflow-hidden">
-        {/* Accent background */}
+        {/* Accent */}
         <div className="absolute top-0 right-0 w-72 h-72 bg-sky-100/40 rounded-full blur-3xl -z-10 translate-x-16 -translate-y-10"></div>
 
         {/* Header */}
@@ -169,7 +175,7 @@ const PetugasVerifikasiDetail = () => {
           </table>
         </div>
 
-        {/* Hasil Survei Lapangan */}
+        {/* Hasil Survei */}
         <div className="mt-8">
           <h3 className="text-base font-semibold text-slate-800 mb-3 border-b border-slate-200 pb-2">
             Hasil Survei Lapangan
@@ -198,17 +204,18 @@ const PetugasVerifikasiDetail = () => {
                 value={catatan}
                 onChange={(e) => setCatatan(e.target.value)}
                 className="border border-slate-300 rounded-lg px-3 py-2 w-full text-sm focus:ring-1 focus:ring-sky-500 focus:border-sky-500"
-                placeholder="Tulis catatan tambahan (opsional)..."
+                placeholder="Tulis catatan tambahan..."
               />
             </div>
           </div>
         </div>
 
-        {/* Dokumen / Foto Bukti */}
+        {/* Foto / Dokumen Bukti */}
         <div className="mt-8">
           <h3 className="text-base font-semibold text-slate-700 mb-3">
             Dokumen / Foto Bukti
           </h3>
+
           {data.foto_bukti?.length ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {data.foto_bukti.map((foto, i) => {
@@ -270,13 +277,7 @@ const PetugasVerifikasiDetail = () => {
         </div>
       </div>
 
-      {/* Toast */}
-      <ToastContainer
-        position="top-right"
-        autoClose={2500}
-        hideProgressBar
-        theme="light"
-      />
+      <ToastContainer position="top-right" autoClose={2500} hideProgressBar />
     </div>
   );
 };

@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 class OperatorVerifikasiController extends Controller
 {
-    // 🔹 Operator lihat data di kecamatan-nya
+    // 🔹 Operator lihat data verifikasi di kecamatan-nya
     public function index(Request $request)
     {
         $user = $request->user();
@@ -32,55 +32,80 @@ class OperatorVerifikasiController extends Controller
         return response()->json(['success' => true, 'data' => $data]);
     }
 
-    // 🔹 Operator mengirim data verifikasi ke petugas kecamatan
-public function kirimKePetugas(Request $request, $id)
-{
-    $user = $request->user();
+    // 🔹 LIST PETUGAS di kecamatan operator → untuk dropdown di frontend
+    public function listPetugas(Request $request)
+    {
+        $user = $request->user();
 
-    // Ambil data verifikasi
-    $verifikasi = Verifikasi::with('lks')->findOrFail($id);
+        $petugas = User::role('petugas')
+            ->where('kecamatan_id', $user->kecamatan_id)
+            ->where('status_aktif', true)
+            ->get(['id', 'name']);
 
-    // Pastikan operator hanya kirim data di kecamatannya
-    if ($verifikasi->lks->kecamatan_id !== $user->kecamatan_id) {
         return response()->json([
-            'success' => false,
-            'message' => 'Anda tidak memiliki izin untuk mengirim data di luar kecamatan Anda.',
-        ], 403);
+            'success' => true,
+            'data' => $petugas,
+        ]);
     }
 
-    // Cari petugas di kecamatan yang sama
-    $petugas = \App\Models\User::role('petugas')
-        ->where('kecamatan_id', $user->kecamatan_id)
-        ->first();
+    // 🔹 Operator mengirim verifikasi ke petugas (operator PILIH petugas)
+    public function kirimKePetugas(Request $request, $id)
+    {
+        $user = $request->user();
 
-    if (!$petugas) {
+        $validated = $request->validate([
+            'petugas_id' => 'required|exists:users,id',
+            'catatan'    => 'nullable|string',
+        ]);
+
+        // Ambil verifikasi + LKS
+        $verifikasi = Verifikasi::with('lks')->findOrFail($id);
+
+        // Pastikan masih dalam kecamatan operator
+        if (!$verifikasi->lks || $verifikasi->lks->kecamatan_id !== $user->kecamatan_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk mengirim data di luar kecamatan Anda.',
+            ], 403);
+        }
+
+        // Pastikan petugas masih di kecamatan yang sama
+        $petugas = User::role('petugas')
+            ->where('id', $validated['petugas_id'])
+            ->where('kecamatan_id', $user->kecamatan_id)
+            ->first();
+
+        if (!$petugas) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Petugas tidak ditemukan atau bukan di kecamatan ini.',
+            ], 404);
+        }
+
+        // Update verifikasi → assign petugas & ubah status
+        $verifikasi->update([
+            'petugas_id' => $petugas->id,
+            'status'     => 'proses_survei',  // pastikan ENUM sudah ada
+            // ❗ tanggal_verifikasi TIDAK diubah di sini → diisi saat petugas selesai survei
+        ]);
+
+        // Update status verifikasi di LKS
+        $verifikasi->lks->update([
+            'status_verifikasi' => 'proses_survei',
+        ]);
+
+        // Log aktivitas
+        VerifikasiLog::create([
+            'verifikasi_id' => $verifikasi->id,
+            'user_id'       => $user->id,
+            'aksi'          => 'kirim_petugas',
+            'keterangan'    => "Operator mengirim verifikasi ke petugas {$petugas->name}.",
+        ]);
+
         return response()->json([
-            'success' => false,
-            'message' => 'Tidak ada petugas yang terdaftar di kecamatan ini.',
-        ], 404);
+            'success' => true,
+            'message' => 'Data berhasil dikirim ke petugas survei.',
+            'data'    => $verifikasi->load(['lks', 'petugas']),
+        ]);
     }
-
-    // Update data verifikasi → assign ke petugas & ubah status
-    $verifikasi->update([
-        'petugas_id' => $petugas->id,
-        'status' => 'proses_survei',
-        'tanggal_verifikasi' => now(),
-    ]);
-
-    // Tambahkan log aktivitas
-    \App\Models\VerifikasiLog::create([
-        'verifikasi_id' => $verifikasi->id,
-        'user_id' => $user->id,
-        'aksi' => 'kirim_petugas',
-        'keterangan' => 'Operator mengirim data verifikasi ke petugas survei.',
-    ]);
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Data berhasil dikirim ke petugas survei.',
-        'data' => $verifikasi->load(['lks', 'petugas']),
-    ]);
-}
-
-
 }

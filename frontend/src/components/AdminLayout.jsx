@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+
 const AdminLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -77,17 +78,26 @@ const AdminLayout = ({ children }) => {
 
   const getInitials = (name = "") => {
     const parts = name.trim().split(" ");
-    if (parts.length === 1) return parts[0]?.substring(0, 2).toUpperCase() || "AD";
+    if (parts.length === 1)
+      return parts[0]?.substring(0, 2).toUpperCase() || "AD";
     return (parts[0][0] + parts[1][0]).toUpperCase();
   };
 
   // Breadcrumb & title otomatis
   const getPageMeta = (path) => {
-    if (path === "/admin") return { breadcrumb: ["Dashboard"], title: "Dashboard Admin" };
-    if (path.startsWith("/admin/lks")) return { breadcrumb: ["Admin", "LKS"], title: "Manajemen LKS" };
-    if (path.startsWith("/admin/klien")) return { breadcrumb: ["Admin", "Klien"], title: "Data Klien" };
-    if (path.startsWith("/admin/verifikasi")) return { breadcrumb: ["Admin", "Verifikasi"], title: "Verifikasi Data" };
-    if (path.startsWith("/admin/users")) return { breadcrumb: ["Admin", "Manajemen Pengguna"], title: "Manajemen Pengguna" };
+    if (path === "/admin")
+      return { breadcrumb: ["Dashboard"], title: "Dashboard Admin" };
+    if (path.startsWith("/admin/lks"))
+      return { breadcrumb: ["Admin", "LKS"], title: "Manajemen LKS" };
+    if (path.startsWith("/admin/klien"))
+      return { breadcrumb: ["Admin", "Klien"], title: "Data Klien" };
+    if (path.startsWith("/admin/verifikasi"))
+      return { breadcrumb: ["Admin", "Verifikasi"], title: "Verifikasi Data" };
+    if (path.startsWith("/admin/users"))
+      return {
+        breadcrumb: ["Admin", "Manajemen Pengguna"],
+        title: "Manajemen Pengguna",
+      };
     return { breadcrumb: ["Dashboard"], title: "Dashboard Admin" };
   };
 
@@ -109,7 +119,11 @@ const AdminLayout = ({ children }) => {
         </button>
 
         <div className="flex items-center gap-3 px-7 py-5 border-b border-sky-800">
-          <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
+          <img
+            src="/logo.png"
+            alt="Logo"
+            className="h-10 w-10 object-contain"
+          />
           {!isCollapsed && (
             <div>
               <span className="text-[11px] tracking-[0.25em] text-emerald-200 uppercase">
@@ -221,6 +235,19 @@ const AdminLayout = ({ children }) => {
                 {!isCollapsed && <span>Verifikasi Data</span>}
               </Link>
             </li>
+            <li>
+              <Link
+                to="/admin/laporan"
+                className={`group flex items-center gap-3 rounded-xl px-3 py-2 transition-all ${
+                  current.includes("/admin/laporan")
+                    ? "bg-sky-800 text-white"
+                    : "text-sky-100 hover:bg-sky-800/80 hover:text-white"
+                }`}
+              >
+                <BarChart3 size={18} />
+                {!isCollapsed && <span>Laporan</span>}
+              </Link>
+            </li>
 
             <li>
               <Link
@@ -272,7 +299,9 @@ const AdminLayout = ({ children }) => {
                 className="flex items-center gap-4 bg-gradient-to-r from-sky-50 to-blue-50 rounded-2xl px-5 py-2.5 shadow-inner border border-blue-100 cursor-pointer hover:shadow-lg transition-all"
               >
                 <div className="flex flex-col text-right leading-tight">
-                  <p className="text-[11px] text-slate-400 font-medium">Peran aktif</p>
+                  <p className="text-[11px] text-slate-400 font-medium">
+                    Peran aktif
+                  </p>
                   <p className="text-sm font-semibold text-sky-700 capitalize">
                     {userInfo.role}
                   </p>
@@ -313,7 +342,9 @@ const AdminLayout = ({ children }) => {
           </div>
         </header>
 
-        <main className="p-6 bg-slate-50 flex-1 overflow-y-auto">{children || <Outlet />}</main>
+        <main className="p-6 bg-slate-50 flex-1 overflow-y-auto">
+          {children || <Outlet />}
+        </main>
       </div>
 
       {/* Modal Konfirmasi Logout */}
