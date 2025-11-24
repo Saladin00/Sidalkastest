@@ -1,7 +1,7 @@
 // src/pages/operator/verifikasi/OperatorVerifikasiDetail.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Send, FileImage } from "lucide-react";
+import { ArrowLeft, Loader2, Send, User, FileImage } from "lucide-react";
 import api from "../../../utils/api";
 import Swal from "sweetalert2";
 import { toast, ToastContainer } from "react-toastify";
@@ -14,8 +14,14 @@ const OperatorVerifikasiDetail = () => {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Modal pilih petugas
+  const [showModal, setShowModal] = useState(false);
+  const [petugasList, setPetugasList] = useState([]);
+  const [selectedPetugas, setSelectedPetugas] = useState("");
   const [sending, setSending] = useState(false);
 
+  // Load detail verifikasi
   const loadData = async () => {
     try {
       const res = await api.get(`/operator/verifikasi/${id}`);
@@ -39,34 +45,56 @@ const OperatorVerifikasiDetail = () => {
     }
   };
 
+  // Ambil list petugas
+  const loadPetugas = async () => {
+    try {
+      const res = await api.get(`/operator/verifikasi/petugas/list`);
+      setPetugasList(res.data?.data || []);
+    } catch (err) {
+      console.error("❌ Gagal ambil daftar petugas:", err);
+      toast.error("Gagal memuat daftar petugas.");
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [id]);
+
+  const openModal = async () => {
+    await loadPetugas();
+    setShowModal(true);
+  };
+
   const handleKirimKePetugas = async () => {
+    if (!selectedPetugas) {
+      toast.warning("Pilih petugas terlebih dahulu!");
+      return;
+    }
+
     const result = await Swal.fire({
       title: "Kirim ke Petugas?",
-      text: "Data ini akan dikirim ke petugas survei untuk proses selanjutnya.",
+      text: "Data ini akan dikirim ke petugas survei.",
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Ya, Kirim",
       cancelButtonText: "Batal",
       confirmButtonColor: "#059669",
       cancelButtonColor: "#6b7280",
-      background: "#fff",
-      color: "#374151",
     });
 
     if (!result.isConfirmed) return;
 
     try {
       setSending(true);
-      await api.post(`/operator/verifikasi/${id}/kirim-ke-petugas`);
-      toast.success("Pengajuan berhasil dikirim ke petugas survei!", {
-        autoClose: 2500,
+      await api.post(`/operator/verifikasi/${id}/kirim-ke-petugas`, {
+        petugas_id: selectedPetugas,
       });
-      setTimeout(() => navigate("/operator/verifikasi"), 2000);
+
+      toast.success("Berhasil dikirim ke petugas survei!");
+      setTimeout(() => navigate("/operator/verifikasi"), 1500);
     } catch (err) {
-      console.error("❌ Gagal kirim ke petugas:", err);
-      toast.error("Terjadi kesalahan saat mengirim ke petugas survei.", {
-        autoClose: 2500,
-      });
+      console.error("❌ Error:", err);
+      toast.error("Gagal mengirim ke petugas survei.");
     } finally {
       setSending(false);
     }
@@ -92,10 +120,6 @@ const OperatorVerifikasiDetail = () => {
     const isImage = ["jpg", "jpeg", "png", "gif", "webp", "bmp"].includes(ext);
     return isImage ? `Foto ${index + 1}` : `Dokumen ${index + 1}`;
   };
-
-  useEffect(() => {
-    loadData();
-  }, [id]);
 
   if (loading)
     return (
@@ -165,55 +189,42 @@ const OperatorVerifikasiDetail = () => {
         <h3 className="text-base font-semibold text-slate-700 mb-4">
           Dokumen / Foto Bukti
         </h3>
-        {(() => {
-          let fotoBukti = [];
 
-          if (typeof data.foto_bukti === "string") {
-            try {
-              fotoBukti = JSON.parse(data.foto_bukti);
-            } catch (e) {
-              console.error("⚠️ Gagal parse foto_bukti:", e);
-            }
-          } else if (Array.isArray(data.foto_bukti)) {
-            fotoBukti = data.foto_bukti;
-          }
+        {data.foto_bukti.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
+            {data.foto_bukti.map((foto, i) => {
+              const url = foto.url || foto;
+              const namaFile = getNamaFile(url, i);
 
-          return fotoBukti.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
-              {fotoBukti.map((foto, i) => {
-                const url = foto.url || foto;
-                const namaFile = getNamaFile(url, i);
-
-                return (
-                  <div
-                    key={i}
-                    className="border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.02] transition-all bg-white"
+              return (
+                <div
+                  key={i}
+                  className="border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.02] transition-all bg-white"
+                >
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
                   >
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block"
-                    >
-                      <img
-                        src={url}
-                        alt={namaFile}
-                        className="object-cover w-full h-40"
-                      />
-                    </a>
-                    <div className="p-2 border-t text-center bg-slate-50 text-xs text-slate-600 font-medium truncate">
-                      {namaFile}
-                    </div>
+                    <img
+                      src={url}
+                      alt={namaFile}
+                      className="object-cover w-full h-40"
+                    />
+                  </a>
+                  <div className="p-2 border-t text-center bg-slate-50 text-xs text-slate-600 font-medium truncate">
+                    {namaFile}
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-slate-500 text-sm italic flex items-center gap-2">
-              <FileImage size={16} /> Tidak ada dokumen pendukung.
-            </p>
-          );
-        })()}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-slate-500 text-sm italic flex items-center gap-2">
+            <FileImage size={16} /> Tidak ada dokumen pendukung.
+          </p>
+        )}
       </div>
 
       {/* Tombol Aksi */}
@@ -227,7 +238,7 @@ const OperatorVerifikasiDetail = () => {
 
         {data.status === "menunggu" && (
           <button
-            onClick={handleKirimKePetugas}
+            onClick={openModal}
             disabled={sending}
             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm px-6 py-2.5 rounded-md shadow transition"
           >
@@ -244,14 +255,56 @@ const OperatorVerifikasiDetail = () => {
         )}
       </div>
 
-      {/* Toast container */}
-      <ToastContainer
-        position="top-right"
-        autoClose={2500}
-        hideProgressBar
-        newestOnTop
-        theme="light"
-      />
+      {/* Modal Pilih Petugas */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
+          <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-xl">
+            <h3 className="text-lg font-semibold mb-4 text-slate-800">
+              Pilih Petugas Survei
+            </h3>
+
+            <select
+              value={selectedPetugas}
+              onChange={(e) => setSelectedPetugas(e.target.value)}
+              className="w-full border border-slate-300 rounded-md px-3 py-2 mb-4"
+            >
+              <option value="">-- Pilih Petugas --</option>
+              {petugasList.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 rounded-md border"
+              >
+                Batal
+              </button>
+
+              <button
+                disabled={sending}
+                onClick={handleKirimKePetugas}
+                className="px-5 py-2 bg-emerald-600 text-white rounded-md flex items-center gap-2"
+              >
+                {sending ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> Mengirim...
+                  </>
+                ) : (
+                  <>
+                    <User size={16} /> Kirim
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ToastContainer position="top-right" autoClose={2500} hideProgressBar />
     </div>
   );
 };

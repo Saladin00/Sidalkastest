@@ -15,6 +15,7 @@ import {
   X,
   CheckCircle2,
   UserCircle2,
+  BarChart3,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -74,6 +75,8 @@ const OperatorLayout = ({ children }) => {
     { label: "Data Klien", to: "/operator/klien", icon: Users },
     { label: "Sebaran Wilayah", to: "/operator/sebaran", icon: MapPin },
     { label: "Verifikasi Data", to: "/operator/verifikasi", icon: ShieldCheck },
+    { label: "Laporan", to: "/operator/laporan", icon: BarChart3 },
+
   ];
 
   const isActive = (path) =>

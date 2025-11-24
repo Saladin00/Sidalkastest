@@ -16,6 +16,12 @@ use App\Http\Controllers\Verifikasi\OperatorVerifikasiController;
 use App\Http\Controllers\Verifikasi\PetugasVerifikasiController;
 use App\Http\Controllers\Verifikasi\LksVerifikasiController;
 
+// Laporan Controller
+use App\Http\Controllers\Laporan\AdminLaporanController;
+use App\Http\Controllers\Laporan\AdminLaporanExportController;
+use App\Http\Controllers\Laporan\OperatorLaporanController; 
+use App\Http\Controllers\Laporan\OperatorLaporanExportController; 
+
 /*
 |--------------------------------------------------------------------------
 | PUBLIC ROUTES
@@ -67,6 +73,52 @@ Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
     Route::get('/lks/{id}/kunjungan', [LaporanKunjunganController::class, 'index']);
     Route::post('/lks/{id}/kunjungan', [LaporanKunjunganController::class, 'store']);
 
+/*
+|--------------------------------------------------------------------------
+| LAPORAN ADMIN
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', 'role:admin'])
+    ->prefix('admin/laporan')
+    ->group(function () {
+        Route::get('/', [AdminLaporanController::class, 'laporan']);
+    });
+
+    Route::middleware(['auth:sanctum','role:admin'])
+    ->prefix('admin/laporan')
+    ->group(function () {
+        Route::get('/', [AdminLaporanController::class, 'laporan']);
+
+        // Export
+        Route::get('/export/pdf', [AdminLaporanExportController::class, 'exportPdf']);
+        Route::get('/export/excel', [AdminLaporanExportController::class, 'exportExcel']);
+    });
+
+/*
+|--------------------------------------------------------------------------
+| LAPORAN OPERATOR
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', 'role:operator'])
+    ->prefix('operator/laporan')
+    ->group(function () {
+        Route::get('/', [OperatorLaporanController::class, 'laporan']);
+    });
+    
+    Route::middleware(['auth:sanctum','role:operator'])
+    ->prefix('operator/laporan')
+    ->group(function () {
+        Route::get('/', [OperatorLaporanController::class, 'laporan']);
+
+        // Export
+        Route::get('/export/pdf', [OperatorLaporanExportController::class, 'exportPdf']);
+        Route::get('/export/excel', [OperatorLaporanExportController::class, 'exportExcel']);
+    });
+
+
+
+
+
     /*
     |--------------------------------------------------------------------------
     | VERIFIKASI (PER ROLE)
@@ -98,6 +150,7 @@ Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
             Route::get('/', [OperatorVerifikasiController::class, 'index']); // daftar verifikasi per kecamatan
             Route::get('/{id}', [OperatorVerifikasiController::class, 'show']); // detail
             Route::post('/{id}/kirim-ke-petugas', [OperatorVerifikasiController::class, 'kirimKePetugas']); // kirim ke petugas
+            Route::get('/petugas/list', [OperatorVerifikasiController::class, 'listPetugas']); // ⬅️ baru
         });
 
         // 🔹 Operator hanya bisa aktifkan LKS di kecamatan-nya

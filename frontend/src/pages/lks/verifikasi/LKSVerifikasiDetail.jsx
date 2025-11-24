@@ -16,7 +16,7 @@ const LKSVerifikasiDetail = () => {
       const res = await api.get(`/lks/verifikasi/${id}`);
       const result = res.data?.data;
 
-      // pastikan foto_bukti berupa array
+      // Pastikan foto_bukti terbaca baik dari JSON string, array string, atau array objek
       if (typeof result.foto_bukti === "string") {
         try {
           result.foto_bukti = JSON.parse(result.foto_bukti);
@@ -24,6 +24,7 @@ const LKSVerifikasiDetail = () => {
           result.foto_bukti = [];
         }
       }
+
       if (!Array.isArray(result.foto_bukti)) result.foto_bukti = [];
 
       setData(result);
@@ -55,7 +56,7 @@ const LKSVerifikasiDetail = () => {
     }
   };
 
-  // 🔹 Deteksi nama otomatis
+  // 🔹 Deteksi nama file otomatis
   const getNamaFile = (url, index) => {
     const ext = url.split(".").pop()?.toLowerCase() || "";
     const isImage = ["jpg", "jpeg", "png", "gif", "webp", "bmp"].includes(ext);
@@ -101,12 +102,16 @@ const LKSVerifikasiDetail = () => {
                     : "-"}
                 </td>
               </tr>
+
               <tr>
                 <td className="p-4 font-semibold text-slate-700">
                   2. Petugas Verifikasi
                 </td>
-                <td className="p-4 text-slate-800">{data.petugas?.name || "-"}</td>
+                <td className="p-4 text-slate-800">
+                  {data.petugas?.name || "-"}
+                </td>
               </tr>
+
               <tr className="bg-slate-50/60">
                 <td className="p-4 font-semibold text-slate-700">3. Status</td>
                 <td className="p-4">
@@ -119,8 +124,11 @@ const LKSVerifikasiDetail = () => {
                   </span>
                 </td>
               </tr>
+
               <tr>
-                <td className="p-4 font-semibold text-slate-700">4. Penilaian</td>
+                <td className="p-4 font-semibold text-slate-700">
+                  4. Penilaian
+                </td>
                 <td className="p-4 text-slate-800">
                   {data.penilaian || (
                     <span className="italic text-slate-500">
@@ -129,9 +137,20 @@ const LKSVerifikasiDetail = () => {
                   )}
                 </td>
               </tr>
+
               <tr className="bg-slate-50/60">
-                <td className="p-4 font-semibold text-slate-700">5. Catatan</td>
-                <td className="p-4 text-slate-800">{data.catatan || "-"}</td>
+                <td className="p-4 font-semibold text-slate-700">
+                  5. Catatan Admin
+                </td>
+                <td className="p-4 text-slate-800">
+                  {data.status === "valid" || data.status === "tidak_valid"
+                    ? data.catatan || "-"
+                    : (
+                      <span className="italic text-slate-500">
+                        Belum ada catatan admin.
+                      </span>
+                    )}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -142,6 +161,7 @@ const LKSVerifikasiDetail = () => {
           <h3 className="text-base font-semibold text-slate-700 mb-3">
             Dokumen / Foto Bukti
           </h3>
+
           {data.foto_bukti?.length ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {data.foto_bukti.map((foto, i) => {

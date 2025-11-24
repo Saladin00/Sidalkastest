@@ -38,17 +38,17 @@ export default function KlienForm() {
   }, []);
 
   // === ADMIN: Dapat semua LKS ===
- useEffect(() => {
-  if (role === "admin") {
-    api.get("/lks")
-      .then((res) => {
-        const raw = res.data?.data;
-      setLksList(Array.isArray(raw) ? raw : raw?.data || []);
-      })
-      .catch(() => showError("Gagal memuat data LKS"));
-  }
-}, [role]);
-
+  useEffect(() => {
+    if (role === "admin") {
+      api
+        .get("/lks")
+        .then((res) => {
+          const raw = res.data?.data;
+          setLksList(Array.isArray(raw) ? raw : raw?.data || []);
+        })
+        .catch(() => showError("Gagal memuat data LKS"));
+    }
+  }, [role]);
 
   // === Filter LKS by Kecamatan (ADMIN ONLY) ===
   useEffect(() => {
@@ -71,15 +71,15 @@ export default function KlienForm() {
 
     try {
       await api.post("/klien", form);
-  showSuccess("Klien berhasil ditambahkan!");
-  setTimeout(() => {
-    if (role === "admin") navigate("/admin/klien");
-    else navigate("/lks/klien");
-  }, 1200);
-} catch (err) {
-  console.error("❌ Error:", err);
-  showError("Gagal menambahkan klien. Periksa kembali input Anda.");
-}
+      showSuccess("Klien berhasil ditambahkan!");
+      setTimeout(() => {
+        if (role === "admin") navigate("/admin/klien");
+        else navigate("/lks/klien");
+      }, 1200);
+    } catch (err) {
+      console.error("❌ Error:", err);
+      showError("Gagal menambahkan klien. Periksa kembali input Anda.");
+    }
   };
 
   const inputStyle =

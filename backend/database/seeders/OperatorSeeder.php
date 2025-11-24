@@ -4,30 +4,35 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use App\Models\User;
 use App\Models\Kecamatan;
 
 class OperatorSeeder extends Seeder
 {
-    public function run()
+    public function run(): void
     {
-        $targetKecamatan = ['Indramayu', 'Lohbener', 'Sindang', 'Jatibarang', 'Kandanghaur'];
+        $kecamatan = Kecamatan::whereIn('nama', [
+            'Indramayu','Sindang','Lohbener','Jatibarang','Kandanghaur','Balongan'
+        ])->get();
 
-        $kecamatanList = Kecamatan::whereIn('nama', $targetKecamatan)->get();
+        foreach ($kecamatan as $kec) {
+            $slug = Str::slug($kec->nama, '_');
 
-        foreach ($kecamatanList as $kec) {
             $user = User::firstOrCreate(
-                ['email' => strtolower($kec->nama).'_operator@sidalekas.go.id'],
+                ['email' => "operator.{$slug}@gmail.com"], // ✅ Gmail
                 [
-                    'username' => strtolower($kec->nama).'_operator',
-                    'name' => "Operator {$kec->nama}",
-                    'password' => Hash::make('operator123'),
+                    'username'     => "operator_{$slug}",
+                    'name'         => "Operator {$kec->nama}",
+                    'password'     => Hash::make('password'), // ✅ "password"
                     'kecamatan_id' => $kec->id,
                     'status_aktif' => true,
                 ]
             );
 
-            $user->assignRole('operator');
+            if (!$user->hasRole('operator')) {
+                $user->assignRole('operator');
+            }
         }
     }
 }

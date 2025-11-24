@@ -39,7 +39,9 @@ class Lks extends Model
     protected $casts = [
         'dokumen' => 'array',
         'tanggal_akreditasi' => 'date',
+        'status_verifikasi' => 'string',
     ];
+    
 
     /* ----------------------------
      * 🔗 RELASI

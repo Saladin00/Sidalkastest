@@ -200,13 +200,15 @@ export default function KlienList() {
         </div>
       </div>
 
-      {/* ====== TABEL DATA ====== */}
+      {/* ====== TABEL ====== */}
       <div className="bg-white rounded-xl shadow overflow-hidden">
         {loading ? (
           <div className="p-6 text-center text-gray-500">Memuat data...</div>
         ) : displayedData.length === 0 ? (
           <div className="p-6 text-center text-gray-400">
-            Tidak ada data ditemukan.
+            {filters.kecamatan_id
+              ? "Belum ada klien terdaftar pada kecamatan ini."
+              : "Tidak ada data ditemukan."}
           </div>
         ) : (
           <div className="overflow-x-auto">
