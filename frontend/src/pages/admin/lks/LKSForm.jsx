@@ -1,9 +1,13 @@
 import React, { useEffect, useState, useRef, memo } from "react";
+import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../../components/AdminLayout";
 import API from "../../../utils/api";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 import {
   BuildingOfficeIcon,
   MapPinIcon,
@@ -11,10 +15,11 @@ import {
   WrenchIcon,
   ChartBarIcon,
   PaperClipIcon,
+  ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
 
 // ===============================
-// MARKER LEAFLET
+// LEAFLET MARKER
 // ===============================
 const markerIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
@@ -23,7 +28,7 @@ const markerIcon = new L.Icon({
 });
 
 // ===============================
-// MAP CLICK HANDLER
+// MAP INTERAKTIF
 // ===============================
 const LocationMarker = ({ position, setPosition, setForm }) => {
   useMapEvents({
@@ -37,17 +42,17 @@ const LocationMarker = ({ position, setPosition, setForm }) => {
 };
 
 // ===============================
-// INPUT COMPONENT
+// INPUT FIELD
 // ===============================
 const Field = memo(({ label, name, value, onChange, type = "text" }) => (
   <div className="space-y-1">
-    <label className="text-sm font-medium">{label}</label>
+    <label className="text-sm font-medium text-gray-700">{label}</label>
     <input
       type={type}
       name={name}
       value={value || ""}
       onChange={onChange}
-      className="w-full px-3 py-2 border rounded-lg shadow-sm text-sm"
+      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:ring-2 focus:ring-sky-500 outline-none"
     />
   </div>
 ));
@@ -65,13 +70,14 @@ const AutoTextarea = memo(({ label, name, value, onChange }) => {
   }, [value]);
   return (
     <div className="space-y-1">
-      <label className="text-sm font-medium">{label}</label>
+      <label className="text-sm font-medium text-gray-700">{label}</label>
       <textarea
         ref={ref}
         name={name}
         value={value || ""}
         onChange={onChange}
-        className="w-full px-3 py-2 border rounded-lg resize-none shadow-sm text-sm"
+        rows={2}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none shadow-sm text-sm focus:ring-2 focus:ring-sky-500 outline-none"
       />
     </div>
   );
@@ -84,7 +90,7 @@ const SectionHeader = ({ icon: Icon, title, color }) => (
   <div className="flex items-center gap-2 mb-5">
     <Icon className={`h-5 w-5 text-${color}-600`} />
     <h2 className={`text-lg font-semibold text-${color}-700`}>{title}</h2>
-    <div className="flex-1 border-t ml-2"></div>
+    <div className="flex-1 border-t border-gray-200 ml-2"></div>
   </div>
 );
 
@@ -92,6 +98,7 @@ const SectionHeader = ({ icon: Icon, title, color }) => (
 // MAIN COMPONENT
 // ===============================
 const LKSForm = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [daftarKecamatan, setDaftarKecamatan] = useState([]);
   const [dokumenBaru, setDokumenBaru] = useState([]);
@@ -122,26 +129,39 @@ const LKSForm = () => {
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
+  // ===============================
+  // VALIDASI FILE UPLOAD
+  // ===============================
   const handleFileChange = (e) => {
-    setDokumenBaru(Array.from(e.target.files));
+    const files = Array.from(e.target.files);
+    const validFiles = files.filter((file) => {
+      const allowed = ["application/pdf", "image/jpeg", "image/png"];
+      const isValidType = allowed.includes(file.type);
+      const isValidSize = file.size <= 5 * 1024 * 1024;
+
+      if (!isValidType) toast.error(` ${file.name} bukan PDF/JPG/PNG`);
+      if (!isValidSize) toast.warning(` ${file.name} melebihi 5 MB`);
+
+      return isValidType && isValidSize;
+    });
+    setDokumenBaru(validFiles);
   };
 
   // ===============================
-  // LOAD DATA KECAMATAN
+  // LOAD KECAMATAN
   // ===============================
   useEffect(() => {
     API.get("/kecamatan")
       .then((r) => setDaftarKecamatan(r.data.data))
-      .catch(() => alert("Gagal memuat daftar kecamatan"));
+      .catch(() => toast.error("Gagal memuat daftar kecamatan"));
   }, []);
 
   // ===============================
-  // SIMPAN DATA BARU
+  // SIMPAN DATA
   // ===============================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const payload = new FormData();
       Object.keys(form).forEach((key) => payload.append(key, form[key] ?? ""));
@@ -151,46 +171,28 @@ const LKSForm = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      alert("✅ LKS baru berhasil ditambahkan!");
-      setForm({
-        nama: "",
-        alamat: "",
-        jenis_layanan: "",
-        npwp: "",
-        kecamatan_id: "",
-        kelurahan: "",
-        akta_pendirian: "",
-        izin_operasional: "",
-        kontak_pengurus: "",
-        legalitas: "",
-        no_akta: "",
-        status_akreditasi: "",
-        no_sertifikat: "",
-        tanggal_akreditasi: "",
-        koordinat: "",
-        jumlah_pengurus: "",
-        sarana: "",
-        hasil_observasi: "",
-        tindak_lanjut: "",
-      });
-      setDokumenBaru([]);
+      toast.success(" LKS baru berhasil ditambahkan!");
+      setTimeout(() => navigate("/admin/lks"), 1500);
     } catch (err) {
-      console.error("❌ Gagal menyimpan LKS:", err);
-      alert("Gagal menambah data LKS. Silakan periksa kembali inputan Anda.");
+      console.error(" Gagal menyimpan LKS:", err);
+      toast.error("Gagal menambah data LKS. Silakan periksa kembali input Anda.");
     } finally {
       setLoading(false);
     }
   };
 
+  // ===============================
+  // RENDER
+  // ===============================
   return (
     <AdminLayout>
-      <div className="max-w-5xl mx-auto bg-white p-8 rounded-xl shadow-md border">
-        <h1 className="text-2xl font-bold text-center mb-6">
+      <div className="max-w-5xl mx-auto bg-white p-6 sm:p-10 rounded-2xl shadow-xl border border-gray-100">
+        <h1 className="text-2xl sm:text-3xl font-bold text-center text-sky-700 mb-8">
           Tambah Lembaga Kesejahteraan Sosial (LKS)
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-10">
-          {/* ================= PROFILE UMUM ================= */}
+          {/* ================= PROFILE ================= */}
           <section>
             <SectionHeader
               icon={BuildingOfficeIcon}
@@ -198,18 +200,18 @@ const LKSForm = () => {
               color="blue"
             />
 
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Field label="Nama LKS" name="nama" value={form.nama} onChange={handleChange} />
               <Field label="Jenis Layanan" name="jenis_layanan" value={form.jenis_layanan} onChange={handleChange} />
-              <AutoTextarea label="Alamat" name="alamat" value={form.alamat} onChange={handleChange} />
+              <AutoTextarea label="Alamat Lengkap" name="alamat" value={form.alamat} onChange={handleChange} />
 
               <div>
-                <label className="text-sm font-medium">Kecamatan</label>
+                <label className="text-sm font-medium text-gray-700">Kecamatan</label>
                 <select
                   name="kecamatan_id"
-                  value={form.kecamatan_id || ""}
+                  value={form.kecamatan_id}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:ring-2 focus:ring-sky-500 outline-none"
                 >
                   <option value="">Pilih Kecamatan</option>
                   {daftarKecamatan.map((k) => (
@@ -220,7 +222,7 @@ const LKSForm = () => {
                 </select>
               </div>
 
-              <Field label="Kelurahan" name="kelurahan" value={form.kelurahan} onChange={handleChange} />
+              <Field label="Kelurahan / Desa" name="kelurahan" value={form.kelurahan} onChange={handleChange} />
               <Field label="NPWP" name="npwp" value={form.npwp} onChange={handleChange} />
               <Field label="Kontak Pengurus" name="kontak_pengurus" value={form.kontak_pengurus} onChange={handleChange} />
               <Field label="Legalitas" name="legalitas" value={form.legalitas} onChange={handleChange} />
@@ -235,53 +237,89 @@ const LKSForm = () => {
           {/* ================= PETA ================= */}
           <section>
             <SectionHeader icon={MapPinIcon} title="Lokasi LKS" color="red" />
-            <MapContainer center={position} zoom={13} className="h-72 rounded-xl border shadow">
+            <MapContainer
+              center={position}
+              zoom={13}
+              className="h-72 rounded-xl border shadow z-0"
+            >
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               <LocationMarker position={position} setPosition={setPosition} setForm={setForm} />
             </MapContainer>
-            <p className="text-sm mt-2">
-              Koordinat: <b>{form.koordinat || "Belum dipilih"}</b>
+            <p className="text-sm mt-2 text-gray-600">
+              Klik pada peta untuk menentukan lokasi LKS. <br />
+              <strong>Koordinat:</strong> {form.koordinat || "Belum dipilih"}
             </p>
           </section>
 
           {/* ================= PENGURUS ================= */}
           <section>
             <SectionHeader icon={UsersIcon} title="Pengurus" color="purple" />
-            <Field label="Jumlah Pengurus" name="jumlah_pengurus" type="number" value={form.jumlah_pengurus} onChange={handleChange} />
+            <Field
+              label="Jumlah Pengurus"
+              name="jumlah_pengurus"
+              type="number"
+              value={form.jumlah_pengurus}
+              onChange={handleChange}
+            />
           </section>
 
           {/* ================= SARANA ================= */}
           <section>
             <SectionHeader icon={WrenchIcon} title="Sarana & Prasarana" color="green" />
-            <AutoTextarea label="Sarana & Fasilitas" name="sarana" value={form.sarana} onChange={handleChange} />
+            <AutoTextarea
+              label="Sarana & Fasilitas"
+              name="sarana"
+              value={form.sarana}
+              onChange={handleChange}
+            />
           </section>
 
           {/* ================= MONITORING ================= */}
           <section>
             <SectionHeader icon={ChartBarIcon} title="Monitoring" color="pink" />
-            <AutoTextarea label="Hasil Observasi" name="hasil_observasi" value={form.hasil_observasi} onChange={handleChange} />
-            <AutoTextarea label="Tindak Lanjut" name="tindak_lanjut" value={form.tindak_lanjut} onChange={handleChange} />
+            <AutoTextarea
+              label="Hasil Observasi"
+              name="hasil_observasi"
+              value={form.hasil_observasi}
+              onChange={handleChange}
+            />
+            <AutoTextarea
+              label="Tindak Lanjut"
+              name="tindak_lanjut"
+              value={form.tindak_lanjut}
+              onChange={handleChange}
+            />
           </section>
 
-          {/* ================= DOKUMEN ================= */}
-          <section>
-            <SectionHeader icon={PaperClipIcon} title="Dokumen Pendukung" color="gray" />
-            <input type="file" multiple onChange={handleFileChange} className="mt-1" />
-            <p className="text-xs text-gray-500">Upload PDF / JPG / PNG</p>
-          </section>
 
-          {/* ================= SAVE BUTTON ================= */}
-          <div className="text-right">
+          {/* ================= BUTTONS ================= */}
+          <div className="flex flex-col sm:flex-row justify-between items-center pt-6 border-t border-gray-200 gap-3">
+            <button
+              type="button"
+              onClick={() => navigate("/admin/lks")}
+              className="flex items-center gap-2 px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-sm font-medium shadow-md transition"
+            >
+              <ArrowLeftIcon className="w-4 h-4" />
+              Kembali
+            </button>
+
             <button
               type="submit"
               disabled={loading}
-              className="px-8 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
+              className={`px-8 py-2.5 rounded-lg font-semibold text-white shadow-md transition-all ${
+                loading
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-emerald-600 hover:bg-emerald-700"
+              }`}
             >
               {loading ? "Menyimpan..." : "Simpan Data"}
             </button>
           </div>
         </form>
       </div>
+
+      {/* TOAST CONTAINER */}
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop />
     </AdminLayout>
   );
 };
