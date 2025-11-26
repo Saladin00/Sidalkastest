@@ -13,32 +13,26 @@ use App\Models\Verifikasi;
 
 class LksSeeder extends Seeder
 {
-     public function run(): void
+    public function run(): void
     {
-        /* ========================================================
-         *  RESET DATA (agar tidak numpuk setiap seeding)
-         * ====================================================== */
+        /* ================================
+         * RESET DATA
+         * ================================ */
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-// bersihkan verifikasi log dulu
-DB::table('verifikasi_logs')->delete();
-DB::table('verifikasi')->delete();
-DB::table('klien')->delete();
-DB::table('lks')->delete();
+        DB::table('verifikasi_logs')->truncate();
+        DB::table('verifikasi')->truncate();
+        DB::table('klien')->truncate();
+        DB::table('lks')->truncate();
 
-// reset auto increment
-DB::statement('ALTER TABLE verifikasi_logs AUTO_INCREMENT = 1;');
-DB::statement('ALTER TABLE verifikasi AUTO_INCREMENT = 1;');
-DB::statement('ALTER TABLE klien AUTO_INCREMENT = 1;');
-DB::statement('ALTER TABLE lks AUTO_INCREMENT = 1;');
+        // Hapus semua user role LKS
+        User::role('lks')->get()->each(fn($u) => $u->delete());
 
-// hapus user role LKS
-User::role('lks')->get()->each(function ($u) {
-    $u->delete();
-});
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-
+        /* ================================
+         * DATA DESA PER KECAMATAN
+         * ================================ */
         $desaByKecamatan = [
             'Indramayu' => [
                 'Bojongsari (Kelurahan)','Karanganyar (Kelurahan)','Karangmalang (Kelurahan)',
@@ -71,6 +65,10 @@ DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         $jenisList = ['Anak', 'Lansia', 'Disabilitas', 'Fakir Miskin'];
 
+
+        /* ================================
+         * LOOP KECAMATAN → DESA → 5 LKS
+         * ================================ */
         foreach ($desaByKecamatan as $namaKec => $desaList) {
 
             $kec = Kecamatan::where('nama', $namaKec)->first();
@@ -80,66 +78,101 @@ DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
                 for ($i = 1; $i <= 5; $i++) {
 
+                    /* ================================
+                     * CREATE LKS
+                     * ================================ */
                     $lksName = "LKS {$i} {$desa} - {$namaKec}";
 
                     $lks = Lks::create([
-                        'nama'           => $lksName,
-                        'jenis_layanan'  => $jenisList[array_rand($jenisList)],
-                        'status'         => 'pending', // default sebelum validasi
-                        'alamat'         => "Jl. Mawar {$i}, {$desa}",
-                        'kelurahan'      => $desa,
-                        'kecamatan_id'   => $kec->id,
+                        'nama'          => $lksName,
+                        'jenis_layanan' => $jenisList[array_rand($jenisList)],
+                        'status'        => 'pending',
+                        'alamat'        => "Jl. Mawar {$i}, {$desa}",
+                        'kelurahan'     => $desa,
+                        'kecamatan_id'  => $kec->id,
                     ]);
 
-                   // --- Buat Akun User LKS (tanpa konflik) ---
-$username = "lks{$i}_" . Str::slug($desa, '_') . "_" . Str::random(4);
-$email = $username . "@gmail.com";
+                    /* ================================
+                     * CREATE USER LKS
+                     * ================================ */
+                    $username = "lks{$i}_" . Str::slug($desa, '_') . "_" . Str::random(4);
+                    $email    = $username . "@gmail.com";
 
-$user = User::create([
-    'name'         => "User {$lksName}",
-    'email'        => $email,
-    'username'     => $username,
-    'password'     => Hash::make('password'),
-    'kecamatan_id' => $kec->id,
-    'status_aktif' => true,
-    'lks_id'       => $lks->id,
-]);
+                    $user = User::create([
+                        'name'         => "User {$lksName}",
+                        'email'        => $email,
+                        'username'     => $username,
+                        'password'     => Hash::make('password'),
+                        'kecamatan_id' => $kec->id,
+                        'status_aktif' => true,
+                        'lks_id'       => $lks->id,
+                    ]);
 
-$user->assignRole('lks');
+                    $user->assignRole('lks');
 
-// Bind user ke LKS
-$lks->update(['user_id' => $user->id]);
-
-// ===================================
-//  CREATE VERIFIKASI AWAL (STATUS MENUNGGU)
-// ===================================
-// =======================================
-// GENERATE TANGGAL VERIFIKASI RANDOM
-// =======================================
-$tanggalVerif = now()
-    ->setYear(2025)
-    ->setMonth(rand(1, 12))
-    ->setDay(rand(1, 28))
-    ->setTime(rand(8, 16), rand(0, 59), rand(0, 59));
+                    // Bind ke LKS
+                    $lks->update(['user_id' => $user->id]);
 
 
-// =======================================
-//  CREATE VERIFIKASI AWAL (STATUS MENUNGGU)
-// =======================================
-Verifikasi::create([
-    'lks_id' => $lks->id,
-    'petugas_id' => null,
-    'status' => 'menunggu', 
-    'penilaian' => 'Menunggu penugasan dari operator kecamatan.',
-    'catatan' => 'Pengajuan verifikasi awal dari sistem (seeder).',
-    'tanggal_verifikasi' => $tanggalVerif,
-]);
+                    /* ================================
+                     * STATUS VERIFIKASI REALISTIK
+                     * ================================ */
+                    $skenario = rand(1, 4);
 
+                    switch ($skenario) {
 
+                        case 1:
+                            // Baru mengajukan
+                            $statusLks    = 'menunggu_operator';
+                            $statusVerif  = 'menunggu';
+                            $catatan      = 'LKS baru mengajukan verifikasi.';
+                            $tanggalVerif = now()->subDays(rand(1, 30));
+                            break;
+
+                        case 2:
+                            // Operator → petugas
+                            $statusLks    = 'proses_survei';
+                            $statusVerif  = 'proses_survei';
+                            $catatan      = 'Operator mengirim ke petugas survei.';
+                            $tanggalVerif = now()->subDays(rand(31, 90));
+                            break;
+
+                        case 3:
+                            // Petugas → admin
+                            $statusLks    = 'proses_validasi';
+                            $statusVerif  = 'dikirim_admin';
+                            $catatan      = 'Petugas telah mengirim hasil survei ke admin.';
+                            $tanggalVerif = now()->subDays(rand(91, 180));
+                            break;
+
+                        case 4:
+                        default:
+                            // Admin valid
+                            $statusLks    = 'valid';
+                            $statusVerif  = 'valid';
+                            $catatan      = 'Admin telah menyetujui verifikasi.';
+                            $tanggalVerif = now()->subDays(rand(181, 365)); // 6–12 bulan (2024)
+                            break;
+                    }
+
+                    // Update status LKS (kolom status_verifikasi)
+                    $lks->update(['status_verifikasi' => $statusLks]);
+
+                    /* ================================
+                     * CREATE VERIFIKASI
+                     * ================================ */
+                    Verifikasi::create([
+                        'lks_id'            => $lks->id,
+                        'petugas_id'        => null,
+                        'status'            => $statusVerif,
+                        'penilaian'         => ucfirst(str_replace('_', ' ', $statusVerif)),
+                        'catatan'           => $catatan,
+                        'tanggal_verifikasi'=> $tanggalVerif,
+                    ]);
                 }
             }
         }
 
-        echo "\nSeeder LKS + Pengajuan Verifikasi → Sukses.\n";
+        echo "\nSeeder LKS + Verifikasi Realistik → SUKSES.\n";
     }
 }
