@@ -271,29 +271,43 @@ const OperatorLayout = ({ children }) => {
                 </div>
               </motion.div>
 
-              {/* Dropdown cuma Keluar */}
-              <AnimatePresence>
-                {dropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.25 }}
-                    className="absolute right-0 mt-3 w-48 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50"
-                  >
-                    <button
-                      onClick={() => {
-                        setShowLogoutConfirm(true);
-                        setDropdownOpen(false);
-                      }}
-                      className="flex items-center gap-2 w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition font-medium"
-                    >
-                      <LogOut size={18} className="text-red-500" />
-                      Keluar
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {/* Dropdown */}
+<AnimatePresence>
+  {dropdownOpen && (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.25 }}
+      className="absolute right-0 mt-3 w-48 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50"
+    >
+      {/* 🔹 Menu Pengaturan Akun */}
+      <button
+        onClick={() => {
+          navigate("/operator/account");
+          setDropdownOpen(false);
+        }}
+        className="flex items-center gap-2 w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-100 transition font-medium"
+      >
+        <UserCog size={18} className="text-slate-600" />
+        Pengaturan Akun
+      </button>
+
+      {/* 🔹 Logout */}
+      <button
+        onClick={() => {
+          setShowLogoutConfirm(true);
+          setDropdownOpen(false);
+        }}
+        className="flex items-center gap-2 w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition font-medium"
+      >
+        <LogOut size={18} className="text-red-500" />
+        Keluar
+      </button>
+    </motion.div>
+  )}
+</AnimatePresence>
+
             </div>
           </div>
         </header>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import api from "../../../utils/api";
 import { Loader2 } from "lucide-react";
 import {
@@ -7,17 +7,18 @@ import {
   Tooltip,
   Cell,
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
 } from "recharts";
+import { useNavigate } from "react-router-dom";
 
 export default function LaporanOperator() {
+  const navigate = useNavigate();
+
   const [periode, setPeriode] = useState("bulan");
-  const [tahun, setTahun] = useState(new Date().getFullYear());
-  const [bulan, setBulan] = useState("");
+  const [tahun, setTahun] = useState(null);
+  const [bulan, setBulan] = useState(null);
+
+  const [tahunList, setTahunList] = useState([]);
+
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
 
@@ -37,12 +38,16 @@ export default function LaporanOperator() {
   ];
 
   const loadLaporan = async () => {
+    if (!tahun || !bulan) return;
+
     setLoading(true);
     try {
       const res = await api.get("/operator/laporan", {
         params: { periode, tahun, bulan },
       });
+
       setData(res.data);
+      setTahunList(res.data.tahun_list || []);
     } catch (err) {
       alert("Gagal memuat laporan operator");
       console.error(err);
@@ -50,17 +55,43 @@ export default function LaporanOperator() {
     setLoading(false);
   };
 
-  const COLORS = ["#10b981", "#ef4444", "#3b82f6"];
+  // 🔥 AUTO SET DEFAULT BULAN + TAHUN SAAT MASUK HALAMAN
+  useEffect(() => {
+    const now = new Date();
+    setBulan(now.getMonth() + 1);
+    setTahun(now.getFullYear());
+  }, []);
+
+  // 🔥 AUTO LOAD LAPORAN SAAT DEFAULT TERISI
+  useEffect(() => {
+    if (tahun && bulan) loadLaporan();
+  }, [tahun, bulan]);
+
+  const COLORS_LKS = ["#10b981", "#ef4444", "#3b82f6"];
+  const COLORS_KLIEN = ["#10b981", "#9ca3af"];
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-semibold text-emerald-700 mb-6">
-        Laporan Kecamatan (Operator)
-      </h1>
+
+      {/* HEADER */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold text-emerald-700">
+          Laporan Kecamatan (Operator)
+        </h1>
+
+        <button
+          onClick={() => navigate(-1)}
+          className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded"
+        >
+          Kembali
+        </button>
+      </div>
 
       {/* FILTER */}
       <div className="bg-white p-5 rounded-lg shadow mb-6">
         <div className="grid md:grid-cols-4 gap-4">
+          
+          {/* Periode */}
           <div>
             <label className="text-sm font-medium">Periode</label>
             <select
@@ -74,16 +105,22 @@ export default function LaporanOperator() {
             </select>
           </div>
 
+          {/* Tahun */}
           <div>
             <label className="text-sm font-medium">Tahun</label>
-            <input
-              type="number"
+            <select
               className="w-full border rounded px-3 py-2"
-              value={tahun}
-              onChange={(e) => setTahun(e.target.value)}
-            />
+              value={tahun || ""}
+              onChange={(e) => setTahun(Number(e.target.value))}
+            >
+              <option value="">Pilih Tahun</option>
+              {tahunList.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
           </div>
 
+          {/* Bulan */}
           {periode !== "tahun" && (
             <div>
               <label className="text-sm font-medium">
@@ -92,8 +129,8 @@ export default function LaporanOperator() {
 
               <select
                 className="border px-3 py-2 rounded-md w-full"
-                value={bulan}
-                onChange={(e) => setBulan(e.target.value)}
+                value={bulan || ""}
+                onChange={(e) => setBulan(Number(e.target.value))}
               >
                 <option value="">
                   {periode === "bulan" ? "Pilih Bulan" : "Pilih Triwulan"}
@@ -105,7 +142,7 @@ export default function LaporanOperator() {
                         {b.label}
                       </option>
                     ))
-                  : [1, 2, 3, 4].map((tw) => (
+                  : [1,2,3,4].map((tw) => (
                       <option key={tw} value={tw}>
                         Triwulan {tw}
                       </option>
@@ -114,70 +151,27 @@ export default function LaporanOperator() {
             </div>
           )}
 
-          <div className="flex items-end gap-2">
+          {/* Tombol */}
+          <div className="flex items-end">
             <button
               onClick={loadLaporan}
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded flex items-center justify-center"
             >
-              {loading ? <Loader2 className="animate-spin" /> : "Tampilkan"}
-            </button>
-
-            {/* PDF */}
-            <button
-              onClick={() =>
-                api
-                  .get("/operator/laporan/export/pdf", {
-                    params: { periode, tahun, bulan },
-                    responseType: "blob",
-                  })
-                  .then((res) => {
-                    const url = window.URL.createObjectURL(
-                      new Blob([res.data])
-                    );
-                    const link = document.createElement("a");
-                    link.href = url;
-                    link.setAttribute("download", "laporan-operator.pdf");
-                    document.body.appendChild(link);
-                    link.click();
-                  })
-              }
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
-            >
-              PDF
-            </button>
-
-            {/* EXCEL */}
-            <button
-              onClick={() =>
-                api
-                  .get("/operator/laporan/export/excel", {
-                    params: { periode, tahun, bulan },
-                    responseType: "blob",
-                  })
-                  .then((res) => {
-                    const url = window.URL.createObjectURL(
-                      new Blob([res.data])
-                    );
-                    const link = document.createElement("a");
-                    link.href = url;
-                    link.setAttribute("download", "laporan-operator.xlsx");
-                    document.body.appendChild(link);
-                    link.click();
-                  })
-              }
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-            >
-              Excel
+              {loading ? <Loader2 className="animate-spin" /> : "Terapkan"}
             </button>
           </div>
+
         </div>
       </div>
 
-      {/* DATA */}
+      {/* ======================= */}
+      {/*        DATA             */}
+      {/* ======================= */}
       {data && (
         <div className="bg-white p-6 rounded-lg shadow space-y-10">
+
           {/* ============================
-              BAGIAN LKS
+              LKS SECTION
           ============================= */}
           <h2 className="text-xl font-semibold text-slate-700">
             Rekap Status LKS
@@ -198,7 +192,7 @@ export default function LaporanOperator() {
                 </td>
               </tr>
               <tr>
-                <td className="border px-3 py-2">LKS Proses Verifikasi</td>
+                <td className="border px-3 py-2">LKS Proses</td>
                 <td className="border px-3 py-2 text-right">
                   {data.data.lks_proses}
                 </td>
@@ -222,8 +216,8 @@ export default function LaporanOperator() {
                 outerRadius={110}
                 label
               >
-                {COLORS.map((color, idx) => (
-                  <Cell key={idx} fill={color} />
+                {COLORS_LKS.map((c, i) => (
+                  <Cell key={i} fill={c} />
                 ))}
               </Pie>
               <Tooltip />
@@ -231,7 +225,7 @@ export default function LaporanOperator() {
           </ResponsiveContainer>
 
           {/* ============================
-              BAGIAN KLIEN
+              KLIEN SECTION
           ============================= */}
           <h2 className="text-xl font-semibold text-slate-700 mt-10">
             Rekap Status Klien
@@ -275,6 +269,7 @@ export default function LaporanOperator() {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
+
         </div>
       )}
     </div>

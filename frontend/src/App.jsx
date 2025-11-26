@@ -5,6 +5,16 @@ import "react-toastify/dist/ReactToastify.css";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
+
+
+// Account
+import AccountSettings from "./pages/admin/AccountSettings";
+import OperatorAccount from "./pages/operator/OperatorAccount";
+import PetugasAccount from "./pages/petugas/PetugasAccount";
+import LKSAccount from "./pages/lks/LKSAccount";
+
 
 // Layouts
 import AdminLayout from "./components/AdminLayout";
@@ -63,10 +73,10 @@ import PetugasVerifikasiDetail from "./pages/petugas/verifikasi/PetugasVerifikas
 // ================= LKS =================
 
 // Klien
-import LKSKlienList from "./pages/lks/LKSKlienList";
-import LKSKlienForm from "./pages/lks/LKSKlienForm";
-import LKSKlienDetail from "./pages/lks/LKSKlienDetail";
-import LKSKlienEdit from "./pages/lks/LKSKlienEdit";
+import LKSKlienList from "./pages/lks/klien/LKSKlienList";
+import LKSKlienForm from "./pages/lks/klien/LKSKlienForm";
+import LKSKlienDetail from "./pages/lks/klien/LKSKLienDetail";
+import LKSKlienEdit from "./pages/lks/klien/LKSKlienEdit";
 
 // Profil
 import LKSProfileView from "./pages/lks/LKSProfileView";
@@ -82,6 +92,7 @@ import LKSVerifikasiForm from "./pages/lks/verifikasi/LKSVerifikasiForm"; // ✅
 import LaporanAdmin from "./pages/admin/laporan/LaporanAdmin";
 import LaporanOperator from "./pages/operator/Laporan/LaporanOperator";
 
+
 function App() {
   return (
     <BrowserRouter>
@@ -89,6 +100,9 @@ function App() {
         {/* ================= AUTH ================= */}
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        {/* 🚀 RESET PASSWORD */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         {/* ================= ADMIN ================= */}
         <Route
           path="/admin"
@@ -135,9 +149,7 @@ function App() {
           path="/admin/lks/tambah"
           element={
             <ProtectedRoute allowedRoles={["admin", "operator"]}>
-              
-                <LKSForm />
-              
+              <LKSForm />
             </ProtectedRoute>
           }
         />
@@ -145,9 +157,7 @@ function App() {
           path="/admin/lks/detail/:id"
           element={
             <ProtectedRoute allowedRoles={["admin", "operator", "lks"]}>
-      
-                <LKSDetail />
-            
+              <LKSDetail />
             </ProtectedRoute>
           }
         />
@@ -155,9 +165,7 @@ function App() {
           path="/admin/lks/edit/:id"
           element={
             <ProtectedRoute allowedRoles={["admin", "operator"]}>
-          
-                <LKSEditForm />
-            
+              <LKSEditForm />
             </ProtectedRoute>
           }
         />
@@ -233,6 +241,15 @@ function App() {
             </ProtectedRoute>
           }
         />
+        {/* =========Account Settings Admin */}
+        <Route
+          path="/admin/account"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AccountSettings />
+            </ProtectedRoute>
+          }
+        />
         {/* ================= OPERATOR ================= */}
         <Route
           path="/operator"
@@ -250,6 +267,15 @@ function App() {
               <OperatorLayout>
                 <ManajemenLKSOperator />
               </OperatorLayout>
+            </ProtectedRoute>
+          }
+        />
+        {/* Operator acount setting */}
+        <Route
+          path="/operator/account"
+          element={
+            <ProtectedRoute allowedRoles={["operator"]}>
+              <OperatorAccount />
             </ProtectedRoute>
           }
         />
@@ -357,6 +383,14 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/petugas/account"
+          element={
+            <ProtectedRoute allowedRoles={["petugas"]}>
+              <PetugasAccount />
+            </ProtectedRoute>
+          }
+        />
         {/* ================= LKS ================= */}
         <Route
           path="/lks"
@@ -380,6 +414,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["lks"]}>
               <LKSProfileEdit />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/lks/account"
+          element={
+            <ProtectedRoute allowedRoles={["lks"]}>
+              <LKSAccount />
             </ProtectedRoute>
           }
         />
@@ -469,7 +512,6 @@ function App() {
           }
         />
         {/* Laporan  */}
-
         {/* ADMIN */}
         <Route path="/admin/laporan" element={<LaporanAdmin />} />
         {/* OPERATOR */}
@@ -486,7 +528,6 @@ function App() {
         theme="colored"
       />
     </BrowserRouter>
-    
   );
 }
 

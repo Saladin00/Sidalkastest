@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-
 const AdminLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -325,6 +324,19 @@ const AdminLayout = ({ children }) => {
                     transition={{ duration: 0.25 }}
                     className="absolute right-0 mt-3 w-48 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50"
                   >
+                    {/* 🔹 Menu Pengaturan Akun */}
+                    <button
+                      onClick={() => {
+                        navigate("/admin/account");
+                        setDropdownOpen(false);
+                      }}
+                      className="flex items-center gap-2 w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-100 transition font-medium"
+                    >
+                      <UserCog size={18} className="text-slate-600" />
+                      Pengaturan Akun
+                    </button>
+
+                    {/* 🔹 Logout */}
                     <button
                       onClick={() => {
                         setShowLogoutConfirm(true);
