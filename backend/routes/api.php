@@ -19,8 +19,8 @@ use App\Http\Controllers\Verifikasi\LksVerifikasiController;
 // Laporan Controller
 use App\Http\Controllers\Laporan\AdminLaporanController;
 use App\Http\Controllers\Laporan\AdminLaporanExportController;
-use App\Http\Controllers\Laporan\OperatorLaporanController; 
-use App\Http\Controllers\Laporan\OperatorLaporanExportController; 
+use App\Http\Controllers\Laporan\OperatorLaporanController;
+use App\Http\Controllers\Laporan\OperatorLaporanExportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -103,18 +103,11 @@ Route::middleware(['auth:sanctum', 'role:operator'])
     ->prefix('operator/laporan')
     ->group(function () {
         Route::get('/', [OperatorLaporanController::class, 'laporan']);
-    });
-    
-    Route::middleware(['auth:sanctum','role:operator'])
-    ->prefix('operator/laporan')
-    ->group(function () {
-        Route::get('/', [OperatorLaporanController::class, 'laporan']);
 
         // Export
         Route::get('/export/pdf', [OperatorLaporanExportController::class, 'exportPdf']);
         Route::get('/export/excel', [OperatorLaporanExportController::class, 'exportExcel']);
     });
-
 
 
 

@@ -1,282 +1,404 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import api from "../../../utils/api";
-import { Loader2 } from "lucide-react";
 import {
-  PieChart,
-  Pie,
-  Tooltip,
-  Cell,
-  ResponsiveContainer,
+  Loader2,
+  FileDown,
+  FileSpreadsheet,
+  BarChart3,
+  Users,
+} from "lucide-react";
+import {
   BarChart,
   Bar,
   XAxis,
   YAxis,
+  Tooltip,
+  ResponsiveContainer,
   CartesianGrid,
+  Legend,
 } from "recharts";
+import { toast } from "react-toastify";
+import OperatorLayout from "../../../components/OperatorLayout";
+import useChartContainer from "../../../hooks/useChartContainer";
 
-export default function LaporanOperator() {
+export default function OperatorLaporan() {
   const [periode, setPeriode] = useState("bulan");
-  const [tahun, setTahun] = useState(new Date().getFullYear());
-  const [bulan, setBulan] = useState("");
+  const [tahun, setTahun] = useState(null);
+  const [bulan, setBulan] = useState(null);
+  const [tahunList, setTahunList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
 
   const bulanList = [
-    { value: 1, label: "Januari" },
-    { value: 2, label: "Februari" },
-    { value: 3, label: "Maret" },
-    { value: 4, label: "April" },
-    { value: 5, label: "Mei" },
-    { value: 6, label: "Juni" },
-    { value: 7, label: "Juli" },
-    { value: 8, label: "Agustus" },
-    { value: 9, label: "September" },
-    { value: 10, label: "Oktober" },
-    { value: 11, label: "November" },
-    { value: 12, label: "Desember" },
+    { label: "Januari", value: 1 },
+    { label: "Februari", value: 2 },
+    { label: "Maret", value: 3 },
+    { label: "April", value: 4 },
+    { label: "Mei", value: 5 },
+    { label: "Juni", value: 6 },
+    { label: "Juli", value: 7 },
+    { label: "Agustus", value: 8 },
+    { label: "September", value: 9 },
+    { label: "Oktober", value: 10 },
+    { label: "November", value: 11 },
+    { label: "Desember", value: 12 },
   ];
 
-  const loadLaporan = async () => {
+  // ==========================
+  // LOAD DATA
+  // ==========================
+  const loadLaporan = async (auto = false) => {
+    if (!tahun) {
+      if (!auto) toast.warning("Silakan pilih tahun terlebih dahulu.");
+      return;
+    }
     setLoading(true);
     try {
       const res = await api.get("/operator/laporan", {
         params: { periode, tahun, bulan },
       });
-      setData(res.data);
+
+      const d = res.data.data || {};
+      setData([
+        {
+          kecamatan: res.data.kecamatan || "Wilayah Anda",
+          lks_valid: d.lks_valid || 0,
+          lks_tidak_valid: d.lks_tidak_valid || 0,
+          lks_proses: d.lks_proses || 0,
+          klien_aktif: d.klien_aktif || 0,
+          klien_tidak_aktif: d.klien_tidak_aktif || 0,
+        },
+      ]);
+
+      setTahunList(res.data.tahun_list || []);
     } catch (err) {
-      alert("Gagal memuat laporan operator");
       console.error(err);
+      toast.error("Gagal memuat laporan operator.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const COLORS = ["#10b981", "#ef4444", "#3b82f6"];
+  // ==========================
+  // EXPORT PDF / EXCEL
+  // ==========================
+  const exportAll = async (type) => {
+    const endpoint =
+      type === "pdf"
+        ? "/operator/laporan/export/pdf"
+        : "/operator/laporan/export/excel";
+    try {
+      const res = await api.get(endpoint, {
+        params: { periode, tahun, bulan },
+        responseType: "blob",
+      });
 
+      const blob = new Blob([res.data], {
+        type:
+          type === "pdf"
+            ? "application/pdf"
+            : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        type === "pdf"
+          ? "laporan-operator.pdf"
+          : "laporan-operator.xlsx"
+      );
+      document.body.appendChild(link);
+      link.click();
+      toast.success(`Laporan ${type.toUpperCase()} berhasil diunduh.`);
+    } catch (err) {
+      console.error(err);
+      toast.error(`Gagal mengekspor laporan ${type.toUpperCase()}.`);
+    }
+  };
+
+  // ==========================
+  // INIT – load data bulan sekarang
+  // ==========================
+  useEffect(() => {
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+
+  setBulan(currentMonth);
+  setTahun(currentYear);
+}, []);
+
+    // Jalankan loadLaporan otomatis setelah bulan & tahun di-set
+useEffect(() => {
+  if (tahun && bulan) {
+    // auto load tanpa warning deps
+    loadLaporan(true);
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [tahun, bulan]);
+
+  const { ref, ready } = useChartContainer();
+
+  // ==========================
+  // CHART WRAPPER
+  // ==========================
+  const ChartWrapper = ({ children, title }) => (
+    <div className="relative rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-500 border border-slate-200 bg-gradient-to-br from-white via-sky-50 to-blue-50 overflow-hidden mb-8">
+      <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-sky-500 via-blue-400 to-cyan-400 rounded-t-2xl opacity-80" />
+      <h3 className="text-lg font-semibold text-slate-800 mb-4">{title}</h3>
+
+      <div
+        ref={ref}
+        className="relative w-full h-[400px] bg-white rounded-xl border border-slate-100 shadow-inner"
+      >
+        {data && ready ? (
+          <ResponsiveContainer width="100%" height="100%">
+            {children}
+          </ResponsiveContainer>
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-slate-400 italic">
+            {data ? "Menyiapkan grafik..." : "Belum ada data"}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // ==========================
+  // RETURN (UI)
+  // ==========================
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-semibold text-emerald-700 mb-6">
-        Laporan Kecamatan (Operator)
-      </h1>
+    <OperatorLayout>
+      <div className="p-8 bg-gray-50 min-h-screen">
+        <h1 className="text-3xl font-semibold text-slate-800 mb-8 tracking-tight">
+          Laporan Wilayah Operator
+        </h1>
 
-      {/* FILTER */}
-      <div className="bg-white p-5 rounded-lg shadow mb-6">
-        <div className="grid md:grid-cols-4 gap-4">
-          <div>
-            <label className="text-sm font-medium">Periode</label>
-            <select
-              className="w-full border rounded px-3 py-2"
-              value={periode}
-              onChange={(e) => setPeriode(e.target.value)}
-            >
-              <option value="bulan">Bulanan</option>
-              <option value="triwulan">Triwulan</option>
-              <option value="tahun">Tahunan</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Tahun</label>
-            <input
-              type="number"
-              className="w-full border rounded px-3 py-2"
-              value={tahun}
-              onChange={(e) => setTahun(e.target.value)}
-            />
-          </div>
-
-          {periode !== "tahun" && (
+        {/* FILTER */}
+        <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6 mb-8">
+          <div className="grid md:grid-cols-4 gap-4">
+            {/* Periode */}
             <div>
-              <label className="text-sm font-medium">
-                {periode === "bulan" ? "Bulan" : "Triwulan (1–4)"}
-              </label>
-
+              <label className="text-sm font-medium text-slate-700">Periode</label>
               <select
-                className="border px-3 py-2 rounded-md w-full"
-                value={bulan}
-                onChange={(e) => setBulan(e.target.value)}
+                className="w-full border rounded-lg px-3 py-2 text-sm"
+                value={periode}
+                onChange={(e) => {
+                  setPeriode(e.target.value);
+                  setBulan(null);
+                }}
               >
-                <option value="">
-                  {periode === "bulan" ? "Pilih Bulan" : "Pilih Triwulan"}
-                </option>
-
-                {periode === "bulan"
-                  ? bulanList.map((b) => (
-                      <option key={b.value} value={b.value}>
-                        {b.label}
-                      </option>
-                    ))
-                  : [1, 2, 3, 4].map((tw) => (
-                      <option key={tw} value={tw}>
-                        Triwulan {tw}
-                      </option>
-                    ))}
+                <option value="bulan">Bulanan</option>
+                <option value="triwulan">Triwulan</option>
+                <option value="tahun">Tahunan</option>
               </select>
             </div>
-          )}
 
-          <div className="flex items-end gap-2">
-            <button
-              onClick={loadLaporan}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded flex items-center justify-center"
-            >
-              {loading ? <Loader2 className="animate-spin" /> : "Tampilkan"}
-            </button>
+            {/* Tahun */}
+            <div>
+              <label className="text-sm font-medium text-slate-700">Tahun</label>
+              <select
+                className="w-full border rounded-lg px-3 py-2 text-sm"
+                value={tahun || ""}
+                onChange={(e) => setTahun(Number(e.target.value))}
+              >
+                <option value="">Pilih Tahun</option>
+                {tahunList.length > 0 ? (
+                  tahunList.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))
+                ) : (
+                  <option value={new Date().getFullYear()}>
+                    {new Date().getFullYear()}
+                  </option>
+                )}
+              </select>
+            </div>
 
-            {/* PDF */}
-            <button
-              onClick={() =>
-                api
-                  .get("/operator/laporan/export/pdf", {
-                    params: { periode, tahun, bulan },
-                    responseType: "blob",
-                  })
-                  .then((res) => {
-                    const url = window.URL.createObjectURL(
-                      new Blob([res.data])
-                    );
-                    const link = document.createElement("a");
-                    link.href = url;
-                    link.setAttribute("download", "laporan-operator.pdf");
-                    document.body.appendChild(link);
-                    link.click();
-                  })
-              }
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
-            >
-              PDF
-            </button>
+            {/* Bulan / Triwulan */}
+            {periode !== "tahun" && (
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  {periode === "bulan" ? "Bulan" : "Triwulan"}
+                </label>
+                <select
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  value={bulan || ""}
+                  onChange={(e) => setBulan(Number(e.target.value))}
+                >
+                  {periode === "bulan"
+                    ? bulanList.map((b) => (
+                        <option key={b.value} value={b.value}>
+                          {b.label}
+                        </option>
+                      ))
+                    : [1, 2, 3, 4].map((tw) => (
+                        <option key={tw} value={tw}>
+                          Triwulan {tw}
+                        </option>
+                      ))}
+                </select>
+              </div>
+            )}
 
-            {/* EXCEL */}
-            <button
-              onClick={() =>
-                api
-                  .get("/operator/laporan/export/excel", {
-                    params: { periode, tahun, bulan },
-                    responseType: "blob",
-                  })
-                  .then((res) => {
-                    const url = window.URL.createObjectURL(
-                      new Blob([res.data])
-                    );
-                    const link = document.createElement("a");
-                    link.href = url;
-                    link.setAttribute("download", "laporan-operator.xlsx");
-                    document.body.appendChild(link);
-                    link.click();
-                  })
-              }
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-            >
-              Excel
-            </button>
+            {/* Tombol */}
+            <div className="flex items-end">
+              <button
+                onClick={() => loadLaporan()}
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-sky-600 to-blue-500 hover:from-sky-700 hover:to-blue-600 text-white rounded-lg px-4 py-2 flex items-center justify-center transition"
+              >
+                {loading ? <Loader2 className="animate-spin" size={18} /> : "Tampilkan"}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* DATA */}
-      {data && (
-        <div className="bg-white p-6 rounded-lg shadow space-y-10">
-          {/* ============================
-              BAGIAN LKS
-          ============================= */}
-          <h2 className="text-xl font-semibold text-slate-700">
-            Rekap Status LKS
-          </h2>
+        {/* ====== TABEL ====== */}
+        {data && (
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 mb-10">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-slate-800 flex items-center gap-2">
+                <Users size={20} /> Ringkasan Data Wilayah
+              </h2>
 
-          <table className="w-full text-sm border mb-6">
-            <tbody>
-              <tr>
-                <td className="border px-3 py-2">LKS Valid</td>
-                <td className="border px-3 py-2 text-right">
-                  {data.data.lks_valid}
-                </td>
-              </tr>
-              <tr>
-                <td className="border px-3 py-2">LKS Tidak Valid</td>
-                <td className="border px-3 py-2 text-right">
-                  {data.data.lks_tidak_valid}
-                </td>
-              </tr>
-              <tr>
-                <td className="border px-3 py-2">LKS Proses Verifikasi</td>
-                <td className="border px-3 py-2 text-right">
-                  {data.data.lks_proses}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => exportAll("pdf")}
+                  className="bg-gradient-to-r from-rose-600 via-pink-500 to-amber-400 hover:brightness-110 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 shadow-md transition-all duration-300"
+                >
+                  <FileDown size={16} /> PDF
+                </button>
+                <button
+                  onClick={() => exportAll("excel")}
+                  className="bg-gradient-to-r from-emerald-600 via-teal-500 to-green-400 hover:brightness-110 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 shadow-md transition-all duration-300"
+                >
+                  <FileSpreadsheet size={16} /> Excel
+                </button>
+              </div>
+            </div>
 
-          {/* Chart LKS */}
-          <h3 className="text-lg font-semibold text-slate-700 mb-3">
-            Grafik Status LKS
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={[
-                  { name: "Valid", value: data.data.lks_valid },
-                  { name: "Tidak Valid", value: data.data.lks_tidak_valid },
-                  { name: "Proses", value: data.data.lks_proses },
-                ]}
-                dataKey="value"
-                outerRadius={110}
-                label
-              >
-                {COLORS.map((color, idx) => (
-                  <Cell key={idx} fill={color} />
+            <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+              <thead className="bg-gradient-to-r from-blue-100 via-sky-100 to-cyan-100 text-slate-700">
+                <tr>
+                  <th className="border px-3 py-2">Kecamatan</th>
+                  <th className="border px-3 py-2">LKS Valid</th>
+                  <th className="border px-3 py-2">LKS Tidak Valid</th>
+                  <th className="border px-3 py-2">LKS Proses</th>
+                  <th className="border px-3 py-2">Klien Aktif</th>
+                  <th className="border px-3 py-2">Klien Tidak Aktif</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((r, i) => (
+                  <tr key={i} className="hover:bg-blue-50 transition-all duration-200">
+                    <td className="border px-3 py-2 font-medium text-slate-800">
+                      {r.kecamatan}
+                    </td>
+                    <td className="border px-3 py-2 text-center text-sky-700 font-semibold">
+                      {r.lks_valid}
+                    </td>
+                    <td className="border px-3 py-2 text-center text-pink-600 font-semibold">
+                      {r.lks_tidak_valid}
+                    </td>
+                    <td className="border px-3 py-2 text-center text-emerald-600 font-semibold">
+                      {r.lks_proses}
+                    </td>
+                    <td className="border px-3 py-2 text-center text-cyan-700 font-semibold">
+                      {r.klien_aktif}
+                    </td>
+                    <td className="border px-3 py-2 text-center text-amber-600 font-semibold">
+                      {r.klien_tidak_aktif}
+                    </td>
+                  </tr>
                 ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+              </tbody>
+            </table>
+          </div>
+        )}
 
-          {/* ============================
-              BAGIAN KLIEN
-          ============================= */}
-          <h2 className="text-xl font-semibold text-slate-700 mt-10">
-            Rekap Status Klien
+        {/* ====== GRAFIK ====== */}
+        <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-xl border border-slate-200 p-8">
+          <h2 className="text-xl font-semibold text-slate-800 flex items-center gap-2 mb-6">
+            <BarChart3 size={20} /> Grafik Wilayah {data?.[0]?.kecamatan}
           </h2>
 
-          <table className="w-full text-sm border">
-            <tbody>
-              <tr>
-                <td className="border px-3 py-2">Klien Aktif</td>
-                <td className="border px-3 py-2 text-right">
-                  {data.data.klien_aktif}
-                </td>
-              </tr>
-              <tr>
-                <td className="border px-3 py-2">Klien Tidak Aktif</td>
-                <td className="border px-3 py-2 text-right">
-                  {data.data.klien_tidak_aktif}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          {/* GRAFIK LKS */}
+          <ChartWrapper title="Grafik LKS">
+            <BarChart data={data || []}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="kecamatan" tick={{ fontSize: 12, fill: "#475569" }} />
+              <YAxis tick={{ fill: "#475569" }} />
+              <Tooltip
+                contentStyle={{
+                  background: "rgba(255,255,255,0.9)",
+                  backdropFilter: "blur(6px)",
+                  borderRadius: "12px",
+                  border: "1px solid #e2e8f0",
+                  boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
+                }}
+              />
+              <Legend wrapperStyle={{ color: "#334155" }} />
 
-          {/* Chart Klien */}
-          <h3 className="text-lg font-semibold text-slate-700 mb-3 mt-5">
-            Grafik Status Klien
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={[
-                  { name: "Aktif", value: data.data.klien_aktif },
-                  { name: "Tidak Aktif", value: data.data.klien_tidak_aktif },
-                ]}
-                dataKey="value"
-                outerRadius={110}
-                label
-              >
-                <Cell fill="#10b981" />
-                <Cell fill="#9ca3af" />
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+              <defs>
+                <linearGradient id="gradValid" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" />
+                  <stop offset="100%" stopColor="#93c5fd" />
+                </linearGradient>
+                <linearGradient id="gradInvalid" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#f472b6" />
+                  <stop offset="100%" stopColor="#f9a8d4" />
+                </linearGradient>
+                <linearGradient id="gradProses" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10b981" />
+                  <stop offset="100%" stopColor="#6ee7b7" />
+                </linearGradient>
+              </defs>
+
+              <Bar dataKey="lks_valid" name="Valid" fill="url(#gradValid)" radius={[10, 10, 0, 0]} />
+              <Bar dataKey="lks_tidak_valid" name="Tidak Valid" fill="url(#gradInvalid)" radius={[10, 10, 0, 0]} />
+              <Bar dataKey="lks_proses" name="Proses" fill="url(#gradProses)" radius={[10, 10, 0, 0]} />
+            </BarChart>
+          </ChartWrapper>
+
+          {/* GRAFIK KLIEN */}
+          <ChartWrapper title="Grafik Klien">
+            <BarChart data={data || []}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="kecamatan" tick={{ fontSize: 12, fill: "#475569" }} />
+              <YAxis tick={{ fill: "#475569" }} />
+              <Tooltip
+                contentStyle={{
+                  background: "rgba(255,255,255,0.9)",
+                  backdropFilter: "blur(6px)",
+                  borderRadius: "12px",
+                  border: "1px solid #e2e8f0",
+                  boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
+                }}
+              />
+              <Legend wrapperStyle={{ color: "#334155" }} />
+
+              <defs>
+                <linearGradient id="gradAktif" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#06b6d4" />
+                  <stop offset="100%" stopColor="#67e8f9" />
+                </linearGradient>
+                <linearGradient id="gradTidakAktif" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#f59e0b" />
+                  <stop offset="100%" stopColor="#fde68a" />
+                </linearGradient>
+              </defs>
+
+              <Bar dataKey="klien_aktif" name="Aktif" fill="url(#gradAktif)" radius={[10, 10, 0, 0]} />
+              <Bar dataKey="klien_tidak_aktif" name="Tidak Aktif" fill="url(#gradTidakAktif)" radius={[10, 10, 0, 0]} />
+            </BarChart>
+          </ChartWrapper>
         </div>
-      )}
-    </div>
+      </div>
+    </OperatorLayout>
   );
 }

@@ -17,7 +17,6 @@ class AdminLaporanExportController extends Controller
             ->laporan($request)
             ->getData(true);
 
-        // Jika request gagal → hentikan
         if (!isset($response['success']) || $response['success'] !== true) {
             return [
                 'success' => false,
@@ -33,24 +32,25 @@ class AdminLaporanExportController extends Controller
         ];
     }
 
-   public function exportPDF(Request $request)
-{
-    $laporan = $this->getLaporanData($request);
+    public function exportPDF(Request $request)
+    {
+        $laporan = $this->getLaporanData($request);
 
-    if (!$laporan['success']) {
-        return response()->json([
-            'success' => false,
-            'message' => $laporan['message']
-        ], 422);
+        if (!$laporan['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $laporan['message']
+            ], 422);
+        }
+
+        $periode = ucfirst($laporan['periode'] ?? 'Bulan');
+        $start = $laporan['range']['start'] ?? date('Y-m-d');
+        $end   = $laporan['range']['end'] ?? date('Y-m-d');
+        $filename = "Laporan_{$periode}_{$start}_sd_{$end}.pdf";
+
+        $pdf = Pdf::loadView('pdf.laporan_admin_pdf', $laporan);
+        return $pdf->download($filename);
     }
-
-    // Panggil view yang benar (folder pdf)
-    $pdf = Pdf::loadView('pdf.laporan_admin_pdf', $laporan);
-
-    return $pdf->download('laporan-admin.pdf');
-}
-
-
 
     public function exportExcel(Request $request)
     {
@@ -63,10 +63,17 @@ class AdminLaporanExportController extends Controller
             ], 422);
         }
 
-        // Hanya data tabel yang dikirim ke Excel
-        return Excel::download(
-            new AdminLaporanExport($laporan['data']),
-            'laporan-admin.xlsx'
-        );
+        $periode = ucfirst($laporan['periode'] ?? 'Bulan');
+        $start = $laporan['range']['start'] ?? date('Y-m-d');
+        $end   = $laporan['range']['end'] ?? date('Y-m-d');
+        $filename = "Laporan_{$periode}_{$start}_sd_{$end}.xlsx";
+
+        $exportData = [
+            'data' => $laporan['data'],
+            'periode' => $laporan['periode'],
+            'range' => $laporan['range'],
+        ];
+
+        return Excel::download(new AdminLaporanExport($exportData), $filename);
     }
 }
