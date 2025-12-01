@@ -9,6 +9,7 @@ export default function LKSAccount() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({});
   const [form, setForm] = useState({ name: "", email: "", username: "" });
+
   const [passwordForm, setPasswordForm] = useState({
     current_password: "",
     new_password: "",
@@ -30,11 +31,13 @@ export default function LKSAccount() {
     try {
       const res = await API.get("/account");
       const kecRes = await API.get("/kecamatan");
-      const u = res.data.user;
 
+      const u = res.data.user;
       const kecList =
         kecRes.data.kecamatan || kecRes.data.data || kecRes.data || [];
-      const kecName = kecList.find((k) => k.id === u.kecamatan_id)?.nama || "-";
+
+      const kecName =
+        kecList.find((k) => k.id === u.kecamatan_id)?.nama || "-";
 
       setProfile({
         username: u.username,
@@ -77,7 +80,9 @@ export default function LKSAccount() {
       "Ya, Simpan",
       async () => {
         try {
-          await API.post("/account/update-email", { email: form.email });
+          await API.post("/account/update-email", {
+            email: form.email,
+          });
           toast.success("Profil berhasil diperbarui", toastOptions);
           loadProfile();
         } catch {
@@ -124,7 +129,8 @@ export default function LKSAccount() {
           });
         } catch (err) {
           toast.error(
-            err.response?.data?.message || "Gagal memperbarui password",
+            err.response?.data?.message ||
+              "Gagal memperbarui password",
             toastOptions
           );
         }
@@ -150,9 +156,8 @@ export default function LKSAccount() {
           Pengaturan Akun LKS
         </h2>
 
-        {/* Informasi Akun & Edit Profil */}
+        {/* Informasi Akun */}
         <div className="grid md:grid-cols-2 gap-6 mb-10">
-          {/* Informasi Akun */}
           <div className="bg-sky-50 border border-sky-100 rounded-xl p-6 shadow-sm">
             <h3 className="font-semibold text-sky-700 mb-5 text-lg">
               Informasi Akun
@@ -167,43 +172,59 @@ export default function LKSAccount() {
 
           {/* Edit Profil */}
           <div className="bg-sky-50 border border-sky-100 rounded-xl p-6 shadow-sm">
-            <h3 className="font-semibold text-sky-700 mb-4 text-lg">Edit Profil</h3>
+            <h3 className="font-semibold text-sky-700 mb-4 text-lg">
+              Edit Profil
+            </h3>
             <form onSubmit={updateProfile} className="space-y-4">
               <InputWithIcon
                 icon={<User size={16} />}
                 label="Nama"
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, name: e.target.value })
+                }
               />
               <InputWithIcon
                 icon={<Mail size={16} />}
                 label="Email"
                 type="email"
                 value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, email: e.target.value })
+                }
               />
-              <button className="btn-primary w-full">Simpan Perubahan</button>
+              <button className="btn-primary w-full">
+                Simpan Perubahan
+              </button>
             </form>
           </div>
         </div>
 
         {/* Edit Username */}
         <div className="bg-sky-50 border border-sky-100 p-6 rounded-xl shadow-sm mb-10">
-          <h3 className="font-semibold text-sky-700 mb-4 text-lg">Edit Username</h3>
+          <h3 className="font-semibold text-sky-700 mb-4 text-lg">
+            Edit Username
+          </h3>
           <form onSubmit={updateUsername} className="space-y-4">
             <InputWithIcon
               icon={<User size={16} />}
               label="Username"
               value={form.username}
-              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, username: e.target.value })
+              }
             />
-            <button className="btn-primary w-full">Update Username</button>
+            <button className="btn-primary w-full">
+              Update Username
+            </button>
           </form>
         </div>
 
         {/* Ganti Password */}
         <div className="bg-sky-50 border border-sky-100 p-6 rounded-xl shadow-sm">
-          <h3 className="font-semibold text-sky-700 mb-4 text-lg">Ganti Password</h3>
+          <h3 className="font-semibold text-sky-700 mb-4 text-lg">
+            Ganti Password
+          </h3>
           <form onSubmit={updatePassword} className="space-y-4">
             <InputWithIcon
               icon={<KeyRound size={16} />}
@@ -217,6 +238,7 @@ export default function LKSAccount() {
                 })
               }
             />
+
             <InputWithIcon
               icon={<KeyRound size={16} />}
               label="Password Baru"
@@ -229,6 +251,7 @@ export default function LKSAccount() {
                 })
               }
             />
+
             <InputWithIcon
               icon={<KeyRound size={16} />}
               label="Konfirmasi Password Baru"
@@ -237,11 +260,15 @@ export default function LKSAccount() {
               onChange={(e) =>
                 setPasswordForm({
                   ...passwordForm,
-                  new_password_confirmation: e.target.value,
+                  new_password_confirmation:
+                    e.target.value,
                 })
               }
             />
-            <button className="btn-primary w-full">Update Password</button>
+
+            <button className="btn-primary w-full">
+              Update Password
+            </button>
           </form>
         </div>
       </div>
@@ -249,7 +276,6 @@ export default function LKSAccount() {
   );
 }
 
-// Komponen baris info rapi
 function InfoRow({ label, value }) {
   return (
     <div className="grid grid-cols-3 text-sm">
@@ -259,7 +285,6 @@ function InfoRow({ label, value }) {
   );
 }
 
-// Komponen input dengan ikon
 function InputWithIcon({ icon, label, type = "text", ...props }) {
   return (
     <div>

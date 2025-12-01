@@ -50,6 +50,7 @@ export default function LaporanAdmin() {
   // =========================================
   const loadLaporan = async () => {
     if (!tahun) return toast.warning("Silakan pilih tahun terlebih dahulu.");
+
     setLoading(true);
 
     let params = { periode, tahun };
@@ -100,6 +101,7 @@ export default function LaporanAdmin() {
       );
       document.body.appendChild(link);
       link.click();
+
       toast.success(`Laporan ${type.toUpperCase()} berhasil diunduh.`);
     } catch (err) {
       console.error(err);
@@ -108,7 +110,7 @@ export default function LaporanAdmin() {
   };
 
   // =========================================
-  // INISIALISASI OTOMATIS (bulan & tahun sekarang)
+  // SET DEFAULT BULAN DAN TAHUN
   // =========================================
   useEffect(() => {
     const now = new Date();
@@ -120,18 +122,22 @@ export default function LaporanAdmin() {
     if (bulan && tahun) loadLaporan();
   }, [bulan, tahun]);
 
+  // =========================================
+  // FILTER DATA
+  // =========================================
   const filteredData = kecamatan
     ? data.filter((d) => d.kecamatan === kecamatan)
     : data;
 
   // =========================================
-  // WRAPPER GRAFIK
+  // CHART WRAPPER
   // =========================================
   const { ref, ready } = useChartContainer();
   const ChartWrapper = ({ children, dataAvailable, title }) => (
     <div className="relative rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-500 border border-slate-200 bg-gradient-to-br from-white via-sky-50 to-blue-50 overflow-hidden mb-8">
       <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-sky-500 via-blue-400 to-cyan-400 rounded-t-2xl opacity-80" />
       <h3 className="text-lg font-semibold text-slate-800 mb-4">{title}</h3>
+
       <div
         ref={ref}
         className="relative bg-white rounded-xl border border-slate-100 shadow-inner"
@@ -197,12 +203,13 @@ export default function LaporanAdmin() {
               </select>
             </div>
 
-            {/* Bulan/Triwulan */}
+            {/* Bulan / Triwulan */}
             {periode !== "tahun" && (
               <div>
                 <label className="text-sm font-medium text-slate-700">
                   {periode === "bulan" ? "Bulan" : "Triwulan"}
                 </label>
+
                 <select
                   className="w-full border rounded-lg px-3 py-2 text-sm"
                   value={bulan || ""}
@@ -211,6 +218,7 @@ export default function LaporanAdmin() {
                   <option value="">
                     {periode === "bulan" ? "Pilih Bulan" : "Pilih Triwulan"}
                   </option>
+
                   {periode === "bulan"
                     ? bulanList.map((b) => (
                         <option key={b.value} value={b.value}>
@@ -244,7 +252,7 @@ export default function LaporanAdmin() {
             </div>
 
             {/* Tombol */}
-            <div className="flex items-end gap-2">
+            <div className="flex items-end">
               <button
                 onClick={loadLaporan}
                 disabled={loading}
@@ -262,16 +270,18 @@ export default function LaporanAdmin() {
             <h2 className="text-xl font-semibold text-slate-800 flex items-center gap-2">
               <BarChart3 size={20} /> Rekapitulasi LKS per Kecamatan
             </h2>
+
             <div className="flex gap-2">
               <button
                 onClick={() => exportAll("pdf")}
-                className="bg-gradient-to-r from-red-600 to-red-500 hover:to-red-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 shadow-md transition-all duration-300"
+                className="bg-gradient-to-r from-red-600 to-red-500 hover:to-red-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 shadow-md"
               >
                 <FileDown size={16} /> PDF
               </button>
+
               <button
                 onClick={() => exportAll("excel")}
-                className="bg-gradient-to-r from-emerald-600 to-green-500 hover:to-emerald-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 shadow-md transition-all duration-300"
+                className="bg-gradient-to-r from-emerald-600 to-green-500 hover:to-emerald-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 shadow-md"
               >
                 <FileSpreadsheet size={16} /> Excel
               </button>
@@ -289,23 +299,31 @@ export default function LaporanAdmin() {
                   <th className="border px-3 py-2">LKS Proses</th>
                 </tr>
               </thead>
+
               <tbody>
                 {filteredData.length > 0 ? (
                   filteredData.map((r, i) => (
                     <tr
                       key={i}
-                      className={`${i % 2 === 0 ? "bg-white" : "bg-slate-50"} hover:bg-blue-50`}
+                      className={`${
+                        i % 2 === 0 ? "bg-white" : "bg-slate-50"
+                      } hover:bg-blue-50`}
                     >
                       <td className="border px-3 py-2 text-center">{i + 1}</td>
                       <td className="border px-3 py-2">{r.kecamatan}</td>
                       <td className="border px-3 py-2 text-center">{r.lks_valid}</td>
-                      <td className="border px-3 py-2 text-center">{r.lks_tidak_valid}</td>
+                      <td className="border px-3 py-2 text-center">
+                        {r.lks_tidak_valid}
+                      </td>
                       <td className="border px-3 py-2 text-center">{r.lks_proses}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="text-center py-4 text-slate-400 italic">
+                    <td
+                      colSpan={5}
+                      className="text-center py-4 text-slate-400 italic"
+                    >
                       Belum ada data
                     </td>
                   </tr>
@@ -321,6 +339,7 @@ export default function LaporanAdmin() {
             <BarChart3 size={20} /> Grafik Gabungan LKS & Klien
           </h2>
 
+          {/* Grafik LKS */}
           <ChartWrapper
             dataAvailable={filteredData.length > 0}
             title="Grafik LKS per Kecamatan"
@@ -332,11 +351,17 @@ export default function LaporanAdmin() {
               <Tooltip />
               <Legend />
               <Bar dataKey="lks_valid" name="Valid" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-              <Bar dataKey="lks_tidak_valid" name="Tidak Valid" fill="#ef4444" radius={[8, 8, 0, 0]} />
+              <Bar
+                dataKey="lks_tidak_valid"
+                name="Tidak Valid"
+                fill="#ef4444"
+                radius={[8, 8, 0, 0]}
+              />
               <Bar dataKey="lks_proses" name="Proses" fill="#10b981" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ChartWrapper>
 
+          {/* Grafik Klien */}
           <ChartWrapper
             dataAvailable={filteredData.length > 0}
             title="Grafik Klien per Kecamatan"
@@ -347,8 +372,18 @@ export default function LaporanAdmin() {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="klien_aktif" name="Aktif" fill="#06b6d4" radius={[8, 8, 0, 0]} />
-              <Bar dataKey="klien_tidak_aktif" name="Tidak Aktif" fill="#f59e0b" radius={[8, 8, 0, 0]} />
+              <Bar
+                dataKey="klien_aktif"
+                name="Aktif"
+                fill="#06b6d4"
+                radius={[8, 8, 0, 0]}
+              />
+              <Bar
+                dataKey="klien_tidak_aktif"
+                name="Tidak Aktif"
+                fill="#f59e0b"
+                radius={[8, 8, 0, 0]}
+              />
             </BarChart>
           </ChartWrapper>
         </div>

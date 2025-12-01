@@ -61,6 +61,7 @@ export default function AdminAccount() {
       confirmButtonText: confirmText,
       cancelButtonText: "Batal",
     });
+
     if (result.isConfirmed) await actionFn();
   };
 
@@ -90,9 +91,7 @@ export default function AdminAccount() {
       "Ya, Ubah",
       async () => {
         try {
-          await API.post("/account/update-username", {
-            username: form.username,
-          });
+          await API.post("/account/update-username", { username: form.username });
           toast.success("Username berhasil diperbarui", toastOptions);
           loadProfile();
         } catch {
@@ -112,6 +111,7 @@ export default function AdminAccount() {
         try {
           await API.post("/account/update-password", passwordForm);
           toast.success("Password berhasil diperbarui", toastOptions);
+
           setPasswordForm({
             current_password: "",
             new_password: "",
@@ -147,7 +147,6 @@ export default function AdminAccount() {
 
         {/* Informasi Akun & Edit Profil */}
         <div className="grid md:grid-cols-2 gap-6 mb-10">
-          {/* Informasi Akun */}
           <div className="bg-sky-50 border border-sky-100 rounded-xl p-6 shadow-sm">
             <h3 className="font-semibold text-sky-700 mb-5 text-lg">
               Informasi Akun
@@ -160,7 +159,6 @@ export default function AdminAccount() {
             </div>
           </div>
 
-          {/* Edit Profil */}
           <div className="bg-sky-50 border border-sky-100 rounded-xl p-6 shadow-sm">
             <h3 className="font-semibold text-sky-700 mb-4 text-lg">Edit Profil</h3>
             <form onSubmit={updateProfile} className="space-y-4">
@@ -170,6 +168,7 @@ export default function AdminAccount() {
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
+
               <InputWithIcon
                 icon={<Mail size={16} />}
                 label="Email"
@@ -177,6 +176,7 @@ export default function AdminAccount() {
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
+
               <button className="btn-primary w-full">Simpan Perubahan</button>
             </form>
           </div>
@@ -185,6 +185,7 @@ export default function AdminAccount() {
         {/* Edit Username */}
         <div className="bg-sky-50 border border-sky-100 p-6 rounded-xl shadow-sm mb-10">
           <h3 className="font-semibold text-sky-700 mb-4 text-lg">Edit Username</h3>
+
           <form onSubmit={updateUsername} className="space-y-4">
             <InputWithIcon
               icon={<User size={16} />}
@@ -199,6 +200,7 @@ export default function AdminAccount() {
         {/* Ganti Password */}
         <div className="bg-sky-50 border border-sky-100 p-6 rounded-xl shadow-sm">
           <h3 className="font-semibold text-sky-700 mb-4 text-lg">Ganti Password</h3>
+
           <form onSubmit={updatePassword} className="space-y-4">
             <InputWithIcon
               icon={<KeyRound size={16} />}
@@ -206,24 +208,20 @@ export default function AdminAccount() {
               type="password"
               value={passwordForm.current_password}
               onChange={(e) =>
-                setPasswordForm({
-                  ...passwordForm,
-                  current_password: e.target.value,
-                })
+                setPasswordForm({ ...passwordForm, current_password: e.target.value })
               }
             />
+
             <InputWithIcon
               icon={<KeyRound size={16} />}
               label="Password Baru"
               type="password"
               value={passwordForm.new_password}
               onChange={(e) =>
-                setPasswordForm({
-                  ...passwordForm,
-                  new_password: e.target.value,
-                })
+                setPasswordForm({ ...passwordForm, new_password: e.target.value })
               }
             />
+
             <InputWithIcon
               icon={<KeyRound size={16} />}
               label="Konfirmasi Password Baru"
@@ -236,6 +234,7 @@ export default function AdminAccount() {
                 })
               }
             />
+
             <button className="btn-primary w-full">Update Password</button>
           </form>
         </div>
@@ -244,7 +243,6 @@ export default function AdminAccount() {
   );
 }
 
-// Komponen info baris rapi
 function InfoRow({ label, value }) {
   return (
     <div className="grid grid-cols-3 text-sm">
@@ -254,7 +252,6 @@ function InfoRow({ label, value }) {
   );
 }
 
-// Komponen input seragam dengan ikon
 function InputWithIcon({ icon, label, type = "text", ...props }) {
   return (
     <div>

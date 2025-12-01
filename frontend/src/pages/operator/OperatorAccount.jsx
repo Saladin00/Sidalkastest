@@ -9,6 +9,7 @@ export default function OperatorAccount() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({});
   const [form, setForm] = useState({ name: "", email: "", username: "" });
+
   const [passwordForm, setPasswordForm] = useState({
     current_password: "",
     new_password: "",
@@ -18,10 +19,8 @@ export default function OperatorAccount() {
   const toastOptions = {
     position: "top-right",
     autoClose: 2500,
-    hideProgressBar: false,
-    pauseOnHover: true,
     theme: "colored",
-    icon: false, // 🔹 nonaktifkan emoji bawaan
+    icon: false,
   };
 
   useEffect(() => {
@@ -32,6 +31,7 @@ export default function OperatorAccount() {
     try {
       const res = await API.get("/account");
       const kecListRes = await API.get("/kecamatan");
+
       const list =
         kecListRes.data?.kecamatan ||
         kecListRes.data?.data ||
@@ -98,11 +98,13 @@ export default function OperatorAccount() {
     e.preventDefault();
     confirmAction(
       "Perbarui Username?",
-      "Pastikan username tidak sama dengan sebelumnya.",
+      "Pastikan username tidak sama.",
       "Ya, Update",
       async () => {
         try {
-          await API.post("/account/update-username", { username: form.username });
+          await API.post("/account/update-username", {
+            username: form.username,
+          });
           toast.success("Username berhasil diperbarui", toastOptions);
           loadProfile();
         } catch {
@@ -116,7 +118,7 @@ export default function OperatorAccount() {
     e.preventDefault();
     confirmAction(
       "Ganti Password?",
-      "Pastikan Anda mengingat password baru Anda.",
+      "Pastikan Anda mengingat password baru.",
       "Ya, Ganti",
       async () => {
         try {
@@ -187,6 +189,7 @@ export default function OperatorAccount() {
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
+
               <button className="btn-primary w-full">Simpan Perubahan</button>
             </form>
           </div>
@@ -221,6 +224,7 @@ export default function OperatorAccount() {
                 })
               }
             />
+
             <InputWithIcon
               icon={<KeyRound size={16} />}
               label="Password Baru"
@@ -233,6 +237,7 @@ export default function OperatorAccount() {
                 })
               }
             />
+
             <InputWithIcon
               icon={<KeyRound size={16} />}
               label="Konfirmasi Password Baru"
@@ -245,6 +250,7 @@ export default function OperatorAccount() {
                 })
               }
             />
+
             <button className="btn-primary w-full">Update Password</button>
           </form>
         </div>
@@ -253,7 +259,7 @@ export default function OperatorAccount() {
   );
 }
 
-// 🔹 Komponen info baris rapi (label sejajar)
+// 🔹 Row info rapi
 function InfoRow({ label, value }) {
   return (
     <div className="grid grid-cols-3 text-sm">
@@ -270,8 +276,10 @@ function InputWithIcon({ icon, label, type = "text", ...props }) {
       <label className="block text-sm font-semibold text-slate-600 mb-1">
         {label}
       </label>
+
       <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2 focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-400 transition-all">
         {icon && <span className="text-slate-500">{icon}</span>}
+
         <input
           type={type}
           className="flex-1 outline-none text-sm bg-transparent text-slate-800"
