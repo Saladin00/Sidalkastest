@@ -5,6 +5,9 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\LKSController;
 use App\Http\Controllers\KlienController;
+use App\Http\Controllers\AccountController;
+
+use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\LaporanKunjunganController;
 use App\Http\Controllers\DokumenLKSController;
 use App\Http\Controllers\LksApprovalController;
@@ -32,7 +35,31 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/kecamatan', [KecamatanController::class, 'index']);
 Route::get('/lks/{id}/cetak-pdf', [LKSController::class, 'cetakProfil']);
 
+
+
+
+
+// ================= AKUN (SEMUA ROLE) =================
+Route::middleware(['auth:sanctum'])->prefix('account')->group(function () {
+    Route::get('/', [AccountController::class, 'profile']);
+    Route::post('/update-email', [AccountController::class, 'updateEmail']);
+    Route::post('/update-username', [AccountController::class, 'updateUsername']);
+    Route::post('/update-password', [AccountController::class, 'updatePassword']);
+});
+
+
+
+
 /*
+|--------------------------------------------------------------------------
+| RESET PASSWORD (MAILPIT)
+|--------------------------------------------------------------------------
+*/
+Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink']);
+Route::post('/reset-password', [PasswordResetController::class, 'reset']);
+
+/*
+
 |--------------------------------------------------------------------------
 | PROTECTED ROUTES
 |--------------------------------------------------------------------------
@@ -73,7 +100,9 @@ Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
     Route::get('/lks/{id}/kunjungan', [LaporanKunjunganController::class, 'index']);
     Route::post('/lks/{id}/kunjungan', [LaporanKunjunganController::class, 'store']);
 
+    
 /*
+*
 |--------------------------------------------------------------------------
 | LAPORAN ADMIN
 |--------------------------------------------------------------------------

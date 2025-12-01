@@ -112,9 +112,6 @@ class AdminLaporanController extends Controller
         ]);
     }
 
-    // ===============================
-    // EXPORT PDF
-    // ===============================
     public function exportPdf(Request $request)
     {
         $laporan = $this->laporan($request)->getData();
@@ -133,7 +130,6 @@ class AdminLaporanController extends Controller
 
         return $pdf->download($filename);
     }
-
     // ===============================
     // EXPORT EXCEL
     // ===============================

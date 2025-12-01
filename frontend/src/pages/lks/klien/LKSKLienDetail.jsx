@@ -1,12 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import api from "../../utils/api";
+import api from "../../../utils/api";
 import { ArrowLeft, Loader2, User } from "lucide-react";
-import {
-  showInfo,
-  showSuccess,
-  showError,
-} from "../../utils/toast";
+import { showInfo, showSuccess, showError } from "../../../utils/toast";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -130,10 +126,10 @@ const KlienDetail = () => {
         {/* Info Tambahan */}
         <div className="bg-gradient-to-r from-blue-50 to-sky-50 p-5 rounded-xl shadow-inner border border-blue-100">
           <p className="text-sm text-gray-700 leading-relaxed">
-            <span className="font-semibold text-sky-700">Catatan:</span> Pastikan
-            data klien selalu diperbarui secara berkala agar validitas dan
-            kelayakan bantuan tetap terjaga. Data ini digunakan sebagai acuan
-            verifikasi oleh petugas sosial.
+            <span className="font-semibold text-sky-700">Catatan:</span>{" "}
+            Pastikan data klien selalu diperbarui secara berkala agar validitas
+            dan kelayakan bantuan tetap terjaga. Data ini digunakan sebagai
+            acuan verifikasi oleh petugas sosial.
           </p>
         </div>
 

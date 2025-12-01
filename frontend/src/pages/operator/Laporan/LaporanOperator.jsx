@@ -52,6 +52,7 @@ export default function OperatorLaporan() {
       if (!auto) toast.warning("Silakan pilih tahun terlebih dahulu.");
       return;
     }
+
     setLoading(true);
     try {
       const res = await api.get("/operator/laporan", {
@@ -122,22 +123,15 @@ export default function OperatorLaporan() {
   // INIT – load data bulan sekarang
   // ==========================
   useEffect(() => {
-  const now = new Date();
-  const currentMonth = now.getMonth() + 1;
-  const currentYear = now.getFullYear();
+    const now = new Date();
+    setBulan(now.getMonth() + 1);
+    setTahun(now.getFullYear());
+  }, []);
 
-  setBulan(currentMonth);
-  setTahun(currentYear);
-}, []);
-
-    // Jalankan loadLaporan otomatis setelah bulan & tahun di-set
-useEffect(() => {
-  if (tahun && bulan) {
-    // auto load tanpa warning deps
-    loadLaporan(true);
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [tahun, bulan]);
+  // Jalankan loadLaporan otomatis setelah bulan & tahun di-set
+  useEffect(() => {
+    if (tahun && bulan) loadLaporan(true);
+  }, [tahun, bulan]);
 
   const { ref, ready } = useChartContainer();
 
@@ -205,17 +199,17 @@ useEffect(() => {
                 onChange={(e) => setTahun(Number(e.target.value))}
               >
                 <option value="">Pilih Tahun</option>
-                {tahunList.length > 0 ? (
-                  tahunList.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
+                {tahunList.length > 0
+                  ? tahunList.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))
+                  : (
+                    <option value={new Date().getFullYear()}>
+                      {new Date().getFullYear()}
                     </option>
-                  ))
-                ) : (
-                  <option value={new Date().getFullYear()}>
-                    {new Date().getFullYear()}
-                  </option>
-                )}
+                  )}
               </select>
             </div>
 
@@ -327,74 +321,28 @@ useEffect(() => {
             <BarChart3 size={20} /> Grafik Wilayah {data?.[0]?.kecamatan}
           </h2>
 
-          {/* GRAFIK LKS */}
           <ChartWrapper title="Grafik LKS">
             <BarChart data={data || []}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="kecamatan" tick={{ fontSize: 12, fill: "#475569" }} />
               <YAxis tick={{ fill: "#475569" }} />
-              <Tooltip
-                contentStyle={{
-                  background: "rgba(255,255,255,0.9)",
-                  backdropFilter: "blur(6px)",
-                  borderRadius: "12px",
-                  border: "1px solid #e2e8f0",
-                  boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
-                }}
-              />
-              <Legend wrapperStyle={{ color: "#334155" }} />
-
-              <defs>
-                <linearGradient id="gradValid" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3b82f6" />
-                  <stop offset="100%" stopColor="#93c5fd" />
-                </linearGradient>
-                <linearGradient id="gradInvalid" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#f472b6" />
-                  <stop offset="100%" stopColor="#f9a8d4" />
-                </linearGradient>
-                <linearGradient id="gradProses" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" />
-                  <stop offset="100%" stopColor="#6ee7b7" />
-                </linearGradient>
-              </defs>
-
-              <Bar dataKey="lks_valid" name="Valid" fill="url(#gradValid)" radius={[10, 10, 0, 0]} />
-              <Bar dataKey="lks_tidak_valid" name="Tidak Valid" fill="url(#gradInvalid)" radius={[10, 10, 0, 0]} />
-              <Bar dataKey="lks_proses" name="Proses" fill="url(#gradProses)" radius={[10, 10, 0, 0]} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="lks_valid" name="Valid" fill="#3b82f6" radius={[10, 10, 0, 0]} />
+              <Bar dataKey="lks_tidak_valid" name="Tidak Valid" fill="#f472b6" radius={[10, 10, 0, 0]} />
+              <Bar dataKey="lks_proses" name="Proses" fill="#10b981" radius={[10, 10, 0, 0]} />
             </BarChart>
           </ChartWrapper>
 
-          {/* GRAFIK KLIEN */}
           <ChartWrapper title="Grafik Klien">
             <BarChart data={data || []}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="kecamatan" tick={{ fontSize: 12, fill: "#475569" }} />
               <YAxis tick={{ fill: "#475569" }} />
-              <Tooltip
-                contentStyle={{
-                  background: "rgba(255,255,255,0.9)",
-                  backdropFilter: "blur(6px)",
-                  borderRadius: "12px",
-                  border: "1px solid #e2e8f0",
-                  boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
-                }}
-              />
-              <Legend wrapperStyle={{ color: "#334155" }} />
-
-              <defs>
-                <linearGradient id="gradAktif" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#06b6d4" />
-                  <stop offset="100%" stopColor="#67e8f9" />
-                </linearGradient>
-                <linearGradient id="gradTidakAktif" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#f59e0b" />
-                  <stop offset="100%" stopColor="#fde68a" />
-                </linearGradient>
-              </defs>
-
-              <Bar dataKey="klien_aktif" name="Aktif" fill="url(#gradAktif)" radius={[10, 10, 0, 0]} />
-              <Bar dataKey="klien_tidak_aktif" name="Tidak Aktif" fill="url(#gradTidakAktif)" radius={[10, 10, 0, 0]} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="klien_aktif" name="Aktif" fill="#06b6d4" radius={[10, 10, 0, 0]} />
+              <Bar dataKey="klien_tidak_aktif" name="Tidak Aktif" fill="#f59e0b" radius={[10, 10, 0, 0]} />
             </BarChart>
           </ChartWrapper>
         </div>

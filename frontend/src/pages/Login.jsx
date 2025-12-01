@@ -199,29 +199,41 @@ const Login = () => {
                   />
                 </div>
 
-                {/* Password */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700">
-                    Kata Sandi
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Masukkan kata sandi"
-                      className="w-full px-4 py-2 pr-10 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                </div>
+               {/* Password */}
+<div className="space-y-1.5">
+  <label className="block text-xs font-semibold text-slate-700">
+    Kata Sandi
+  </label>
+  <div className="relative">
+    <input
+      type={showPassword ? "text" : "password"}
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      placeholder="Masukkan kata sandi"
+      className="w-full px-4 py-2 pr-10 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white/85 text-sm"
+      required
+    />
+    <button
+      type="button"
+      onClick={() => setShowPassword((v) => !v)}
+      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
+    >
+      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+    </button>
+  </div>
+
+  {/* 🔥 Tambahkan tombol ini */}
+  <div className="text-right mt-1">
+    <button
+      type="button"
+      onClick={() => navigate("/forgot-password")}
+      className="text-[11px] text-blue-600 hover:text-blue-800 hover:underline transition"
+    >
+      Lupa password?
+    </button>
+  </div>
+</div>
+
 
                 {/* Captcha */}
                 <div className="space-y-1.5">

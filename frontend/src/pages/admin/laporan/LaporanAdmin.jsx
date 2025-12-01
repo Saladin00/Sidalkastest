@@ -24,11 +24,11 @@ import useChartContainer from "../../../hooks/useChartContainer";
 export default function LaporanAdmin() {
   const [periode, setPeriode] = useState("bulan");
   const [tahun, setTahun] = useState(null);
-  const [tahunList, setTahunList] = useState([]);
   const [bulan, setBulan] = useState(null);
   const [kecamatan, setKecamatan] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [tahunList, setTahunList] = useState([]);
   const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const bulanList = [
     { label: "Januari", value: 1 },
@@ -61,7 +61,7 @@ export default function LaporanAdmin() {
       setTahunList(res.data.tahun_list || []);
     } catch (err) {
       console.error(err);
-      toast.error("Gagal memuat laporan.");
+      toast.error("Gagal memuat laporan admin.");
     } finally {
       setLoading(false);
     }
@@ -75,6 +75,7 @@ export default function LaporanAdmin() {
       type === "pdf"
         ? "/admin/laporan/export/pdf"
         : "/admin/laporan/export/excel";
+
     try {
       const res = await api.get(endpoint, {
         params: { periode, tahun, bulan, gabungan: true },
@@ -93,7 +94,9 @@ export default function LaporanAdmin() {
       link.href = url;
       link.setAttribute(
         "download",
-        type === "pdf" ? "laporan-gabungan.pdf" : "laporan-gabungan.xlsx"
+        type === "pdf"
+          ? "laporan-admin.pdf"
+          : "laporan-admin.xlsx"
       );
       document.body.appendChild(link);
       link.click();
@@ -105,7 +108,7 @@ export default function LaporanAdmin() {
   };
 
   // =========================================
-  // USE EFFECTS
+  // INISIALISASI OTOMATIS (bulan & tahun sekarang)
   // =========================================
   useEffect(() => {
     const now = new Date();
@@ -122,35 +125,20 @@ export default function LaporanAdmin() {
     : data;
 
   // =========================================
-  // WRAPPER GRAFIK DENGAN HOOK
+  // WRAPPER GRAFIK
   // =========================================
-  const ChartWrapper = ({ children, dataAvailable, title }) => {
   const { ref, ready } = useChartContainer();
-
-  return (
+  const ChartWrapper = ({ children, dataAvailable, title }) => (
     <div className="relative rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-500 border border-slate-200 bg-gradient-to-br from-white via-sky-50 to-blue-50 overflow-hidden mb-8">
       <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-sky-500 via-blue-400 to-cyan-400 rounded-t-2xl opacity-80" />
       <h3 className="text-lg font-semibold text-slate-800 mb-4">{title}</h3>
-
       <div
         ref={ref}
         className="relative bg-white rounded-xl border border-slate-100 shadow-inner"
-        style={{
-          width: "100%",
-          minHeight: "400px",
-          minWidth: "100%",
-          height: "400px",
-          overflow: "hidden",
-          display: "block",
-        }}
+        style={{ width: "100%", height: "400px" }}
       >
         {dataAvailable && ready ? (
-          <ResponsiveContainer
-            width="99%"
-            height="100%"
-            minHeight={400}
-            debounce={100}
-          >
+          <ResponsiveContainer width="100%" height="100%">
             {children}
           </ResponsiveContainer>
         ) : (
@@ -161,7 +149,6 @@ export default function LaporanAdmin() {
       </div>
     </div>
   );
-};
 
   // =========================================
   // RENDER UTAMA
@@ -268,6 +255,7 @@ export default function LaporanAdmin() {
             </div>
           </div>
         </div>
+
         {/* ====== TABEL LKS ====== */}
         <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 mb-10">
           <div className="flex justify-between items-center mb-4">
@@ -306,9 +294,7 @@ export default function LaporanAdmin() {
                   filteredData.map((r, i) => (
                     <tr
                       key={i}
-                      className={`${
-                        i % 2 === 0 ? "bg-white" : "bg-slate-50"
-                      } hover:bg-blue-50 transition`}
+                      className={`${i % 2 === 0 ? "bg-white" : "bg-slate-50"} hover:bg-blue-50`}
                     >
                       <td className="border px-3 py-2 text-center">{i + 1}</td>
                       <td className="border px-3 py-2">{r.kecamatan}</td>
@@ -329,193 +315,43 @@ export default function LaporanAdmin() {
           </div>
         </div>
 
-        {/* ====== TABEL KLIEN ====== */}
-        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 mb-10">
-          <h2 className="text-xl font-semibold text-slate-800 flex items-center gap-2 mb-4">
-            <Users size={20} /> Rekapitulasi Klien per Kecamatan
+        {/* ====== GRAFIK ====== */}
+        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-8">
+          <h2 className="text-xl font-semibold text-slate-800 flex items-center gap-2 mb-6">
+            <BarChart3 size={20} /> Grafik Gabungan LKS & Klien
           </h2>
 
-          <div className="overflow-x-auto rounded-lg border border-slate-200 mb-4">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-100 text-slate-700">
-                <tr>
-                  <th className="border px-3 py-2 w-10">No</th>
-                  <th className="border px-3 py-2">Kecamatan</th>
-                  <th className="border px-3 py-2">Klien Aktif</th>
-                  <th className="border px-3 py-2">Klien Tidak Aktif</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredData.length > 0 ? (
-                  filteredData.map((r, i) => (
-                    <tr
-                      key={i}
-                      className={`${
-                        i % 2 === 0 ? "bg-white" : "bg-slate-50"
-                      } hover:bg-blue-50 transition`}
-                    >
-                      <td className="border px-3 py-2 text-center">{i + 1}</td>
-                      <td className="border px-3 py-2">{r.kecamatan}</td>
-                      <td className="border px-3 py-2 text-center">{r.klien_aktif}</td>
-                      <td className="border px-3 py-2 text-center">{r.klien_tidak_aktif}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={4} className="text-center py-4 text-slate-400 italic">
-                      Belum ada data
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <ChartWrapper
+            dataAvailable={filteredData.length > 0}
+            title="Grafik LKS per Kecamatan"
+          >
+            <BarChart data={filteredData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="kecamatan" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="lks_valid" name="Valid" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="lks_tidak_valid" name="Tidak Valid" fill="#ef4444" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="lks_proses" name="Proses" fill="#10b981" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ChartWrapper>
+
+          <ChartWrapper
+            dataAvailable={filteredData.length > 0}
+            title="Grafik Klien per Kecamatan"
+          >
+            <BarChart data={filteredData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="kecamatan" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="klien_aktif" name="Aktif" fill="#06b6d4" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="klien_tidak_aktif" name="Tidak Aktif" fill="#f59e0b" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ChartWrapper>
         </div>
-
-        {/* ====== GRAFIK ====== */}
-<div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-8">
-  <h2 className="text-xl font-semibold text-slate-800 flex items-center gap-2 mb-6">
-    <BarChart3 size={20} /> Grafik Gabungan LKS & Klien
-  </h2>
-
-  <div className="space-y-10">
-    {/* ===== Grafik LKS ===== */}
-    <ChartWrapper
-      dataAvailable={filteredData.length > 0}
-      title="Grafik LKS per Kecamatan"
-    >
-      <BarChart data={filteredData}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-        <XAxis
-          dataKey="kecamatan"
-          tickFormatter={(val) => val.slice(0, 4)}
-          tick={{ fontSize: 12, fill: "#334155" }}
-        />
-        <YAxis tick={{ fill: "#334155" }} />
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "rgba(255,255,255,0.95)",
-            borderRadius: "10px",
-            border: "1px solid #e2e8f0",
-            boxShadow: "0 6px 12px rgba(0,0,0,0.08)",
-          }}
-          itemStyle={{ color: "#0ea5e9" }}
-        />
-        <Legend wrapperStyle={{ color: "#0ea5e9" }} />
-
-        {/* Gradien & Glow */}
-        <defs>
-          <linearGradient id="gradValid" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2563eb" />
-            <stop offset="100%" stopColor="#60a5fa" />
-          </linearGradient>
-          <linearGradient id="gradInvalid" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#38bdf8" />
-            <stop offset="100%" stopColor="#7dd3fc" />
-          </linearGradient>
-          <linearGradient id="gradProses" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#0ea5e9" />
-            <stop offset="100%" stopColor="#22d3ee" />
-          </linearGradient>
-
-          {/* Animasi Pulse Glow */}
-          <style>
-            {`
-              @keyframes barPulse {
-                0%, 100% { filter: drop-shadow(0 0 6px rgba(56,189,248,0.5)); }
-                50% { filter: drop-shadow(0 0 12px rgba(56,189,248,0.8)); }
-              }
-              .bar-glow {
-                animation: barPulse 2.2s ease-in-out infinite;
-                transition: transform 0.3s ease;
-              }
-              .bar-glow:hover {
-                transform: scaleY(1.03);
-                filter: drop-shadow(0 0 16px rgba(37,99,235,0.6));
-              }
-            `}
-          </style>
-        </defs>
-
-        <Bar
-          dataKey="lks_valid"
-          name="Valid"
-          fill="url(#gradValid)"
-          radius={[8, 8, 0, 0]}
-          className="bar-glow"
-        />
-        <Bar
-          dataKey="lks_tidak_valid"
-          name="Tidak Valid"
-          fill="url(#gradInvalid)"
-          radius={[8, 8, 0, 0]}
-          className="bar-glow"
-        />
-        <Bar
-          dataKey="lks_proses"
-          name="Proses"
-          fill="url(#gradProses)"
-          radius={[8, 8, 0, 0]}
-          className="bar-glow"
-        />
-      </BarChart>
-    </ChartWrapper>
-
-    {/* ===== Grafik KLIEN ===== */}
-    <ChartWrapper
-      dataAvailable={filteredData.length > 0}
-      title="Grafik Klien per Kecamatan"
-    >
-      <BarChart data={filteredData}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-        <XAxis
-          dataKey="kecamatan"
-          tickFormatter={(val) => val.slice(0, 4)}
-          tick={{ fontSize: 12, fill: "#334155" }}
-        />
-        <YAxis tick={{ fill: "#334155" }} />
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "rgba(255,255,255,0.95)",
-            borderRadius: "10px",
-            border: "1px solid #e2e8f0",
-            boxShadow: "0 6px 12px rgba(0,0,0,0.08)",
-          }}
-          itemStyle={{ color: "#0284c7" }}
-        />
-        <Legend wrapperStyle={{ color: "#0284c7" }} />
-
-        {/* Gradien & Animasi */}
-        <defs>
-          <linearGradient id="gradAktif" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#0284c7" />
-            <stop offset="100%" stopColor="#0ea5e9" />
-          </linearGradient>
-          <linearGradient id="gradTidakAktif" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#facc15" />
-            <stop offset="100%" stopColor="#fbbf24" />
-          </linearGradient>
-        </defs>
-
-        <Bar
-          dataKey="klien_aktif"
-          name="Aktif"
-          fill="url(#gradAktif)"
-          radius={[8, 8, 0, 0]}
-          className="bar-glow"
-        />
-        <Bar
-          dataKey="klien_tidak_aktif"
-          name="Tidak Aktif"
-          fill="url(#gradTidakAktif)"
-          radius={[8, 8, 0, 0]}
-          className="bar-glow"
-        />
-      </BarChart>
-    </ChartWrapper>
-  </div>
-</div>
-
       </div>
     </AdminLayout>
   );
