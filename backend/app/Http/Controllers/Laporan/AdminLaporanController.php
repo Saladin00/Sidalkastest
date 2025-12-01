@@ -66,6 +66,7 @@ class AdminLaporanController extends Controller
             $lksList = Lks::where('kecamatan_id', $kec->id)->get();
 
             $valid = $tidakValid = $proses = 0;
+
             foreach ($lksList as $lks) {
                 $verif = Verifikasi::where('lks_id', $lks->id)
                     ->whereNotNull('tanggal_verifikasi')
@@ -139,7 +140,6 @@ class AdminLaporanController extends Controller
     // ===============================
     public function exportExcel(Request $request)
     {
-        // Ambil data laporan
         $laporan = $this->laporan($request)->getData(true);
 
         if (!isset($laporan['success']) || $laporan['success'] !== true) {
@@ -149,13 +149,11 @@ class AdminLaporanController extends Controller
             ], 422);
         }
 
-        // Tentukan nama file
         $periode = ucfirst($laporan['periode'] ?? 'Bulan');
         $start = $laporan['range']['start'] ?? date('Y-m-d');
         $end   = $laporan['range']['end'] ?? date('Y-m-d');
         $filename = "Laporan_{$periode}_{$start}_sd_{$end}.xlsx";
 
-        // Struktur data untuk Export class
         $exportData = [
             'data' => $laporan['data'],
             'periode' => $laporan['periode'],

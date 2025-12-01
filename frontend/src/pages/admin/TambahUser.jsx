@@ -1,14 +1,17 @@
-// src/pages/admin/TambahUser.jsx
 import React, { useEffect, useState } from "react";
 import { X, Eye, EyeOff } from "lucide-react";
 import API from "../../utils/api";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
 import {
   showSuccess,
   showError,
   showWarning,
   showInfo,
 } from "../../utils/toast";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function TambahUser() {
   const navigate = useNavigate();
@@ -42,7 +45,6 @@ export default function TambahUser() {
 
   // ================== VALIDASI ==================
   const validatePassword = (password) => {
-    // minimal 8 karakter, huruf besar, kecil, dan angka
     const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
     return regex.test(password);
   };
@@ -76,7 +78,7 @@ export default function TambahUser() {
     }
 
     if (password !== confirmPassword) {
-      showWarning("Konfirmasi password tidak cocok dengan password.");
+      showError("Konfirmasi password tidak cocok dengan password!");
       return false;
     }
 
@@ -93,8 +95,29 @@ export default function TambahUser() {
     e.preventDefault();
     if (!validateForm()) return;
 
+    // Tampilkan konfirmasi SweetAlert2
+    const result = await Swal.fire({
+      title: "Simpan Data Pengguna?",
+      text: "Pastikan data sudah benar sebelum disimpan.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#2563eb", // biru
+      cancelButtonColor: "#6b7280", // abu
+      confirmButtonText: "Ya, Simpan",
+      cancelButtonText: "Batal",
+      background: "#fff",
+      color: "#374151",
+      backdrop: `rgba(0,0,0,0.4)`,
+    });
+
+    if (!result.isConfirmed) {
+      showInfo("Aksi dibatalkan.");
+      return;
+    }
+
     setLoading(true);
     showInfo("Menyimpan data pengguna...");
+
     try {
       const token = sessionStorage.getItem("token");
       await API.post(
@@ -111,8 +134,16 @@ export default function TambahUser() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      showSuccess(" Akun pengguna berhasil dibuat!");
-      setTimeout(() => navigate("/admin/users"), 1200);
+
+      await Swal.fire({
+        icon: "success",
+        title: "Berhasil!",
+        text: "Akun pengguna berhasil dibuat.",
+        confirmButtonColor: "#16a34a", // hijau
+        confirmButtonText: "OK",
+      });
+
+      navigate("/admin/users");
     } catch (err) {
       console.error("Error:", err);
       const msg =
@@ -151,7 +182,6 @@ export default function TambahUser() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Username, Name, Email */}
           {["username", "name", "email"].map((key) => (
             <div key={key} className="space-y-2">
               <label className="block text-base font-medium text-slate-700 capitalize">
@@ -164,7 +194,7 @@ export default function TambahUser() {
                   setFormData({ ...formData, [key]: e.target.value })
                 }
                 placeholder={`Masukkan ${key}`}
-                className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all outline-none"
+                className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition-all"
                 required
               />
             </div>
@@ -182,7 +212,7 @@ export default function TambahUser() {
                 setFormData({ ...formData, password: e.target.value })
               }
               placeholder="Masukkan password"
-              className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all outline-none pr-10"
+              className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none pr-10"
               required
             />
             <button
@@ -210,12 +240,14 @@ export default function TambahUser() {
                 setFormData({ ...formData, confirmPassword: e.target.value })
               }
               placeholder="Ulangi password"
-              className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all outline-none pr-10"
+              className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none pr-10"
               required
             />
             <button
               type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              onClick={() =>
+                setShowConfirmPassword(!showConfirmPassword)
+              }
               className="absolute right-3 top-10 text-slate-500 hover:text-slate-700 transition"
             >
               {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -232,7 +264,7 @@ export default function TambahUser() {
               onChange={(e) =>
                 setFormData({ ...formData, role: e.target.value })
               }
-              className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all outline-none"
+              className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none"
             >
               <option value="operator">Operator</option>
               <option value="petugas">Petugas</option>
@@ -250,7 +282,7 @@ export default function TambahUser() {
                 setFormData({ ...formData, kecamatan_id: e.target.value })
               }
               required
-              className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all outline-none"
+              className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none"
             >
               <option value="">Pilih Kecamatan</option>
               {daftarKecamatan.map((k) => (
@@ -284,6 +316,15 @@ export default function TambahUser() {
           </div>
         </form>
       </div>
+
+      {/* Toast Container */}
+      <ToastContainer
+        position="top-right"
+        autoClose={2500}
+        hideProgressBar
+        newestOnTop
+        theme="colored"
+      />
     </div>
   );
 }

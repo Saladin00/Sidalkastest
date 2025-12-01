@@ -22,8 +22,8 @@ use App\Http\Controllers\Verifikasi\LksVerifikasiController;
 // Laporan Controller
 use App\Http\Controllers\Laporan\AdminLaporanController;
 use App\Http\Controllers\Laporan\AdminLaporanExportController;
-use App\Http\Controllers\Laporan\OperatorLaporanController; 
-use App\Http\Controllers\Laporan\OperatorLaporanExportController; 
+use App\Http\Controllers\Laporan\OperatorLaporanController;
+use App\Http\Controllers\Laporan\OperatorLaporanExportController;
 
 /*
 |--------------------------------------------------------------------------
