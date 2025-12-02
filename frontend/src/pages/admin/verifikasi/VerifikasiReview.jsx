@@ -57,7 +57,9 @@ const VerifikasiReview = () => {
       return;
     }
     if (!catatan.trim()) {
-      setError("Catatan tidak boleh kosong. Mohon isi alasan atau penjelasan review.");
+      setError(
+        "Catatan tidak boleh kosong. Mohon isi alasan atau penjelasan review."
+      );
       showWarning("Catatan wajib diisi.");
       return;
     }
@@ -86,7 +88,8 @@ const VerifikasiReview = () => {
     showInfo("Menyimpan hasil review...");
 
     try {
-      await api.put(`/admin/verifikasi/${id}/status`, { status, catatan });
+      await api.put(`/admin/verifikasi/${id}/validasi`, { status, catatan });
+
       showSuccess("Status verifikasi berhasil diperbarui!");
       navigate("/admin/verifikasi");
     } catch (err) {
@@ -123,7 +126,8 @@ const VerifikasiReview = () => {
           Review Verifikasi LKS
         </h2>
         <p className="text-sm text-slate-500 mt-1">
-          Pastikan hasil verifikasi dan catatan admin sudah akurat sebelum disimpan.
+          Pastikan hasil verifikasi dan catatan admin sudah akurat sebelum
+          disimpan.
         </p>
       </div>
 
@@ -189,7 +193,12 @@ const VerifikasiReview = () => {
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </div>
         </div>

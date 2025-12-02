@@ -10,7 +10,7 @@ import "react-toastify/dist/ReactToastify.css";
 const LKSKlienForm = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [kecamatanList, setKecamatanList] = useState([]);
+
   const [metaLKS, setMetaLKS] = useState({});
 
   const [form, setForm] = useState({
@@ -18,38 +18,22 @@ const LKSKlienForm = () => {
     nama: "",
     alamat: "",
     kelurahan: "",
-    kecamatan_id: "",
     jenis_kebutuhan: "",
     status_bantuan: "",
     status_pembinaan: "",
   });
 
-  // 🔁 Ambil daftar kecamatan
-  useEffect(() => {
-    const fetchKecamatan = async () => {
-      try {
-        const res = await api.get("/kecamatan");
-        setKecamatanList(res.data.data || []);
-      } catch (err) {
-        console.error("❌ Gagal memuat kecamatan:", err);
-        toast.dismiss();
-        showError("Gagal memuat data kecamatan!");
-      }
-    };
-    fetchKecamatan();
-  }, []);
-
-  // 🏢 Ambil meta LKS
+  // Ambil meta LKS
   useEffect(() => {
     const fetchMetaLKS = async () => {
       const lksId = sessionStorage.getItem("lks_id");
       if (!lksId) return;
+
       try {
         const res = await api.get(`/lks/${lksId}`);
         setMetaLKS(res.data.data || {});
       } catch (err) {
         console.error("❌ Gagal memuat meta LKS:", err);
-        toast.dismiss();
         showError("Gagal memuat informasi LKS!");
       }
     };
@@ -61,28 +45,53 @@ const LKSKlienForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    toast.dismiss(); // pastikan tidak spam
+    toast.dismiss();
     setLoading(true);
 
-    try {
-      const lksId = sessionStorage.getItem("lks_id");
-      if (!lksId) {
-        showError("LKS belum login atau ID tidak ditemukan!");
-        setLoading(false);
-        return;
-      }
+    // ==========================
+    // 🔥 VALIDASI FRONTEND
+    // ==========================
 
-      await api.post("/klien", {
-        ...form,
-        lks_id: lksId,
-        kecamatan_id: metaLKS.kecamatan_id,
-      });
+    if (form.nik.length !== 16) {
+      showError("NIK harus 16 digit!");
+      setLoading(false);
+      return;
+    }
+
+    if (!form.nama.trim()) {
+      showError("Nama wajib diisi!");
+      setLoading(false);
+      return;
+    }
+
+    if (!form.kelurahan.trim()) {
+      showError("Kelurahan wajib diisi!");
+      setLoading(false);
+      return;
+    }
+
+    if (!form.alamat.trim()) {
+      showError("Alamat wajib diisi!");
+      setLoading(false);
+      return;
+    }
+
+    // Backend akan otomatis mengisi:
+    // - lks_id (dari user login)
+    // - kecamatan_id (dari lks->kecamatan)
+    // jadi kita TIDAK boleh mengirim kecamatan_id & lks_id
+
+    try {
+      await api.post("/klien", form);
 
       showSuccess("Klien berhasil ditambahkan!");
       setTimeout(() => navigate("/lks/klien"), 1000);
     } catch (err) {
-      console.error("❌ Gagal menyimpan klien:", err);
-      showError("Gagal menyimpan data klien!");
+      console.error("❌ VALIDATION ERROR:", err.response?.data);
+      showError(
+        err.response?.data?.message ||
+          "Gagal menyimpan data klien! Periksa kembali input."
+      );
     } finally {
       setLoading(false);
     }
@@ -107,7 +116,7 @@ const LKSKlienForm = () => {
             1. NIK <span className="text-red-500">*</span>
           </label>
           <input
-            type="text"
+            type="number"
             name="nik"
             placeholder="Masukkan NIK (16 digit)"
             value={form.nik}
@@ -136,7 +145,7 @@ const LKSKlienForm = () => {
         {/* Kelurahan */}
         <div>
           <label className="block font-semibold text-gray-700 mb-1">
-            3. Kelurahan
+            3. Kelurahan <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -145,13 +154,14 @@ const LKSKlienForm = () => {
             value={form.kelurahan}
             onChange={handleChange}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+            required
           />
         </div>
 
         {/* Alamat */}
         <div>
           <label className="block font-semibold text-gray-700 mb-1">
-            4. Alamat
+            4. Alamat <span className="text-red-500">*</span>
           </label>
           <textarea
             name="alamat"
@@ -160,10 +170,11 @@ const LKSKlienForm = () => {
             onChange={handleChange}
             rows={3}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none resize-none"
+            required
           />
         </div>
 
-        {/* Kecamatan otomatis */}
+        {/* Kecamatan (otomatis) */}
         <div>
           <label className="block font-semibold text-gray-700 mb-1">
             5. Kecamatan (otomatis)
@@ -171,7 +182,9 @@ const LKSKlienForm = () => {
           <input
             type="text"
             value={
-              metaLKS.kecamatan ? metaLKS.kecamatan.nama : "Memuat kecamatan..."
+              metaLKS.kecamatan
+                ? metaLKS.kecamatan.nama
+                : "Memuat kecamatan..."
             }
             disabled
             className="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-gray-600"
@@ -228,7 +241,7 @@ const LKSKlienForm = () => {
           >
             <option value="">Pilih Status</option>
             <option value="aktif">Aktif</option>
-            <option value="nonaktif">Nonaktif</option>
+            <option value="selesai">Selesai</option>
           </select>
         </div>
       </form>
@@ -244,6 +257,7 @@ const LKSKlienForm = () => {
         </button>
 
         <button
+          type="button"
           onClick={handleSubmit}
           disabled={loading}
           className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-white text-sm font-medium transition disabled:opacity-60"

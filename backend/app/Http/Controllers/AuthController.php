@@ -69,9 +69,13 @@ class AuthController extends Controller
             return response()->json(['message' => 'Email atau password salah.'], 401);
         }
 
-        if (!$user->status_aktif) {
-            return response()->json(['message' => 'Akun Anda belum diaktifkan.'], 403);
-        }
+       if (!$user->status_aktif) {
+    return response()->json([
+        'message' => 'Akun Anda belum diaktifkan. Silakan cek email untuk aktivasi.',
+        'need_activation' => true
+    ], 403);
+}
+
 
         $user->tokens()->delete();
         $token = $user->createToken('auth_token')->plainTextToken;
