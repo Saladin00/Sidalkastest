@@ -66,11 +66,11 @@ const PetugasVerifikasiDetail = () => {
     try {
       setSubmitting(true);
 
-      await api.put(`/petugas/verifikasi/${id}`, {
-        status,
-        penilaian,
-        catatan,
-      });
+     await api.put(`/petugas/verifikasi/${id}/kirim-admin`, {
+  penilaian,
+  catatan
+});
+
 
       toast.success("Hasil survei berhasil dikirim ke admin!", {
         autoClose: 2500,

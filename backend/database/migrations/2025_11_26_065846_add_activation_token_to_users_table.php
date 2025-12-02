@@ -9,13 +9,13 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-  public function up(): void
+    public function up(): void
 {
     Schema::table('users', function (Blueprint $table) {
-        // Tambah kolom token aktivasi
+        // Tambah kolom activation_token
         $table->string('activation_token')->nullable()->after('status_aktif');
 
-        // Ubah default status_aktif dari true → false
+        // Ubah status_aktif default jadi false
         $table->boolean('status_aktif')->default(false)->change();
     });
 }
@@ -24,8 +24,6 @@ public function down(): void
 {
     Schema::table('users', function (Blueprint $table) {
         $table->dropColumn('activation_token');
-
-        // kembalikan default seperti semula
         $table->boolean('status_aktif')->default(true)->change();
     });
 }

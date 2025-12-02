@@ -34,6 +34,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/kecamatan', [KecamatanController::class, 'index']);
 Route::get('/lks/{id}/cetak-pdf', [LKSController::class, 'cetakProfil']);
+Route::post('/resend-activation', [UserController::class, 'resendActivation']);
 
 
 
@@ -147,24 +148,36 @@ Route::middleware(['auth:sanctum', 'role:operator'])
     |--------------------------------------------------------------------------
     */
 
-    // 🧩 ADMIN
-    Route::prefix('admin')->middleware('role:admin')->group(function () {
-        Route::prefix('verifikasi')->group(function () {
-            Route::get('/', [AdminVerifikasiController::class, 'index']); // daftar verifikasi
-            Route::get('/{id}', [AdminVerifikasiController::class, 'show']); // detail
-            Route::put('/{id}/validasi', [AdminVerifikasiController::class, 'validasiAkhir']); // validasi akhir
-            Route::get('/{id}/logs', [AdminVerifikasiController::class, 'logs']); // histori log
-        });
+    /*
+|--------------------------------------------------------------------------
+| ADMIN ROUTES
+|--------------------------------------------------------------------------
+*/
 
-        // 🔹 Manajemen User
+Route::prefix('admin')
+    ->middleware(['auth:sanctum', 'role:admin'])   // ⬅️ middleware lengkap
+    ->group(function () {
+
+        // 🔹 Manajemen User (ADMIN)
         Route::apiResource('users', UserController::class);
+
+        // 🔹 Toggle Status User
         Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus']);
+
+        // 🔹 Verifikasi (ADMIN)
+        Route::prefix('verifikasi')->group(function () {
+            Route::get('/', [AdminVerifikasiController::class, 'index']);
+            Route::get('/{id}', [AdminVerifikasiController::class, 'show']);
+            Route::put('/{id}/validasi', [AdminVerifikasiController::class, 'validasiAkhir']);
+            Route::get('/{id}/logs', [AdminVerifikasiController::class, 'logs']);
+        });
 
         // 🔹 LKS Approval
         Route::get('/lks/pending', [LksApprovalController::class, 'index']);
         Route::patch('/lks/{id}/approve', [LksApprovalController::class, 'approve']);
         Route::patch('/lks/{id}/reject', [LksApprovalController::class, 'reject']);
     });
+
 
     // 🧩 OPERATOR
     Route::prefix('operator')->middleware('role:operator')->group(function () {
