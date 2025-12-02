@@ -1,30 +1,27 @@
 import React, { useEffect, useState } from "react";
 import API from "../../utils/api";
 import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 import PetugasLayout from "../../components/PetugasLayout";
 import { User, Mail, KeyRound } from "lucide-react";
 
 export default function PetugasAccount() {
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState({
-    username: "",
-    name: "",
-    email: "",
-    role: "petugas",
-    kecamatan: "-", // 🔥 Tambahkan kecamatan
-  });
-
-  const [form, setForm] = useState({
-    username: "",
-    name: "",
-    email: "",
-  });
+  const [profile, setProfile] = useState({});
+  const [form, setForm] = useState({ name: "", email: "", username: "" });
 
   const [passwordForm, setPasswordForm] = useState({
     current_password: "",
     new_password: "",
     new_password_confirmation: "",
   });
+
+  const toastOptions = {
+    position: "top-right",
+    autoClose: 2500,
+    theme: "colored",
+    icon: false,
+  };
 
   useEffect(() => {
     loadProfile();
@@ -33,10 +30,9 @@ export default function PetugasAccount() {
   const loadProfile = async () => {
     try {
       const res = await API.get("/account");
-      const u = res.data.user;
-
-      // 🔥 Ambil data kecamatan aman untuk semua struktur API
       const kecRes = await API.get("/kecamatan");
+
+      const u = res.data.user;
 
       const list =
         kecRes.data.kecamatan || kecRes.data.data || kecRes.data || [];
@@ -57,190 +53,259 @@ export default function PetugasAccount() {
         name: u.name,
         email: u.email,
       });
+
     } catch (err) {
-      console.error("Gagal load data kecamatan:", err);
-      toast.error("Gagal memuat profil");
+      toast.error("Gagal memuat profil petugas", toastOptions);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
-  const updateEmail = async (e) => {
+  const confirmAction = async (title, text, confirmText, actionFn) => {
+    const result = await Swal.fire({
+      title,
+      text,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#0ea5e9",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: confirmText,
+      cancelButtonText: "Batal",
+    });
+    if (result.isConfirmed) await actionFn();
+  };
+
+  const updateProfile = (e) => {
     e.preventDefault();
-    try {
-      await API.post("/account/update-email", { email: form.email });
-      toast.success("Email berhasil diperbarui!");
-      loadProfile();
-    } catch {
-      toast.error("Email gagal diperbarui.");
-    }
+    confirmAction(
+      "Simpan Perubahan Profil?",
+      "Data profil Anda akan diperbarui.",
+      "Ya, Simpan",
+      async () => {
+        try {
+          await API.post("/account/update-email", {
+            email: form.email,
+          });
+
+          toast.success("Profil berhasil diperbarui", toastOptions);
+          loadProfile();
+
+        } catch {
+          toast.error("Gagal memperbarui profil", toastOptions);
+        }
+      }
+    );
   };
 
-  const updateUsername = async (e) => {
+  const updateUsername = (e) => {
     e.preventDefault();
-    try {
-      await API.post("/account/update-username", { username: form.username });
-      toast.success("Username berhasil diperbarui!");
-      loadProfile();
-    } catch {
-      toast.error("Gagal memperbarui username.");
-    }
+    confirmAction(
+      "Ubah Username?",
+      "Pastikan username baru berbeda.",
+      "Ya, Ubah",
+      async () => {
+        try {
+          await API.post("/account/update-username", {
+            username: form.username,
+          });
+
+          toast.success("Username berhasil diperbarui", toastOptions);
+          loadProfile();
+
+        } catch {
+          toast.error("Gagal memperbarui username", toastOptions);
+        }
+      }
+    );
   };
 
-  const updatePassword = async (e) => {
+  const updatePassword = (e) => {
     e.preventDefault();
-    try {
-      await API.post("/account/update-password", passwordForm);
+    confirmAction(
+      "Ganti Password?",
+      "Pastikan Anda mengingat password baru.",
+      "Ya, Ganti",
+      async () => {
+        try {
+          await API.post("/account/update-password", passwordForm);
 
-      toast.success("Password berhasil diperbarui!");
+          toast.success("Password berhasil diperbarui", toastOptions);
 
-      setPasswordForm({
-        current_password: "",
-        new_password: "",
-        new_password_confirmation: "",
-      });
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Password gagal diperbarui");
-    }
+          setPasswordForm({
+            current_password: "",
+            new_password: "",
+            new_password_confirmation: "",
+          });
+
+        } catch (err) {
+          toast.error(
+            err.response?.data?.message || "Gagal memperbarui password",
+            toastOptions
+          );
+        }
+      }
+    );
   };
 
-  if (loading) return <PetugasLayout>Loading...</PetugasLayout>;
+  if (loading)
+    return (
+      <PetugasLayout>
+        <div className="max-w-3xl mx-auto mt-16 p-8 bg-white rounded-2xl shadow animate-pulse">
+          <div className="h-6 bg-slate-200 rounded w-1/3 mb-4"></div>
+          <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+          <div className="h-4 bg-slate-200 rounded w-2/4"></div>
+        </div>
+      </PetugasLayout>
+    );
 
   return (
     <PetugasLayout>
-      <div className="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow">
-        <h2 className="text-xl font-semibold mb-4 text-sky-700">
+      <div className="max-w-4xl mx-auto mt-10 bg-white p-8 rounded-2xl shadow-md border border-slate-100">
+
+        <h2 className="text-2xl font-bold text-sky-700 mb-8">
           Pengaturan Akun Petugas Lapangan
         </h2>
 
-        {/* Informasi akun */}
-        <div className="mb-8 p-4 bg-slate-50 border rounded-lg">
-          <p>
-            <b>Username:</b> {profile.username}
-          </p>
-          <p>
-            <b>Nama:</b> {profile.name}
-          </p>
-          <p>
-            <b>Email:</b> {profile.email}
-          </p>
-          <p>
-            <b>Role:</b> {profile.role.toUpperCase()}
-          </p>
+        {/* INFORMASI AKUN */}
+        <div className="grid md:grid-cols-2 gap-6 mb-10">
 
-          {/* 🔥 Tampilkan kecamatan */}
-          <p>
-            <b>Kecamatan:</b> {profile.kecamatan}
-          </p>
-        </div>
+          <div className="bg-sky-50 border border-sky-100 rounded-xl p-6 shadow-sm">
+            <h3 className="font-semibold text-sky-700 mb-5 text-lg">Informasi Akun</h3>
 
-        {/* Update Email */}
-        <h3 className="font-semibold text-sky-600 mb-2">Ubah Email</h3>
-        <form onSubmit={updateEmail} className="space-y-4 mb-8">
-          <div>
-            <label className="text-sm font-semibold">Email Baru</label>
-            <div className="flex gap-2 items-center border rounded px-3 py-2">
-              <Mail size={16} />
-              <input
-                className="flex-1 outline-none"
+            <div className="text-sm text-slate-700 space-y-2">
+              <InfoRow label="Username" value={profile.username} />
+              <InfoRow label="Nama" value={profile.name} />
+              <InfoRow label="Email" value={profile.email} />
+              <InfoRow label="Role" value={profile.role.toUpperCase()} />
+              <InfoRow label="Kecamatan" value={profile.kecamatan} />
+            </div>
+          </div>
+
+          {/* EDIT PROFIL */}
+          <div className="bg-sky-50 border border-sky-100 rounded-xl p-6 shadow-sm">
+            <h3 className="font-semibold text-sky-700 mb-4 text-lg">Edit Profil</h3>
+
+            <form onSubmit={updateProfile} className="space-y-4">
+              <InputWithIcon
+                icon={<User size={16} />}
+                label="Nama"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+
+              <InputWithIcon
+                icon={<Mail size={16} />}
+                label="Email"
+                type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                required
               />
-            </div>
-          </div>
-          <button className="bg-sky-600 text-white px-4 py-2 rounded hover:bg-sky-700">
-            Simpan Email
-          </button>
-        </form>
 
-        {/* Update Username */}
-        <h3 className="font-semibold text-sky-600 mb-2">Ubah Username</h3>
-        <form onSubmit={updateUsername} className="space-y-4 mb-8">
-          <div>
-            <label className="text-sm font-semibold">Username Baru</label>
-            <div className="flex gap-2 items-center border rounded px-3 py-2">
-              <User size={16} />
-              <input
-                className="flex-1 outline-none"
-                value={form.username}
-                onChange={(e) => setForm({ ...form, username: e.target.value })}
-                required
-              />
-            </div>
+              <button className="btn-primary w-full">Simpan Perubahan</button>
+            </form>
           </div>
-          <button className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-            Simpan Username
-          </button>
-        </form>
+        </div>
 
-        {/* Update Password */}
-        <h3 className="font-semibold text-sky-600 mb-2">Ganti Password</h3>
-        <form onSubmit={updatePassword} className="space-y-4">
-          <div>
-            <label className="text-sm font-semibold">Password Lama</label>
-            <div className="flex items-center gap-2 border rounded px-3 py-2">
-              <KeyRound size={16} />
-              <input
-                type="password"
-                className="flex-1 outline-none"
-                value={passwordForm.current_password}
-                onChange={(e) =>
-                  setPasswordForm({
-                    ...passwordForm,
-                    current_password: e.target.value,
-                  })
-                }
-                required
-              />
-            </div>
-          </div>
+        {/* EDIT USERNAME */}
+        <div className="bg-sky-50 border border-sky-100 p-6 rounded-xl shadow-sm mb-10">
 
-          <div>
-            <label className="text-sm font-semibold">Password Baru</label>
-            <div className="flex items-center gap-2 border rounded px-3 py-2">
-              <KeyRound size={16} />
-              <input
-                type="password"
-                className="flex-1 outline-none"
-                value={passwordForm.new_password}
-                onChange={(e) =>
-                  setPasswordForm({
-                    ...passwordForm,
-                    new_password: e.target.value,
-                  })
-                }
-                required
-              />
-            </div>
-          </div>
+          <h3 className="font-semibold text-sky-700 mb-4 text-lg">Edit Username</h3>
 
-          <div>
-            <label className="text-sm font-semibold">
-              Konfirmasi Password Baru
-            </label>
-            <div className="flex items-center gap-2 border rounded px-3 py-2">
-              <KeyRound size={16} />
-              <input
-                type="password"
-                className="flex-1 outline-none"
-                value={passwordForm.new_password_confirmation}
-                onChange={(e) =>
-                  setPasswordForm({
-                    ...passwordForm,
-                    new_password_confirmation: e.target.value,
-                  })
-                }
-                required
-              />
-            </div>
-          </div>
+          <form onSubmit={updateUsername} className="space-y-4">
+            <InputWithIcon
+              icon={<User size={16} />}
+              label="Username"
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
+            />
 
-          <button className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700">
-            Update Password
-          </button>
-        </form>
+            <button className="btn-primary w-full">Update Username</button>
+          </form>
+        </div>
+
+        {/* GANTI PASSWORD */}
+        <div className="bg-sky-50 border border-sky-100 p-6 rounded-xl shadow-sm">
+
+          <h3 className="font-semibold text-sky-700 mb-4 text-lg">Ganti Password</h3>
+
+          <form onSubmit={updatePassword} className="space-y-4">
+            <InputWithIcon
+              icon={<KeyRound size={16} />}
+              label="Password Lama"
+              type="password"
+              value={passwordForm.current_password}
+              onChange={(e) =>
+                setPasswordForm({
+                  ...passwordForm,
+                  current_password: e.target.value,
+                })
+              }
+            />
+
+            <InputWithIcon
+              icon={<KeyRound size={16} />}
+              label="Password Baru"
+              type="password"
+              value={passwordForm.new_password}
+              onChange={(e) =>
+                setPasswordForm({
+                  ...passwordForm,
+                  new_password: e.target.value,
+                })
+              }
+            />
+
+            <InputWithIcon
+              icon={<KeyRound size={16} />}
+              label="Konfirmasi Password Baru"
+              type="password"
+              value={passwordForm.new_password_confirmation}
+              onChange={(e) =>
+                setPasswordForm({
+                  ...passwordForm,
+                  new_password_confirmation: e.target.value,
+                })
+              }
+            />
+
+            <button className="btn-primary w-full">Update Password</button>
+          </form>
+        </div>
       </div>
     </PetugasLayout>
+  );
+}
+
+// INFO ROW
+function InfoRow({ label, value }) {
+  return (
+    <div className="grid grid-cols-3 text-sm">
+      <span className="font-medium text-slate-800">{label}</span>
+      <span className="col-span-2 text-slate-700">: {value}</span>
+    </div>
+  );
+}
+
+// INPUT REUSABLE
+function InputWithIcon({ icon, label, type = "text", ...props }) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-slate-600 mb-1">
+        {label}
+      </label>
+
+      <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2
+        focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-400 transition-all">
+        
+        {icon && <span className="text-slate-500">{icon}</span>}
+
+        <input
+          type={type}
+          className="flex-1 outline-none text-sm bg-transparent text-slate-800"
+          required
+          {...props}
+        />
+      </div>
+    </div>
   );
 }

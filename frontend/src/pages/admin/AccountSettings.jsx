@@ -1,168 +1,272 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import API from "../../utils/api";
-import AdminLayout from "../../components/AdminLayout";
 import { toast } from "react-toastify";
-import { Mail, User, KeyRound, Save } from "lucide-react";
+import Swal from "sweetalert2";
+import AdminLayout from "../../components/AdminLayout";
+import { User, Mail, KeyRound } from "lucide-react";
 
-export default function AccountSettings() {
+export default function AdminAccount() {
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState({});
+  const [form, setForm] = useState({ name: "", email: "", username: "" });
+  const [passwordForm, setPasswordForm] = useState({
+    current_password: "",
+    new_password: "",
+    new_password_confirmation: "",
+  });
 
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const toastOptions = {
+    position: "top-right",
+    autoClose: 2500,
+    theme: "colored",
+    icon: false,
+  };
 
   useEffect(() => {
-    loadData();
+    loadProfile();
   }, []);
 
-  const loadData = async () => {
+  const loadProfile = async () => {
     try {
       const res = await API.get("/account");
-      setUser(res.data.user);
+      const u = res.data.user;
 
-      setEmail(res.data.user.email);
-      setUsername(res.data.user.username);
+      setProfile({
+        username: u.username,
+        name: u.name,
+        email: u.email,
+        role: u.roles?.[0]?.name ?? "admin",
+      });
+
+      setForm({
+        username: u.username,
+        name: u.name,
+        email: u.email,
+      });
     } catch (err) {
-      toast.error("Gagal memuat profil akun!");
+      toast.error("Gagal memuat profil akun admin", toastOptions);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateEmail = async () => {
-    try {
-      await API.put("/account/update-email", { email });
-      toast.success("Email berhasil diperbarui.");
-    } catch (err) {
-      toast.error("Gagal memperbarui email.");
-    }
+  const confirmAction = async (title, text, confirmText, actionFn) => {
+    const result = await Swal.fire({
+      title,
+      text,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#0ea5e9",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: confirmText,
+      cancelButtonText: "Batal",
+    });
+
+    if (result.isConfirmed) await actionFn();
   };
 
-  const updateUsername = async () => {
-    try {
-      await API.put("/account/update-username", { username });
-      toast.success("Username berhasil diperbarui.");
-    } catch (err) {
-      toast.error("Gagal memperbarui username.");
-    }
+  const updateProfile = (e) => {
+    e.preventDefault();
+    confirmAction(
+      "Simpan Perubahan Profil?",
+      "Data profil Anda akan diperbarui.",
+      "Ya, Simpan",
+      async () => {
+        try {
+          await API.post("/account/update-email", { email: form.email });
+          toast.success("Profil berhasil diperbarui", toastOptions);
+          loadProfile();
+        } catch {
+          toast.error("Gagal memperbarui profil", toastOptions);
+        }
+      }
+    );
   };
 
-  const updatePassword = async () => {
-    try {
-      await API.put("/account/update-password", {
-        current_password: currentPassword,
-        new_password: newPassword,
-        new_password_confirmation: confirmNewPassword,
-      });
-
-      toast.success("Password berhasil diperbarui.");
-
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmNewPassword("");
-    } catch (err) {
-      toast.error("Gagal memperbarui password.");
-    }
+  const updateUsername = (e) => {
+    e.preventDefault();
+    confirmAction(
+      "Ubah Username?",
+      "Pastikan username tidak sama dengan sebelumnya.",
+      "Ya, Ubah",
+      async () => {
+        try {
+          await API.post("/account/update-username", { username: form.username });
+          toast.success("Username berhasil diperbarui", toastOptions);
+          loadProfile();
+        } catch {
+          toast.error("Gagal memperbarui username", toastOptions);
+        }
+      }
+    );
   };
 
-  if (loading || !user) {
+  const updatePassword = (e) => {
+    e.preventDefault();
+    confirmAction(
+      "Ganti Password?",
+      "Pastikan Anda mengingat password baru Anda.",
+      "Ya, Ganti",
+      async () => {
+        try {
+          await API.post("/account/update-password", passwordForm);
+          toast.success("Password berhasil diperbarui", toastOptions);
+
+          setPasswordForm({
+            current_password: "",
+            new_password: "",
+            new_password_confirmation: "",
+          });
+        } catch (err) {
+          toast.error(
+            err.response?.data?.message || "Gagal memperbarui password",
+            toastOptions
+          );
+        }
+      }
+    );
+  };
+
+  if (loading)
     return (
       <AdminLayout>
-        <div className="p-10 text-center">Memuat...</div>
+        <div className="max-w-3xl mx-auto mt-16 p-8 bg-white rounded-2xl shadow animate-pulse">
+          <div className="h-6 bg-slate-200 rounded w-1/3 mb-4"></div>
+          <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+          <div className="h-4 bg-slate-200 rounded w-2/4"></div>
+        </div>
       </AdminLayout>
     );
-  }
 
   return (
     <AdminLayout>
-      <div className="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-md space-y-12">
+      <div className="max-w-4xl mx-auto mt-10 bg-white p-8 rounded-2xl shadow-md border border-slate-100">
+        <h2 className="text-2xl font-bold text-sky-700 mb-8">
+          Pengaturan Akun Admin
+        </h2>
 
-        {/* EMAIL */}
-        <section>
-          <h3 className="flex items-center gap-2 text-blue-700 font-semibold text-lg">
-            <Mail size={20} /> Ubah Email
-          </h3>
-
-          <input
-            className="mt-3 w-full border rounded-lg p-2"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-
-          <button
-            onClick={updateEmail}
-            className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <Save size={16} /> Simpan Email
-          </button>
-        </section>
-
-        {/* USERNAME */}
-        <section>
-          <h3 className="flex items-center gap-2 text-indigo-700 font-semibold text-lg">
-            <User size={20} /> Ubah Username
-          </h3>
-
-          <input
-            className="mt-3 w-full border rounded-lg p-2"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-
-          <button
-            onClick={updateUsername}
-            className="mt-3 bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <Save size={16} /> Simpan Username
-          </button>
-        </section>
-
-        {/* PASSWORD */}
-        <section>
-          <h3 className="flex items-center gap-2 text-red-700 font-semibold text-lg">
-            <KeyRound size={20} /> Ganti Password
-          </h3>
-
-          <div className="space-y-3 mt-3">
-            <input
-              type="password"
-              className="w-full border p-2 rounded-lg"
-              placeholder="Password lama"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-            />
-
-            <input
-              type="password"
-              className="w-full border p-2 rounded-lg"
-              placeholder="Password baru"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-            />
-
-            <input
-              type="password"
-              className="w-full border p-2 rounded-lg"
-              placeholder="Konfirmasi password baru"
-              value={confirmNewPassword}
-              onChange={(e) =>
-                setConfirmNewPassword(e.target.value)
-              }
-            />
+        {/* Informasi Akun & Edit Profil */}
+        <div className="grid md:grid-cols-2 gap-6 mb-10">
+          <div className="bg-sky-50 border border-sky-100 rounded-xl p-6 shadow-sm">
+            <h3 className="font-semibold text-sky-700 mb-5 text-lg">
+              Informasi Akun
+            </h3>
+            <div className="text-sm text-slate-700 space-y-2">
+              <InfoRow label="Username" value={profile.username} />
+              <InfoRow label="Nama" value={profile.name} />
+              <InfoRow label="Email" value={profile.email} />
+              <InfoRow label="Role" value={profile.role?.toUpperCase()} />
+            </div>
           </div>
 
-          <button
-            onClick={updatePassword}
-            className="mt-3 bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <Save size={16} /> Simpan Password
-          </button>
-        </section>
+          <div className="bg-sky-50 border border-sky-100 rounded-xl p-6 shadow-sm">
+            <h3 className="font-semibold text-sky-700 mb-4 text-lg">Edit Profil</h3>
+            <form onSubmit={updateProfile} className="space-y-4">
+              <InputWithIcon
+                icon={<User size={16} />}
+                label="Nama"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+
+              <InputWithIcon
+                icon={<Mail size={16} />}
+                label="Email"
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
+
+              <button className="btn-primary w-full">Simpan Perubahan</button>
+            </form>
+          </div>
+        </div>
+
+        {/* Edit Username */}
+        <div className="bg-sky-50 border border-sky-100 p-6 rounded-xl shadow-sm mb-10">
+          <h3 className="font-semibold text-sky-700 mb-4 text-lg">Edit Username</h3>
+
+          <form onSubmit={updateUsername} className="space-y-4">
+            <InputWithIcon
+              icon={<User size={16} />}
+              label="Username"
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
+            />
+            <button className="btn-primary w-full">Update Username</button>
+          </form>
+        </div>
+
+        {/* Ganti Password */}
+        <div className="bg-sky-50 border border-sky-100 p-6 rounded-xl shadow-sm">
+          <h3 className="font-semibold text-sky-700 mb-4 text-lg">Ganti Password</h3>
+
+          <form onSubmit={updatePassword} className="space-y-4">
+            <InputWithIcon
+              icon={<KeyRound size={16} />}
+              label="Password Lama"
+              type="password"
+              value={passwordForm.current_password}
+              onChange={(e) =>
+                setPasswordForm({ ...passwordForm, current_password: e.target.value })
+              }
+            />
+
+            <InputWithIcon
+              icon={<KeyRound size={16} />}
+              label="Password Baru"
+              type="password"
+              value={passwordForm.new_password}
+              onChange={(e) =>
+                setPasswordForm({ ...passwordForm, new_password: e.target.value })
+              }
+            />
+
+            <InputWithIcon
+              icon={<KeyRound size={16} />}
+              label="Konfirmasi Password Baru"
+              type="password"
+              value={passwordForm.new_password_confirmation}
+              onChange={(e) =>
+                setPasswordForm({
+                  ...passwordForm,
+                  new_password_confirmation: e.target.value,
+                })
+              }
+            />
+
+            <button className="btn-primary w-full">Update Password</button>
+          </form>
+        </div>
       </div>
     </AdminLayout>
+  );
+}
+
+function InfoRow({ label, value }) {
+  return (
+    <div className="grid grid-cols-3 text-sm">
+      <span className="font-medium text-slate-800">{label}</span>
+      <span className="col-span-2 text-slate-700">: {value}</span>
+    </div>
+  );
+}
+
+function InputWithIcon({ icon, label, type = "text", ...props }) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-slate-600 mb-1">
+        {label}
+      </label>
+      <div className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2 focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-400 transition-all">
+        {icon && <span className="text-slate-500">{icon}</span>}
+        <input
+          type={type}
+          className="flex-1 outline-none text-sm bg-transparent text-slate-800"
+          {...props}
+          required
+        />
+      </div>
+    </div>
   );
 }
