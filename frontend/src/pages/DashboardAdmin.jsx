@@ -25,10 +25,6 @@ import {
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
-
-// ============================================================
-// AUTOZOOM MAP
-// ============================================================
 function AutoZoom({ locations }) {
   const map = useMap();
   const indexRef = useRef(0);
@@ -46,18 +42,13 @@ function AutoZoom({ locations }) {
   return null;
 }
 
-
-
-// ============================================================
-// DASHBOARD ADMIN
-// ============================================================
 const DashboardAdmin = () => {
   const [time, setTime] = useState(new Date());
 
   const [stats, setStats] = useState({
     lks_aktif: 0,
+    lks_diproses: 0,
     lks_nonaktif: 0,
-    lks_pending: 0,
     klien_aktif: 0,
     klien_nonaktif: 0,
     total_petugas: 0,
@@ -84,68 +75,61 @@ const DashboardAdmin = () => {
     { name: "Anjatan", lat: -6.33, lng: 108.12 },
   ]);
 
-
-
   // ============================================================
   // FETCH DATA API
   // ============================================================
   useEffect(() => {
-  const token = sessionStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
 
-  if (!token) {
-    console.error("Token tidak ditemukan! Anda harus login.");
-    return;
-  }
+    if (!token) {
+      console.error("Token tidak ditemukan! Anda harus login.");
+      return;
+    }
 
-  fetch("http://localhost:8000/api/dashboard", {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Accept": "application/json",
-    },
-  })
-  .then(async (res) => {
-      if (res.status === 401) {
-        console.error("Unauthorized! Token salah atau expired.");
-        return;
-      }
+    fetch("http://localhost:8000/api/dashboard", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    })
+      .then(async (res) => {
+        if (res.status === 401) {
+          console.error("Unauthorized! Token salah atau expired.");
+          return;
+        }
 
-      const data = await res.json();
-      console.log("API DASHBOARD:", data);
+        const data = await res.json();
+        console.log("API DASHBOARD:", data);
 
-      setStats({
-        lks_aktif: data.total_lks.aktif,
-        lks_nonaktif: data.total_lks.nonaktif,
-        lks_pending: data.total_lks.pending,
-        klien_aktif: data.total_klien.aktif,
-        klien_nonaktif: data.total_klien.nonaktif,
-        total_petugas: data.total_petugas,
-      });
+        // ====== AMANKAN DATA DARI BACKEND ======
+        setStats({
+          lks_aktif: data.total_lks?.aktif ?? 0,
+          lks_diproses: data.total_lks?.diproses ?? 0,
+          lks_nonaktif: data.total_lks?.nonaktif ?? 0,
+          klien_aktif: data.total_klien?.aktif ?? 0,
+          klien_nonaktif: data.total_klien?.nonaktif ?? 0,
+          total_petugas: data.total_petugas ?? 0,
+        });
 
-      setKecamatanData(
-        (data.per_kecamatan ?? []).map((k) => ({
-          nama: k.nama ?? "-",
-          jumlah: (k.aktif ?? 0) + (k.nonaktif ?? 0) + (k.pending ?? 0),
-        }))
-      );
-  })
-  .catch((err) => console.error(err));
+        // Per Kecamatan
+        setKecamatanData(
+          (data.per_kecamatan ?? []).map((k) => ({
+            nama: k.nama ?? "-",
+            jumlah: (k.aktif ?? 0) + (k.diproses ?? 0) + (k.nonaktif ?? 0),
+          }))
+        );
+      })
+      .catch((err) => console.error(err));
+  }, []);
 
-}, []);
-
-
-  // ============================================================
-  // JAM REALTIME
-  // ============================================================
+  // Realtime clock
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-
-  // ============================================================
-  // SIMULASI ANIMASI CHART
-  // ============================================================
+  // Chart animation
   useEffect(() => {
     const interval = setInterval(() => {
       setChartData((prev) =>
@@ -158,10 +142,7 @@ const DashboardAdmin = () => {
     return () => clearInterval(interval);
   }, []);
 
-
-  // ============================================================
-  // BACKGROUND ANIMATION
-  // ============================================================
+  // Background animation
   const bgControls = useAnimation();
   useEffect(() => {
     const animate = async () => {
@@ -181,14 +162,11 @@ const DashboardAdmin = () => {
     animate();
   }, [bgControls]);
 
-
-
   // ============================================================
   // RENDER UI
   // ============================================================
   return (
     <motion.div animate={bgControls} className="min-h-screen w-full text-slate-700">
-
       {/* HEADER */}
       <header className="flex justify-between items-center px-16 py-8">
         <div>
@@ -206,19 +184,51 @@ const DashboardAdmin = () => {
         </div>
       </header>
 
-
-
       {/* PANEL STATISTIK */}
       <section className="flex justify-center gap-10 flex-wrap mt-6">
         {[
-          { title: "LKS Aktif", value: stats.lks_aktif, icon: Building2, color: "from-sky-400 to-blue-300" },
-          { title: "LKS Nonaktif", value: stats.lks_nonaktif, icon: Building2, color: "from-red-400 to-rose-300" },
-          { title: "LKS Pending", value: stats.lks_pending, icon: Clock, color: "from-yellow-400 to-amber-300" },
-          { title: "Klien Aktif", value: stats.klien_aktif, icon: Users, color: "from-emerald-400 to-teal-300" },
-          { title: "Klien Nonaktif", value: stats.klien_nonaktif, icon: Users, color: "from-orange-400 to-red-300" },
-          { title: "Total Petugas", value: stats.total_petugas, icon: ShieldCheck, color: "from-indigo-400 to-sky-300" },
+          {
+            title: "LKS Aktif (Valid)",
+            value: stats.lks_aktif,
+            icon: Building2,
+            color: "from-sky-400 to-blue-300",
+          },
+          {
+            title: "LKS Diproses",
+            value: stats.lks_diproses,
+            icon: Clock,
+            color: "from-yellow-400 to-amber-300",
+          },
+          {
+            title: "LKS Nonaktif",
+            value: stats.lks_nonaktif,
+            icon: Building2,
+            color: "from-red-400 to-rose-300",
+          },
+          {
+            title: "Klien Aktif",
+            value: stats.klien_aktif,
+            icon: Users,
+            color: "from-emerald-400 to-teal-300",
+          },
+          {
+            title: "Klien Nonaktif",
+            value: stats.klien_nonaktif,
+            icon: Users,
+            color: "from-orange-400 to-red-300",
+          },
+          {
+            title: "Total Petugas",
+            value: stats.total_petugas,
+            icon: ShieldCheck,
+            color: "from-indigo-400 to-sky-300",
+          },
         ].map((card, i) => (
-          <motion.div key={i} whileHover={{ scale: 1.05 }} className={`bg-gradient-to-br ${card.color} p-[2px] rounded-[2rem] w-64`}>
+          <motion.div
+            key={i}
+            whileHover={{ scale: 1.05 }}
+            className={`bg-gradient-to-br ${card.color} p-[2px] rounded-[2rem] w-64`}
+          >
             <div className="bg-white/70 backdrop-blur-xl rounded-[2rem] p-6 text-center">
               <card.icon size={30} className="text-sky-600 mb-3 mx-auto" />
               <p className="text-slate-600 font-medium">{card.title}</p>
@@ -228,12 +238,8 @@ const DashboardAdmin = () => {
         ))}
       </section>
 
-
-
-
       {/* CHART + BAR */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-12 px-12 mt-12">
-
         {/* TREND */}
         <motion.div className="bg-white/80 rounded-[2rem] p-8 shadow-xl">
           <h3 className="flex items-center gap-2 text-slate-700 font-semibold mb-6">
@@ -252,11 +258,16 @@ const DashboardAdmin = () => {
               <XAxis dataKey="bulan" />
               <YAxis />
               <Tooltip />
-              <Area type="monotone" dataKey="klien" stroke="#0ea5e9" fill="url(#areaFill)" strokeWidth={3} />
+              <Area
+                type="monotone"
+                dataKey="klien"
+                stroke="#0ea5e9"
+                fill="url(#areaFill)"
+                strokeWidth={3}
+              />
             </AreaChart>
           </ResponsiveContainer>
         </motion.div>
-
 
         {/* BAR CHART */}
         <motion.div className="bg-white/80 rounded-[2rem] p-8 shadow-xl">
@@ -280,11 +291,7 @@ const DashboardAdmin = () => {
             </BarChart>
           </ResponsiveContainer>
         </motion.div>
-
       </section>
-
-
-
 
       {/* MAP */}
       <motion.section className="mx-12 mt-16 bg-white/90 rounded-[2rem] p-8 shadow-xl">
@@ -311,14 +318,10 @@ const DashboardAdmin = () => {
         </div>
       </motion.section>
 
-
-
-
       {/* FOOTER */}
       <footer className="mt-14 py-8 text-center text-slate-600">
         © {new Date().getFullYear()} Dinas Sosial Kabupaten Indramayu
       </footer>
-
     </motion.div>
   );
 };

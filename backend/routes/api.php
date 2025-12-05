@@ -161,8 +161,33 @@ Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
     // =================================================================
     // KLIEN (WAJIB LKS VERIFIED)
     // =================================================================
-    Route::apiResource('klien', KlienController::class)
-        ->middleware(['role:lks', 'lks.verified']);
+    Route::middleware(['auth:sanctum'])->group(function () {
+
+    // Admin, Operator, dan LKS bisa mengakses sesuai aturan di controller
+    Route::get('/klien', [KlienController::class, 'index']);
+    Route::post('/klien', [KlienController::class, 'store']);
+    Route::get('/klien/{id}', [KlienController::class, 'show']);
+    Route::put('/klien/{id}', [KlienController::class, 'update']);
+    Route::delete('/klien/{id}', [KlienController::class, 'destroy']);
+
+});
+// =====================================================================
+// LAPORAN ADMIN
+// =====================================================================
+Route::prefix('admin')->middleware(['role:admin'])->group(function () {
+    Route::get('/laporan', [\App\Http\Controllers\Laporan\AdminLaporanController::class, 'laporan']);
+    Route::get('/laporan/export/pdf', [\App\Http\Controllers\Laporan\AdminLaporanController::class, 'exportPdf']);
+    Route::get('/laporan/export/excel', [\App\Http\Controllers\Laporan\AdminLaporanController::class, 'exportExcel']);
+});
+
+// =====================================================================
+// LAPORAN OPERATOR
+// =====================================================================
+Route::prefix('operator')->middleware(['role:operator'])->group(function () {
+    Route::get('/laporan', [\App\Http\Controllers\Laporan\OperatorLaporanController::class, 'laporan']);
+});
+
+
 
 
     // =================================================================

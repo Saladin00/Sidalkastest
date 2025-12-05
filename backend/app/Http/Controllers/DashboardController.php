@@ -15,101 +15,166 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        if ($user->role === 'admin') {
+        if ($user->hasRole('admin')) {
             return $this->adminDashboard();
         }
 
-        if ($user->role === 'operator') {
+        if ($user->hasRole('operator')) {
             return $this->operatorDashboard($user);
         }
 
-        if ($user->role === 'petugas') {
+        if ($user->hasRole('petugas')) {
             return $this->petugasDashboard($user);
         }
 
-        if ($user->role === 'lks') {
+        if ($user->hasRole('lks')) {
             return $this->lksDashboard($user);
         }
 
         return response()->json(['error' => 'Role tidak dikenali'], 403);
     }
 
+    // ============================================================
+    // 📌 ADMIN DASHBOARD (FINAL SINKRON VERIFIKASI)
+    // ============================================================
     private function adminDashboard()
-{
-    return response()->json([
-        'role' => 'admin',
+    {
+        // STATUS DIPROSES (sesuai workflow operator & petugas)
+        $statusesDiproses = [
+            'menunggu',
+            'dikirim_operator',
+            'dikirim_petugas',
+            'proses_survei',
+            'dikirim_admin',
+            'proses_validasi',
+        ];
 
-        // TOTAL LKS
-        'total_lks' => [
-            'aktif'        => Lks::where('status', 'aktif')->count(),
-            'nonaktif'     => Lks::where('status', 'nonaktif')->count(),
-            'pending'      => Lks::where('status', 'pending')->count(),
-        ],
+        return response()->json([
+            'role' => 'admin',
 
-        // TOTAL KLIEN
-        'total_klien' => [
-            'aktif'        => Klien::where('status', 'aktif')->count(),
-            'nonaktif'     => Klien::where('status', 'nonaktif')->count(),
-        ],
+            'total_lks' => [
+                // VALID
+                'aktif' => Lks::whereHas('verifikasiTerbaru', function ($q) {
+                    $q->where('status', 'valid');
+                })->count(),
 
-        // TOTAL PETUGAS
-        'total_petugas' => User::where('role', 'petugas')->count(),
+                // SEDANG DIPROSES
+                'diproses' => Lks::whereHas('verifikasiTerbaru', function ($q) use ($statusesDiproses) {
+                    $q->whereIn('status', $statusesDiproses);
+                })->count(),
 
-        // DATA PER KECAMATAN
-        'per_kecamatan' => Kecamatan::withCount([
-            'lks as aktif'     => fn($q) => $q->where('status', 'aktif'),
-            'lks as nonaktif'  => fn($q) => $q->where('status', 'nonaktif'),
-            'lks as pending'   => fn($q) => $q->where('status', 'pending'),
-        ])
-        ->get()
-        ->map(fn($k) => [
-            'nama'     => $k->nama,
-            'aktif'    => $k->aktif,
-            'nonaktif' => $k->nonaktif,
-            'pending'  => $k->pending,
-        ])
-    ]);
-}
+                // BELUM PERNAH DI VERIFIKASI / NULL
+                'nonaktif' => Lks::whereDoesntHave('verifikasiTerbaru')
+                    ->orWhereHas('verifikasiTerbaru', fn($q) => $q->whereNull('status'))
+                    ->count(),
+            ],
 
+            // KLIEN (status_pembinaan)
+            'total_klien' => [
+                'aktif'        => Klien::where('status_pembinaan', 'aktif')->count(),
+                'nonaktif'     => Klien::where('status_pembinaan', 'selesai')->count(),
+            ],
+
+            // TOTAL PETUGAS
+            'total_petugas' => User::role('petugas')->count(),
+
+            // DATA PER KECAMATAN
+            'per_kecamatan' => Kecamatan::get()->map(function ($k) use ($statusesDiproses) {
+
+                return [
+                    'nama' => $k->nama,
+
+                    'aktif' => Lks::where('kecamatan_id', $k->id)
+                        ->whereHas('verifikasiTerbaru', fn($q) => $q->where('status', 'valid'))
+                        ->count(),
+
+                    'diproses' => Lks::where('kecamatan_id', $k->id)
+                        ->whereHas('verifikasiTerbaru', fn($q) => $q->whereIn('status', $statusesDiproses))
+                        ->count(),
+
+                    'nonaktif' => Lks::where('kecamatan_id', $k->id)
+                        ->whereDoesntHave('verifikasiTerbaru')
+                        ->orWhereHas('verifikasiTerbaru', fn($q) => $q->whereNull('status'))
+                        ->count(),
+                ];
+            })
+        ]);
+    }
+
+    // ============================================================
+    // 📌 OPERATOR DASHBOARD
+    // ============================================================
     private function operatorDashboard($user)
     {
         $idKec = $user->kecamatan_id;
+
+        $statusesDiproses = [
+            'menunggu',
+            'dikirim_operator',
+            'dikirim_petugas',
+            'proses_survei',
+            'dikirim_admin',
+            'proses_validasi',
+        ];
 
         return response()->json([
             'role' => 'operator',
 
             'total_lks' => [
-                'aktif'        => Lks::where('kecamatan_id', $idKec)->where('status','aktif')->count(),
-                'tidak_aktif'  => Lks::where('kecamatan_id', $idKec)->where('status','tidak_aktif')->count(),
-                'diproses'     => Lks::where('kecamatan_id', $idKec)->where('status','diproses')->count(),
+                'aktif' => Lks::where('kecamatan_id', $idKec)
+                    ->whereHas('verifikasiTerbaru', fn($q) => $q->where('status', 'valid'))
+                    ->count(),
+
+                'diproses' => Lks::where('kecamatan_id', $idKec)
+                    ->whereHas('verifikasiTerbaru', fn($q) => $q->whereIn('status', $statusesDiproses))
+                    ->count(),
+
+                'nonaktif' => Lks::where('kecamatan_id', $idKec)
+                    ->whereDoesntHave('verifikasiTerbaru')
+                    ->orWhereHas('verifikasiTerbaru', fn($q) => $q->whereNull('status'))
+                    ->count(),
             ],
 
             'total_klien' => [
-                'aktif'        => Klien::where('kecamatan_id', $idKec)->where('status','aktif')->count(),
-                'tidak_aktif'  => Klien::where('kecamatan_id', $idKec)->where('status','tidak_aktif')->count(),
+                'aktif'        => Klien::where('kecamatan_id', $idKec)->where('status_pembinaan', 'aktif')->count(),
+                'nonaktif'     => Klien::where('kecamatan_id', $idKec)->where('status_pembinaan', 'selesai')->count(),
             ]
         ]);
     }
 
+    // ============================================================
+    // 📌 PETUGAS DASHBOARD
+    // ============================================================
     private function petugasDashboard($user)
     {
         return response()->json([
             'role' => 'petugas',
-            'verifikasi_menunggu' => Verifikasi::where('petugas_id', $user->id)->where('status','menunggu')->count(),
-            'verifikasi_selesai'  => Verifikasi::where('petugas_id', $user->id)->where('status','valid')->count(),
+
+            'verifikasi_menunggu' => Verifikasi::where('petugas_id', $user->id)
+                ->whereIn('status', ['proses_survei'])
+                ->count(),
+
+            'verifikasi_selesai'  => Verifikasi::where('petugas_id', $user->id)
+                ->where('status', 'dikirim_admin')
+                ->count(),
         ]);
     }
 
+    // ============================================================
+    // 📌 LKS DASHBOARD
+    // ============================================================
     private function lksDashboard($user)
     {
         $lks_id = $user->lks_id;
 
         return response()->json([
             'role' => 'lks',
+
             'jumlah_klien' => [
-                'aktif' => Klien::where('lks_id', $lks_id)->where('status','aktif')->count(),
-                'tidak_aktif' => Klien::where('lks_id', $lks_id)->where('status','tidak_aktif')->count(),
+                'aktif' => Klien::where('lks_id', $lks_id)->where('status_pembinaan', 'aktif')->count(),
+                'tidak_aktif' => Klien::where('lks_id', $lks_id)->where('status_pembinaan', 'selesai')->count(),
             ],
+
             'jenis_bantuan' => Klien::where('lks_id', $lks_id)
                 ->selectRaw('jenis_bantuan, count(*) as total')
                 ->groupBy('jenis_bantuan')
