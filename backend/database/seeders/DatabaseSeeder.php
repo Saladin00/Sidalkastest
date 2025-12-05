@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
         KecamatanSeeder::class,
         OperatorSeeder::class,
         LksSeeder::class,
-        PetugasSeeder::class,
+
     ]);
 }
 

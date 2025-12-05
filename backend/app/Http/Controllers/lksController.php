@@ -16,59 +16,49 @@ class LKSController extends Controller
 {
     try {
         $user = $request->user();
+
+        // 🔥 HANYA LKS VALID
         $query = Lks::with(['verifikasiTerbaru', 'kecamatan'])
-    ->whereHas('verifikasiTerbaru', function($q) {
-        $q->where('status', 'valid');
-    });
+            ->whereHas('verifikasiTerbaru', function($q) {
+                $q->where('status', 'valid');
+            });
 
-
-        // 🔹 Jika operator / petugas → hanya tampilkan LKS di kecamatan-nya
+        // Operator → hanya kecamatan sendiri
         if ($user->hasAnyRole(['operator', 'petugas'])) {
-            if (!$user->kecamatan_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User belum memiliki kecamatan_id.'
-                ], 400);
-            }
             $query->where('kecamatan_id', $user->kecamatan_id);
         }
 
-        // 🔹 Jika LKS → hanya data miliknya
+        // LKS → hanya dirinya sendiri
         if ($user->hasRole('lks')) {
             $query->where('user_id', $user->id);
         }
 
-        // 🔹 Filter opsional
+        // Search
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('nama', 'like', "%$search%")
-                  ->orWhere('jenis_layanan', 'like', "%$search%");
-            });
+            $query->where('nama', 'like', "%$search%");
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
+        // Kecamatan filter
         if ($request->filled('kecamatan_id')) {
             $query->where('kecamatan_id', $request->kecamatan_id);
         }
 
-        // 🔹 Ambil data (tanpa paginate dulu)
-        $data = $query->orderBy('created_at', 'desc')->get();
+        $data = $query->orderBy('created_at','desc')->get();
 
         return response()->json([
             'success' => true,
             'data' => $data
         ]);
+
     } catch (\Exception $e) {
         return response()->json([
             'success' => false,
-            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            'message' => $e->getMessage()
         ], 500);
     }
 }
+
 // ============================
     // GET /api/lks
     // ============================
