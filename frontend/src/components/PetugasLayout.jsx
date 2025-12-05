@@ -166,16 +166,7 @@ const PetugasLayout = ({ children }) => {
           </ul>
         </nav>
 
-        {/* Logout */}
-        <div className="border-t border-sky-800 px-3 py-4 bg-sky-900/90">
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-500 hover:bg-red-600 transition text-sm font-semibold text-white py-2.5 shadow-md"
-          >
-            <LogOut size={16} />
-            {!isCollapsed && <span>Logout</span>}
-          </button>
-        </div>
+      
       </aside>
 
       {/* MAIN ================================================= */}
