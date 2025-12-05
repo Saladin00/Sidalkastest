@@ -28,27 +28,31 @@ const LKSLayout = ({ children }) => {
     role: "",
     kecamatan: "-",
   });
+
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showToast, setShowToast] = useState(false);
+
   const dropdownRef = useRef(null);
 
-  // ------------------------
-  // 🔥 LOAD PROFIL + KECAMATAN
-  // ------------------------
+  // ===================================================
+  // 🔥 Load Profil + Kecamatan + Status Verifikasi
+  // ===================================================
   useEffect(() => {
     const loadAccount = async () => {
       try {
         const user = JSON.parse(sessionStorage.getItem("user") || "{}");
         const role = sessionStorage.getItem("role") || "lks";
 
-        // Ambil profil LKS
+        // Ambil profil LKS → status_verifikasi terbaru ikut terbawa
         const res = await API.get("/lks/profile-view");
         const lks = res.data.data;
 
+        // Update session → penting agar sidebar bisa update
+        sessionStorage.setItem("status_verifikasi", lks?.status_verifikasi);
+
         // Ambil daftar kecamatan
         const kecRes = await API.get("/kecamatan");
-
         const kecList =
           kecRes.data?.kecamatan || kecRes.data?.data || kecRes.data || [];
 
@@ -61,21 +65,14 @@ const LKSLayout = ({ children }) => {
           kecamatan: kecamatanNama,
         });
       } catch (err) {
-        console.error("❌ Gagal memuat kecamatan LKS:", err);
-        setUserInfo({
-          name: "Pengguna LKS",
-          role: "lks",
-          kecamatan: "-",
-        });
+        console.error("Gagal memuat profil:", err);
       }
     };
 
     loadAccount();
   }, []);
 
-  // ------------------------
   // Logout
-  // ------------------------
   const logout = () => {
     setShowToast(true);
     setTimeout(() => {
@@ -86,7 +83,7 @@ const LKSLayout = ({ children }) => {
     }, 1800);
   };
 
-  // Tutup dropdown klik di luar
+  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -97,14 +94,27 @@ const LKSLayout = ({ children }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const navItems = [
-    { label: "Dashboard", to: "/lks", icon: LayoutDashboard, exact: true },
-    { label: "Data Klien", to: "/lks/klien", icon: Users },
-    { label: "Dokumen Pendukung", to: "/lks/dokumen", icon: UploadCloud },
-    { label: "Laporan Kegiatan", to: "/lks/laporan", icon: FileText },
+  // ===================================================
+  // 🔥 Sidebar Menu Berdasarkan STATUS VERIFIKASI
+  // ===================================================
+  const statusVerifikasi = sessionStorage.getItem("status_verifikasi");
+  const hanyaBasicMenu = statusVerifikasi !== "valid";
+
+  let navItems = [
     { label: "Status Verifikasi", to: "/lks/verifikasi", icon: ShieldCheck },
     { label: "Profil Saya", to: "/lks/profile", icon: User },
   ];
+
+  if (!hanyaBasicMenu) {
+    navItems = [
+      { label: "Dashboard", to: "/lks", icon: LayoutDashboard, exact: true },
+      { label: "Data Klien", to: "/lks/klien", icon: Users },
+      { label: "Dokumen Pendukung", to: "/lks/dokumen", icon: UploadCloud },
+      { label: "Laporan Kegiatan", to: "/lks/laporan", icon: FileText },
+      { label: "Status Verifikasi", to: "/lks/verifikasi", icon: ShieldCheck },
+      { label: "Profil Saya", to: "/lks/profile", icon: User },
+    ];
+  }
 
   const isActive = (path, exact = false) =>
     exact ? current === path : current.startsWith(path);
@@ -131,27 +141,26 @@ const LKSLayout = ({ children }) => {
 
   return (
     <div className="flex min-h-screen bg-slate-100">
-      {/* ================= SIDEBAR ================= */}
+      {/* ========== SIDEBAR ========== */}
       <aside
         className={`relative flex flex-col bg-[#0a4e75] text-sky-50 shadow-lg transition-all duration-300 ${
           isCollapsed ? "w-20" : "w-64"
         }`}
       >
-        {/* Sidebar Toggle */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="absolute right-0 top-8 z-30 w-7 h-7 translate-x-1/2 rounded-full bg-white/90 border border-sky-300 flex items-center justify-center text-sky-700 shadow-md hover:bg-sky-50 transition"
         >
-          {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+          {isCollapsed ? (
+            <ChevronRight size={14} />
+          ) : (
+            <ChevronLeft size={14} />
+          )}
         </button>
 
-        {/* Logo */}
+        {/* LOGO */}
         <div className="flex items-center gap-3 px-7 py-5 border-b border-sky-800">
-          <img
-            src="/logo.png"
-            alt="Logo"
-            className="h-10 w-10 object-contain"
-          />
+          <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
           {!isCollapsed && (
             <div>
               <span className="text-[11px] tracking-[0.25em] text-emerald-200 uppercase">
@@ -164,7 +173,7 @@ const LKSLayout = ({ children }) => {
           )}
         </div>
 
-        {/* Menu */}
+        {/* MENU */}
         <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-4">
           {!isCollapsed && (
             <p className="px-2 text-[11px] tracking-wide uppercase text-sky-200">
@@ -197,7 +206,7 @@ const LKSLayout = ({ children }) => {
           </ul>
         </nav>
 
-        {/* Logout Button */}
+        {/* Logout */}
         <div className="border-t border-sky-800 px-3 py-4">
           <button
             onClick={() => setShowLogoutConfirm(true)}
@@ -209,9 +218,8 @@ const LKSLayout = ({ children }) => {
         </div>
       </aside>
 
-      {/* ================= MAIN ================= */}
+      {/* ========== MAIN CONTENT ========== */}
       <div className="flex-1 flex flex-col">
-        {/* NAVBAR */}
         <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-slate-200 shadow-sm">
           <div className="flex justify-between items-center px-8 py-3">
             <div>
@@ -304,7 +312,7 @@ const LKSLayout = ({ children }) => {
         </main>
       </div>
 
-      {/* ================= MODAL LOGOUT ================= */}
+      {/* ========== MODAL LOGOUT ========== */}
       <AnimatePresence>
         {showLogoutConfirm && (
           <motion.div

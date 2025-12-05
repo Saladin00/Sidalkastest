@@ -6,7 +6,6 @@ const ProtectedRoute = ({ allowedRoles = [], children }) => {
   const [isValid, setIsValid] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  // Gunakan sessionStorage supaya tidak berbagi antar-tab
   const token = sessionStorage.getItem("token");
   const role = sessionStorage.getItem("role");
 
@@ -16,21 +15,30 @@ const ProtectedRoute = ({ allowedRoles = [], children }) => {
   };
 
   useEffect(() => {
-    const verifyToken = async () => {
+    const verify = async () => {
       try {
         if (!token) {
           setIsValid(false);
           return;
         }
 
-        const res = await API.get("/profile", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // Ambil info user
+        const res = await API.get("/profile");
+        const user = res?.data?.user;
+        if (!user) throw new Error("User not found");
 
-        if (!res?.data?.user) throw new Error("Token invalid");
+        // Jika role LKS, ambil status terbaru langsung dari profil LKS
+        if (role === "lks") {
+          const res2 = await API.get("/lks/profile-view");
+          const statusVer = res2?.data?.data?.status_verifikasi ?? "belum_verifikasi";
+
+          // Simpan ke sessionStorage
+          sessionStorage.setItem("status_verifikasi", statusVer);
+        }
+
         setIsValid(true);
       } catch (err) {
-        console.warn("⚠️ Token expired atau tidak valid:", err);
+        console.warn("Token invalid:", err);
         setIsValid(false);
         sessionStorage.clear();
       } finally {
@@ -38,7 +46,7 @@ const ProtectedRoute = ({ allowedRoles = [], children }) => {
       }
     };
 
-    verifyToken();
+    verify();
   }, [token]);
 
   if (loading) {
