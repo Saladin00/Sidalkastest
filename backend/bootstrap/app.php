@@ -17,17 +17,20 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // ✅ Aktifkan CORS
+        // Enable CORS
         $middleware->api(prepend: [
             \Illuminate\Http\Middleware\HandleCors::class,
         ]);
 
-        // ✅ Daftarkan alias middleware
+        // Register alias middleware
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
-            'idle.timeout' => \App\Http\Middleware\CheckTokenIdleTimeout::class, // ⬅️ idle timeout
+            'idle.timeout' => \App\Http\Middleware\CheckTokenIdleTimeout::class,
+
+            // ⬅️ NEW (LKS MUST BE VERIFIED BEFORE ACCESSING FEATURES)
+            'lks.verified' => \App\Http\Middleware\LksVerified::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

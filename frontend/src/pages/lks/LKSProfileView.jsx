@@ -34,13 +34,15 @@ const LKSProfileView = () => {
 
   const role = sessionStorage.getItem("role") || "Tidak diketahui";
   const user = JSON.parse(sessionStorage.getItem("user") || "{}");
+  const lksId = user?.lks_id;
+
   const namaAkun = user.name || "Pengguna LKS";
   const username = user.username || "-";
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const res = await API.get("/lks/profile-view");
+        const res = await API.get(`/lks/${lksId}`);
         setData(res.data.data);
       } catch (err) {
         console.error("❌ Gagal memuat data LKS:", err);
@@ -124,7 +126,9 @@ const LKSProfileView = () => {
               <Pencil size={16} /> Edit Profil
             </button>
             <a
-              href={`${import.meta.env.VITE_API_BASE_URL}/lks/${data.id}/cetak-profil`}
+              href={`${import.meta.env.VITE_API_BASE_URL}/lks/${
+                data.id
+              }/cetak-profil`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 px-5 py-2.5 bg-green-500 hover:bg-green-600 text-white font-medium text-sm rounded-lg shadow transition"
@@ -137,25 +141,55 @@ const LKSProfileView = () => {
         {/* ======= KONTEN PROFIL ======= */}
         <div className="p-8 sm:p-10 space-y-12">
           {/* 📄 PROFIL UMUM */}
-          <Section title="Profil Umum" icon={<Building2 className="text-blue-600 w-5 h-5" />}>
+          <Section
+            title="Profil Umum"
+            icon={<Building2 className="text-blue-600 w-5 h-5" />}
+          >
             <Grid>
               <Info label="1. Nama LKS" value={display(data.nama)} />
-              <Info label="2. Jenis Layanan" value={display(data.jenis_layanan)} />
+              <Info
+                label="2. Jenis Layanan"
+                value={display(data.jenis_layanan)}
+              />
               <Info label="3. NPWP" value={display(data.npwp)} />
-              <Info label="4. Akta Pendirian" value={display(data.akta_pendirian)} />
+              <Info
+                label="4. Akta Pendirian"
+                value={display(data.akta_pendirian)}
+              />
               <Info label="5. Legalitas" value={display(data.legalitas)} />
-              <Info label="6. Izin Operasional" value={display(data.izin_operasional)} />
-              <Info label="7. Status Akreditasi" value={display(data.status_akreditasi)} />
-              <Info label="8. Tanggal Akreditasi" value={display(data.tanggal_akreditasi)} />
-              <Info label="9. No Sertifikat" value={display(data.no_sertifikat)} />
+              <Info
+                label="6. Izin Operasional"
+                value={display(data.izin_operasional)}
+              />
+              <Info
+                label="7. Status Akreditasi"
+                value={display(data.status_akreditasi)}
+              />
+              <Info
+                label="8. Tanggal Akreditasi"
+                value={display(data.tanggal_akreditasi)}
+              />
+              <Info
+                label="9. No Sertifikat"
+                value={display(data.no_sertifikat)}
+              />
             </Grid>
           </Section>
 
           {/* 📍 LOKASI */}
-          <Section title="Lokasi LKS" icon={<MapPin className="text-red-600 w-5 h-5" />}>
+          <Section
+            title="Lokasi LKS"
+            icon={<MapPin className="text-red-600 w-5 h-5" />}
+          >
             <Grid>
-              <Info label="10. Kecamatan" value={display(data.kecamatan?.nama)} />
-              <Info label="11. Kelurahan / Desa" value={display(data.kelurahan)} />
+              <Info
+                label="10. Kecamatan"
+                value={display(data.kecamatan?.nama)}
+              />
+              <Info
+                label="11. Kelurahan / Desa"
+                value={display(data.kelurahan)}
+              />
               <Info label="12. Alamat Lengkap" value={display(data.alamat)} />
               <Info label="13. Koordinat" value={display(data.koordinat)} />
             </Grid>
@@ -182,25 +216,49 @@ const LKSProfileView = () => {
           </Section>
 
           {/* 👥 PENGURUS */}
-          <Section title="Pengurus" icon={<Users2 className="text-purple-600 w-5 h-5" />}>
+          <Section
+            title="Pengurus"
+            icon={<Users2 className="text-purple-600 w-5 h-5" />}
+          >
             <Grid>
-              <Info label="14. Jumlah Pengurus" value={display(data.jumlah_pengurus)} />
-              <Info label="15. Kontak Pengurus" value={display(data.kontak_pengurus)} />
+              <Info
+                label="14. Jumlah Pengurus"
+                value={display(data.jumlah_pengurus)}
+              />
+              <Info
+                label="15. Kontak Pengurus"
+                value={display(data.kontak_pengurus)}
+              />
             </Grid>
           </Section>
 
           {/* 🧱 SARANA */}
-          <Section title="Sarana & Fasilitas" icon={<Wrench className="text-green-600 w-5 h-5" />}>
+          <Section
+            title="Sarana & Fasilitas"
+            icon={<Wrench className="text-green-600 w-5 h-5" />}
+          >
             <Grid>
-              <Info label="16. Sarana & Fasilitas" value={display(data.sarana)} />
+              <Info
+                label="16. Sarana & Fasilitas"
+                value={display(data.sarana)}
+              />
             </Grid>
           </Section>
 
           {/* 📊 MONITORING */}
-          <Section title="Monitoring" icon={<ClipboardList className="text-pink-600 w-5 h-5" />}>
+          <Section
+            title="Monitoring"
+            icon={<ClipboardList className="text-pink-600 w-5 h-5" />}
+          >
             <Grid>
-              <Info label="17. Hasil Observasi" value={display(data.hasil_observasi)} />
-              <Info label="18. Tindak Lanjut" value={display(data.tindak_lanjut)} />
+              <Info
+                label="17. Hasil Observasi"
+                value={display(data.hasil_observasi)}
+              />
+              <Info
+                label="18. Tindak Lanjut"
+                value={display(data.tindak_lanjut)}
+              />
             </Grid>
           </Section>
         </div>
@@ -229,7 +287,9 @@ const Grid = ({ children }) => (
 
 const Info = ({ label, value }) => (
   <div className="bg-gray-50 hover:bg-blue-50 transition border border-gray-200 rounded-xl p-4 shadow-sm">
-    <p className="text-xs font-semibold text-gray-500 mb-1 uppercase">{label}</p>
+    <p className="text-xs font-semibold text-gray-500 mb-1 uppercase">
+      {label}
+    </p>
     <p className="text-sm font-medium text-gray-800 leading-snug">{value}</p>
   </div>
 );
