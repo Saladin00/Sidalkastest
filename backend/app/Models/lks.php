@@ -27,6 +27,7 @@ class Lks extends Model
         'status_akreditasi',
         'no_sertifikat',
         'tanggal_akreditasi',
+        'status_verifikasi',
         'koordinat',
         'jumlah_pengurus',
         'sarana',

@@ -398,57 +398,78 @@ public function profileView(Request $request)
 {
     $user = $request->user();
 
-    // === ROLE LKS: ambil LKS miliknya ===
+    // =========================
+    // ROLE LKS (pemilik akun)
+    // =========================
     if ($user->hasRole('lks')) {
 
-        // AUTO FIX: kalau user.lks_id ada tapi user_id di tabel lks kosong → perbaiki
-        if ($user->lks_id) {
-            $lks = Lks::find($user->lks_id);
+        // Ambil LKS milik user
+        $lks = Lks::where('user_id', $user->id)->first();
 
-            if ($lks && !$lks->user_id) {
+        // FIX: Jika user punya lks_id tapi user_id di LKS kosong → sinkronkan
+        if (!$lks && $user->lks_id) {
+            $lks = Lks::find($user->lks_id);
+            if ($lks) {
                 $lks->user_id = $user->id;
                 $lks->save();
             }
         }
 
-        // Ambil ulang setelah fix
-        $lks = Lks::where('user_id', $user->id)->first();
-
-        // Jika tetap tidak ada, buat baru (ANTI ERROR)
+        // FIX: Jika tetap tidak ketemu → STOP
         if (!$lks) {
-            $lks = Lks::create([
-                'user_id' => $user->id,
-                'nama' => $user->name,
-                'jenis_layanan' => '',
-                'kecamatan_id' => $user->kecamatan_id,
-                'status' => 'pending',
-            ]);
+            return response()->json([
+                "success" => false,
+                "message" => "Data LKS tidak ditemukan untuk akun ini."
+            ], 404);
         }
 
+        // 🔥 FIX PALING PENTING
+        // Pastikan status_verifikasi dikirim ke FE
         return response()->json([
-            'success' => true,
-            'data' => $lks
+            "success" => true,
+            "data" => [
+                "id"                => $lks->id,
+                "nama"              => $lks->nama,
+                "jenis_layanan"     => $lks->jenis_layanan,
+                "alamat"            => $lks->alamat,
+                "kelurahan"         => $lks->kelurahan,
+                "kecamatan_id"      => $lks->kecamatan_id,
+                "status"            => $lks->status,
+                "status_verifikasi" => $lks->status_verifikasi, // ⬅️ FIX UTAMA
+                "dokumen"           => $lks->dokumen,
+                "updated_at"        => $lks->updated_at,
+            ]
         ]);
     }
 
-    // === ROLE ADMIN ===
+    // =========================
+    // ROLE ADMIN
+    // =========================
     if ($user->hasRole('admin')) {
-        $lksId = $request->query('id');
-        $lks = $lksId ? Lks::find($lksId) : Lks::first();
-        return response()->json(['success' => true, 'data' => $lks]);
+        $lksId = $request->query("id");
+        $lks = $lksId ? Lks::find($lksId) : null;
+
+        return response()->json([
+            "success" => true,
+            "data" => $lks
+        ]);
     }
 
-    // === ROLE OPERATOR / PETUGAS ===
+    // =========================
+    // ROLE OPERATOR / PETUGAS
+    // =========================
     if ($user->hasRole('operator') || $user->hasRole('petugas')) {
-        $lks = Lks::where('kecamatan_id', $user->kecamatan_id)->first();
-        return response()->json(['success' => true, 'data' => $lks]);
+        $lks = Lks::where("kecamatan_id", $user->kecamatan_id)->first();
+
+        return response()->json(["success" => true, "data" => $lks]);
     }
 
     return response()->json([
-        'success' => false,
-        'message' => 'Role tidak memiliki akses'
+        "success" => false,
+        "message" => "Role tidak memiliki akses."
     ], 403);
 }
+
 
 // ===============================================
 // FORMAT UNTUK FE (mapping kolom DB → FE)
