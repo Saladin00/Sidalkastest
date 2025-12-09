@@ -135,7 +135,6 @@ export default function OperatorLaporan() {
     setTahun(now.getFullYear());
   }, []);
 
-  // Load otomatis ketika bulan & tahun siap
   useEffect(() => {
     if (tahun && bulan) loadLaporan(true);
   }, [tahun, bulan]);
@@ -143,7 +142,7 @@ export default function OperatorLaporan() {
   const { ref, ready } = useChartContainer();
 
   // ==========================
-  // Chart Wrapper
+  // CHART WRAPPER
   // ==========================
   const ChartWrapper = ({ children, title }) => (
     <div className="relative rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-500 border border-slate-200 bg-gradient-to-br from-white via-sky-50 to-blue-50 overflow-hidden mb-8">

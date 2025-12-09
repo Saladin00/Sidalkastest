@@ -1,4 +1,5 @@
 // src/pages/admin/klien/KlienList.jsx
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../utils/api";
@@ -16,16 +17,19 @@ export default function KlienList() {
   const navigate = useNavigate();
   const [klien, setKlien] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // FILTER BARU
   const [filters, setFilters] = useState({
-    status_bantuan: "",
-    jenis_kebutuhan: "",
+    jenis_bantuan: "",
+    kelompok_umur: "",
     kecamatan_id: "",
   });
+
   const [daftarKecamatan, setDaftarKecamatan] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [perPage, setPerPage] = useState(10);
 
-  // 🔹 Ambil data kecamatan
+  // Ambil Kecamatan
   useEffect(() => {
     const fetchKecamatan = async () => {
       try {
@@ -38,7 +42,7 @@ export default function KlienList() {
     fetchKecamatan();
   }, []);
 
-  // 🔹 Ambil data klien
+  // Ambil Data Klien
   const fetchKlien = async () => {
     setLoading(true);
     try {
@@ -56,7 +60,7 @@ export default function KlienList() {
     fetchKlien();
   }, [filters]);
 
-  // 🔹 Hapus data klien
+  // Hapus Klien
   const handleDelete = async (id) => {
     const result = await Swal.fire({
       title: "Hapus Data Klien?",
@@ -85,28 +89,24 @@ export default function KlienList() {
     }
   };
 
-  // 🔹 Reset filter
+  // Reset Filter
   const handleResetFilters = () => {
     setFilters({
-      status_bantuan: "",
-      jenis_kebutuhan: "",
+      jenis_bantuan: "",
+      kelompok_umur: "",
       kecamatan_id: "",
     });
     showInfo("Filter telah direset.");
   };
 
-  // 🔹 Info jika filter diterapkan
+  // Notifikasi ketika filter diterapkan
   useEffect(() => {
-    if (
-      filters.kecamatan_id ||
-      filters.status_bantuan ||
-      filters.jenis_kebutuhan
-    ) {
+    if (filters.kecamatan_id || filters.jenis_bantuan || filters.kelompok_umur) {
       showInfo("Filter diterapkan.");
     }
   }, [filters]);
 
-  // 🔹 Filter dan pencarian
+  // Filter dan search
   const filteredData = klien.filter((item) => {
     const q = searchTerm.toLowerCase();
     if (!q) return true;
@@ -126,35 +126,42 @@ export default function KlienList() {
     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
       {/* ====== FILTER & SEARCH BAR ====== */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-5">
+
         {/* Filter Group */}
         <div className="flex flex-wrap gap-2">
+
+          {/* Jenis Bantuan */}
           <select
             className="h-9 px-3 text-xs sm:text-sm border rounded-full bg-white"
-            value={filters.status_bantuan}
+            value={filters.jenis_bantuan}
             onChange={(e) =>
-              setFilters({ ...filters, status_bantuan: e.target.value })
+              setFilters({ ...filters, jenis_bantuan: e.target.value })
             }
           >
-            <option value="">Status Bantuan</option>
-            <option value="PKH">PKH</option>
+            <option value="">Jenis Bantuan</option>
             <option value="BPNT">BPNT</option>
+            <option value="PKH">PKH</option>
             <option value="BLT">BLT</option>
+            <option value="lainnya">Lainnya</option>
           </select>
 
+          {/* Kelompok Umur */}
           <select
             className="h-9 px-3 text-xs sm:text-sm border rounded-full bg-white"
-            value={filters.jenis_kebutuhan}
+            value={filters.kelompok_umur}
             onChange={(e) =>
-              setFilters({ ...filters, jenis_kebutuhan: e.target.value })
+              setFilters({ ...filters, kelompok_umur: e.target.value })
             }
           >
-            <option value="">Jenis Kebutuhan</option>
+            <option value="">Kelompok Umur</option>
+            <option value="balita">Balita</option>
             <option value="anak">Anak</option>
-            <option value="disabilitas">Disabilitas</option>
+            <option value="remaja">Remaja</option>
+            <option value="dewasa">Dewasa</option>
             <option value="lansia">Lansia</option>
-            <option value="fakir_miskin">Fakir Miskin</option>
           </select>
 
+          {/* Kecamatan */}
           <select
             className="h-9 px-3 text-xs sm:text-sm border rounded-full bg-white"
             value={filters.kecamatan_id}
@@ -221,12 +228,16 @@ export default function KlienList() {
                   <th className="px-3 py-2 border">Alamat</th>
                   <th className="px-3 py-2 border">Kelurahan</th>
                   <th className="px-3 py-2 border">Kecamatan</th>
-                  <th className="px-3 py-2 border">Kebutuhan</th>
-                  <th className="px-3 py-2 border">Bantuan</th>
+
+                  {/* FIELD BARU */}
+                  <th className="px-3 py-2 border">Kelompok Umur</th>
+                  <th className="px-3 py-2 border">Jenis Bantuan</th>
+
                   <th className="px-3 py-2 border">LKS</th>
                   <th className="px-3 py-2 border text-center">Aksi</th>
                 </tr>
               </thead>
+
               <tbody>
                 {displayedData.map((item, i) => (
                   <tr
@@ -241,9 +252,13 @@ export default function KlienList() {
                     <td className="border px-3 py-2">{item.alamat}</td>
                     <td className="border px-3 py-2">{item.kelurahan}</td>
                     <td className="border px-3 py-2">{item.kecamatan?.nama}</td>
-                    <td className="border px-3 py-2">{item.jenis_kebutuhan}</td>
-                    <td className="border px-3 py-2">{item.status_bantuan}</td>
+
+                    {/* FIELD BARU */}
+                    <td className="border px-3 py-2">{item.kelompok_umur}</td>
+                    <td className="border px-3 py-2">{item.jenis_bantuan}</td>
+
                     <td className="border px-3 py-2">{item.lks?.nama}</td>
+
                     <td className="border px-3 py-2 text-center">
                       <div className="flex justify-center items-center gap-2 flex-nowrap">
                         <button
@@ -254,6 +269,7 @@ export default function KlienList() {
                         >
                           <Eye size={13} /> Lihat
                         </button>
+
                         <button
                           onClick={() =>
                             navigate(`/admin/klien/edit/${item.id}`)
@@ -262,6 +278,7 @@ export default function KlienList() {
                         >
                           <Edit2 size={13} /> Edit
                         </button>
+
                         <button
                           onClick={() => handleDelete(item.id)}
                           className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-red-100 text-red-700 border border-red-200 rounded hover:bg-red-200 whitespace-nowrap transition"
@@ -273,12 +290,13 @@ export default function KlienList() {
                   </tr>
                 ))}
               </tbody>
+
             </table>
           </div>
         )}
       </div>
 
-      {/* ====== FOOTER ====== */}
+      {/* FOOTER */}
       <div className="flex flex-col sm:flex-row items-center justify-between mt-4 text-sm text-slate-600">
         <div className="flex items-center gap-2">
           <label>Tampilkan</label>

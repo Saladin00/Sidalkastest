@@ -20,8 +20,8 @@ const LKSKlienList = () => {
   const [klien, setKlien] = useState([]);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({
-    jenis_kebutuhan: "",
-    status_bantuan: "",
+    jenis_bantuan: "",
+    kelompok_umur: "",
   });
   const [perPage, setPerPage] = useState(10);
 
@@ -37,18 +37,18 @@ const LKSKlienList = () => {
   const loadKlien = async (customFilters = filters, customSearch = search) => {
     try {
       setLoading(true);
+
       const lksId = sessionStorage.getItem("lks_id");
 
       const params = {
         lks_id: lksId,
         search: customSearch?.trim() || undefined,
-        jenis_kebutuhan: customFilters.jenis_kebutuhan || undefined,
-        status_bantuan: customFilters.status_bantuan || undefined,
+        jenis_bantuan: customFilters.jenis_bantuan || undefined,
+        kelompok_umur: customFilters.kelompok_umur || undefined,
       };
 
       const res = await api.get("/klien", { params });
-      const data = extractList(res);
-      setKlien(data);
+      setKlien(extractList(res));
     } catch (err) {
       console.error("❌ Gagal ambil data klien:", err);
       toast.error("Gagal memuat data klien.", { autoClose: 2000 });
@@ -69,12 +69,8 @@ const LKSKlienList = () => {
     return () => clearTimeout(delay);
   }, [search, filters]);
 
-  const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  };
-
   const handleReset = () => {
-    const reset = { jenis_kebutuhan: "", status_bantuan: "" };
+    const reset = { jenis_bantuan: "", kelompok_umur: "" };
     setFilters(reset);
     setSearch("");
     loadKlien(reset, "");
@@ -84,7 +80,7 @@ const LKSKlienList = () => {
   const handleDelete = async (id, nama) => {
     const result = await Swal.fire({
       title: "Hapus Klien?",
-      text: `Data klien "${nama}" akan dihapus secara permanen.`,
+      text: `Data klien "${nama}" akan dihapus.`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#e02424",
@@ -92,24 +88,18 @@ const LKSKlienList = () => {
       confirmButtonText: "Ya, Hapus",
       cancelButtonText: "Batal",
       reverseButtons: true,
-      background: "#fff",
-      color: "#374151",
-      backdrop: `rgba(0,0,0,0.4)`,
     });
 
-    if (!result.isConfirmed) {
-      toast.info("Aksi dibatalkan.", { autoClose: 1500 });
-      return;
-    }
+    if (!result.isConfirmed) return;
 
     try {
       setLoading(true);
       await api.delete(`/klien/${id}`);
-      toast.success(`Klien "${nama}" berhasil dihapus!`, { autoClose: 2000 });
+      toast.success(`Klien "${nama}" berhasil dihapus!`);
       loadKlien(filters, search);
     } catch (err) {
       console.error("❌ Gagal hapus:", err);
-      toast.error("Gagal menghapus data klien!", { autoClose: 2000 });
+      toast.error("Gagal menghapus data klien!");
     } finally {
       setLoading(false);
     }
@@ -117,13 +107,11 @@ const LKSKlienList = () => {
 
   const renderStatusBadge = (status) => {
     const isActive = status?.toLowerCase() === "aktif";
-    const colorClass = isActive
+    let cls = isActive
       ? "bg-emerald-100 text-emerald-700 border-emerald-200"
       : "bg-rose-100 text-rose-700 border-rose-200";
     return (
-      <span
-        className={`px-2.5 py-1 text-xs font-medium rounded-full border ${colorClass}`}
-      >
+      <span className={`px-2.5 py-1 text-xs rounded-full border ${cls}`}>
         {status || "-"}
       </span>
     );
@@ -131,56 +119,56 @@ const LKSKlienList = () => {
 
   return (
     <div className="max-w-7xl mx-auto bg-white shadow-xl rounded-2xl border border-gray-100 overflow-hidden">
-      {/* ======= HEADER ======= */}
+      {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-5 border-b bg-gradient-to-r from-sky-50 to-white gap-4">
-        <div className="flex flex-wrap gap-3 items-center">
+
+        <div className="flex flex-wrap gap-3">
+          {/* FILTER JENIS BANTUAN */}
           <select
-            value={filters.status_bantuan}
+            value={filters.jenis_bantuan}
             onChange={(e) =>
-              handleFilterChange("status_bantuan", e.target.value)
+              setFilters({ ...filters, jenis_bantuan: e.target.value })
             }
-            className="border border-gray-300 text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500 outline-none"
+            className="border border-gray-300 text-sm rounded-lg px-3 py-2"
           >
-            <option value="">Status Bantuan</option>
-            <option value="BLT">BLT</option>
-            <option value="BPNT">BPNT</option>
+            <option value="">Jenis Bantuan</option>
             <option value="PKH">PKH</option>
+            <option value="BPNT">BPNT</option>
+            <option value="BLT">BLT</option>
             <option value="lainnya">Lainnya</option>
           </select>
 
+          {/* FILTER KELOMPOK UMUR */}
           <select
-            value={filters.jenis_kebutuhan}
+            value={filters.kelompok_umur}
             onChange={(e) =>
-              handleFilterChange("jenis_kebutuhan", e.target.value)
+              setFilters({ ...filters, kelompok_umur: e.target.value })
             }
-            className="border border-gray-300 text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500 outline-none"
+            className="border border-gray-300 text-sm rounded-lg px-3 py-2"
           >
-            <option value="">Jenis Kebutuhan</option>
+            <option value="">Kelompok Umur</option>
+            <option value="balita">Balita</option>
             <option value="anak">Anak</option>
+            <option value="remaja">Remaja</option>
+            <option value="dewasa">Dewasa</option>
             <option value="lansia">Lansia</option>
-            <option value="disabilitas">Disabilitas</option>
-            <option value="fakir_miskin">Fakir Miskin</option>
           </select>
 
           <button
             onClick={handleReset}
-            className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition"
+            className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm"
           >
             <RotateCcw size={16} /> Reset
           </button>
         </div>
 
-        {/* Search & Tambah kanan */}
+        {/* SEARCH + TAMBAH */}
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <div className="relative w-full sm:w-60">
-            <Search
-              className="absolute left-3 top-2.5 text-gray-400"
-              size={16}
-            />
+            <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
             <input
-              type="text"
               placeholder="Cari klien..."
-              className="border border-gray-300 rounded-lg pl-8 pr-3 py-2 text-sm focus:ring-2 focus:ring-sky-500 outline-none w-full"
+              className="border border-gray-300 rounded-lg pl-8 pr-3 py-2 text-sm w-full"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -188,40 +176,38 @@ const LKSKlienList = () => {
 
           <Link
             to="/lks/klien/tambah"
-            className="flex items-center justify-center gap-2 bg-sky-700 hover:bg-sky-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+            className="flex items-center gap-2 bg-sky-700 hover:bg-sky-800 text-white px-4 py-2 rounded-lg text-sm"
           >
             <Plus size={16} /> Tambah Klien
           </Link>
         </div>
       </div>
 
-      {/* ======= TABLE ======= */}
+      {/* TABLE */}
       <div className="overflow-x-auto">
         {loading ? (
           <div className="flex justify-center items-center py-16 text-gray-500">
             <Loader2 className="animate-spin mr-2" /> Memuat data klien...
           </div>
         ) : (
-          <table className="min-w-full text-sm text-left border border-gray-300">
-            <thead className="bg-gray-50 text-gray-600 uppercase text-xs font-semibold border-b border-gray-300">
+          <table className="min-w-full text-sm border border-gray-300">
+            <thead className="bg-gray-50 text-gray-600 uppercase text-xs font-semibold">
               <tr>
                 {[
                   "No",
                   "NIK",
                   "Nama",
+                  "Jenis Kelamin",
                   "Alamat",
                   "Kelurahan",
                   "Kecamatan",
-                  "Kebutuhan",
-                  "Bantuan",
+                  "Jenis Bantuan",
+                  "Kelompok Umur",
                   "Status Pembinaan",
                   "Aksi",
-                ].map((header) => (
-                  <th
-                    key={header}
-                    className="px-4 py-3 border border-gray-300 text-center"
-                  >
-                    {header}
+                ].map((h) => (
+                  <th key={h} className="px-4 py-3 border text-center">
+                    {h}
                   </th>
                 ))}
               </tr>
@@ -230,74 +216,67 @@ const LKSKlienList = () => {
             <tbody>
               {klien.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan="10"
-                    className="text-center py-6 text-gray-500 italic border border-gray-300"
-                  >
-                    Tidak ada data klien ditemukan.
+                  <td colSpan="11" className="text-center py-6 text-gray-500 italic border">
+                    Tidak ada data klien.
                   </td>
                 </tr>
               ) : (
                 klien.slice(0, perPage).map((item, index) => (
-                  <tr
-                    key={item.id}
-                    className="hover:bg-sky-50 transition-all duration-200"
-                  >
-                    <td className="px-4 py-3 text-center border border-gray-300">
-                      {index + 1}
-                    </td>
-                    <td className="px-4 py-3 border border-gray-300">
-                      {item.nik}
-                    </td>
-                    <td className="px-4 py-3 border border-gray-300 font-semibold text-gray-800">
+                  <tr key={item.id} className="hover:bg-sky-50 transition">
+                    <td className="px-4 py-3 text-center border">{index + 1}</td>
+                    <td className="px-4 py-3 border">{item.nik}</td>
+                    <td className="px-4 py-3 border font-semibold text-gray-800">
                       {item.nama}
                     </td>
-                    <td className="px-4 py-3 border border-gray-300">
-                      {item.alamat}
+
+                    <td className="px-4 py-3 border text-center">
+                      {item.jenis_kelamin || "-"}
                     </td>
-                    <td className="px-4 py-3 text-center border border-gray-300">
-                      {item.kelurahan?.nama || item.kelurahan || "-"}
+
+                    <td className="px-4 py-3 border">{item.alamat}</td>
+                    <td className="px-4 py-3 text-center border">
+                      {item.kelurahan || "-"}
                     </td>
-                    <td className="px-4 py-3 text-center border border-gray-300">
+                    <td className="px-4 py-3 text-center border">
                       {item.kecamatan?.nama || "-"}
                     </td>
-                    <td className="px-4 py-3 text-center border border-gray-300">
-                      {item.jenis_kebutuhan || "-"}
+
+                    <td className="px-4 py-3 text-center border">
+                      {item.jenis_bantuan || "-"}
                     </td>
-                    <td className="px-4 py-3 text-center border border-gray-300">
-                      {item.status_bantuan || "-"}
+
+                    <td className="px-4 py-3 text-center border">
+                      {item.kelompok_umur || "-"}
                     </td>
-                    <td className="px-4 py-3 text-center border border-gray-300">
+
+                    <td className="px-4 py-3 text-center border">
                       {renderStatusBadge(item.status_pembinaan)}
                     </td>
-                    <td className="px-4 py-3 text-center border border-gray-300">
+
+                    <td className="px-4 py-3 text-center border">
                       <div className="flex justify-center gap-2">
                         <Link
                           to={`/lks/klien/detail/${item.id}`}
-                          className="p-1.5 rounded-md bg-sky-100 text-sky-600 hover:bg-sky-200 transition flex items-center gap-1"
+                          className="p-1.5 rounded-md bg-sky-100 text-sky-600 hover:bg-sky-200 flex items-center gap-1"
                         >
                           <Eye size={16} />
-                          <span className="hidden sm:inline text-xs font-medium">
-                            Lihat
-                          </span>
+                          <span className="hidden sm:inline text-xs">Lihat</span>
                         </Link>
+
                         <Link
                           to={`/lks/klien/edit/${item.id}`}
-                          className="p-1.5 rounded-md bg-amber-100 text-amber-600 hover:bg-amber-200 transition flex items-center gap-1"
+                          className="p-1.5 rounded-md bg-amber-100 text-amber-600 hover:bg-amber-200 flex items-center gap-1"
                         >
                           <Pencil size={16} />
-                          <span className="hidden sm:inline text-xs font-medium">
-                            Edit
-                          </span>
+                          <span className="hidden sm:inline text-xs">Edit</span>
                         </Link>
+
                         <button
                           onClick={() => handleDelete(item.id, item.nama)}
-                          className="p-1.5 rounded-md bg-rose-100 text-rose-600 hover:bg-rose-200 transition flex items-center gap-1"
+                          className="p-1.5 rounded-md bg-rose-100 text-rose-600 hover:bg-rose-200 flex items-center gap-1"
                         >
                           <Trash2 size={16} />
-                          <span className="hidden sm:inline text-xs font-medium">
-                            Hapus
-                          </span>
+                          <span className="hidden sm:inline text-xs">Hapus</span>
                         </button>
                       </div>
                     </td>
@@ -309,30 +288,24 @@ const LKSKlienList = () => {
         )}
       </div>
 
-      {/* ======= FOOTER ======= */}
+      {/* FOOTER */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-3 px-5 py-4 border-t text-sm bg-gray-50">
         <div className="flex items-center gap-2">
-          <label className="text-gray-600">Tampilkan</label>
+          <label>Tampilkan</label>
           <select
             value={perPage}
             onChange={(e) => setPerPage(Number(e.target.value))}
-            className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-sky-500 outline-none"
+            className="border rounded-lg px-2 py-1"
           >
             <option value={5}>5</option>
             <option value={10}>10</option>
             <option value={20}>20</option>
           </select>
-          <span className="text-gray-600">data per halaman</span>
+          <span>data per halaman</span>
         </div>
       </div>
 
-      <ToastContainer
-        position="top-right"
-        autoClose={2500}
-        hideProgressBar
-        newestOnTop
-        theme="light"
-      />
+      <ToastContainer position="top-right" autoClose={2500} hideProgressBar />
     </div>
   );
 };
