@@ -27,20 +27,28 @@ class KlienController extends Controller
         if ($request->filled('kecamatan_id')) {
             $query->where('kecamatan_id', $request->kecamatan_id);
         }
+
         if ($request->filled('lks_id')) {
             $query->where('lks_id', $request->lks_id);
         }
-        if ($request->filled('status_bantuan')) {
-            $query->where('status_bantuan', $request->status_bantuan);
+
+        // 🔹 filter kelompok umur
+        if ($request->filled('kelompok_umur')) {
+            $query->where('kelompok_umur', $request->kelompok_umur);
         }
-        if ($request->filled('jenis_kebutuhan')) {
-            $query->where('jenis_kebutuhan', $request->jenis_kebutuhan);
+
+        // 🔹 filter jenis bantuan
+        if ($request->filled('jenis_bantuan')) {
+            $query->where('jenis_bantuan', $request->jenis_bantuan);
         }
+
+        // 🔹 filter jenis kelamin
+        if ($request->filled('jenis_kelamin')) {
+            $query->where('jenis_kelamin', $request->jenis_kelamin);
+        }
+
         if ($request->filled('kelurahan')) {
-        $query->where('kelurahan', 'like', '%' . $request->kelurahan . '%');
-        }
-        if ($request->filled('lks_id')) {
-        $query->where('lks_id', $request->lks_id);
+            $query->where('kelurahan', 'like', '%' . $request->kelurahan . '%');
         }
 
         return response()->json([
@@ -55,14 +63,15 @@ class KlienController extends Controller
     {
         $user = $request->user();
 
-        // Default validasi dasar
+        // Validasi terbaru
         $rules = [
             'nik' => 'required|string|max:16|unique:klien,nik',
             'nama' => 'required|string|max:255',
+            'jenis_kelamin' => 'nullable|string',
             'alamat' => 'required|string',
             'kelurahan' => 'required|string',
-            'jenis_kebutuhan' => 'nullable|string',
-            'status_bantuan' => 'nullable|string',
+            'jenis_bantuan' => 'nullable|string',
+            'kelompok_umur' => 'nullable|string',
             'status_pembinaan' => 'nullable|string',
         ];
 
@@ -125,10 +134,11 @@ class KlienController extends Controller
         $validated = $request->validate([
             'nik' => "required|string|max:16|unique:klien,nik,$id",
             'nama' => 'required|string|max:255',
+            'jenis_kelamin' => 'nullable|string',
             'alamat' => 'nullable|string',
             'kelurahan' => 'nullable|string',
-            'jenis_kebutuhan' => 'nullable|string',
-            'status_bantuan' => 'nullable|string',
+            'jenis_bantuan' => 'nullable|string',
+            'kelompok_umur' => 'nullable|string',
             'status_pembinaan' => 'nullable|string',
         ]);
 

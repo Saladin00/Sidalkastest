@@ -5,24 +5,30 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Models\Lks;
 use App\Models\Verifikasi;
 use Illuminate\Support\Str;
-use App\Mail\AktivasiAkunMail;
 use Illuminate\Support\Facades\Mail;
-
+use App\Mail\AktivasiAkunMail;
 
 class UserController extends Controller
 {
+    /**
+     * LIST USERS
+     */
     public function index(Request $request)
     {
         $auth = $request->user();
 
-        $query = User::with(['roles', 'lks', 'kecamatan'])->orderByDesc('created_at');
+        $query = User::with(['roles', 'lks', 'kecamatan'])
+            ->orderByDesc('created_at');
 
+        // Operator hanya melihat LKS di kecamatannya
         if ($auth->hasRole('operator')) {
             $query->whereHas('roles', fn($r) => $r->where('name', 'lks'))
-                ->where('kecamatan_id', $auth->kecamatan_id);
-        } elseif (!$auth->hasRole('admin')) {
+                  ->where('kecamatan_id', $auth->kecamatan_id);
+        }
+        elseif (!$auth->hasRole('admin')) {
             return response()->json(['message' => 'Akses ditolak'], 403);
         }
 
@@ -35,63 +41,82 @@ class UserController extends Controller
             'email' => $user->email,
             'role' => $user->roles->pluck('name')->first(),
             'status_aktif' => $user->status_aktif,
-            'kecamatan' => $user->kecamatan
-                ? ['id' => $user->kecamatan->id, 'nama' => $user->kecamatan->nama]
-                : null,
-            'created_at' => optional($user->created_at)->format('Y-m-d H:i'),
+            'kecamatan' => $user->kecamatan?->only(['id', 'nama']),
+            'created_at' => $user->created_at->format('Y-m-d H:i'),
         ]);
 
         return response()->json(['users' => $data]);
     }
 
-  public function store(Request $request)
-{
-    \Log::info("🔥 STORE USER DIPANGGIL");
+    /**
+     * CREATE USER (ADMIN)
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'username' => 'required|string|unique:users',
+            'name' => 'required|string',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|min:6',
+            'role' => 'required|in:operator,petugas,lks',
+            'kecamatan_id' => 'nullable|exists:kecamatan,id',
+        ]);
 
-    $validated = $request->validate([
-        'username' => 'required|string|unique:users',
-        'name' => 'required|string',
-        'email' => 'required|email|unique:users',
-        'password' => 'required|min:6',
-        'role' => 'required|in:operator,petugas',
-        'kecamatan_id' => 'nullable|exists:kecamatan,id',
-    ]);
+        // Semua user selalu nonaktif dulu
+        $user = User::create([
+            'username' => $validated['username'],
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'status_aktif' => false,
+            'kecamatan_id' => $validated['kecamatan_id'],
+        ]);
 
-    // 🔥 Token dibuat di sini
-   $token = Str::uuid()->toString();
+        $user->assignRole($validated['role']);
 
+        /**
+         * ======================================
+         *  ROLE LKS → TIDAK PAKAI AKTIVASI EMAIL
+         * ======================================
+         */
+        if ($validated['role'] === 'lks') {
+            Lks::create([
+                'nama' => $validated['name'],
+                'jenis_layanan' => '',
+                'kecamatan_id' => $validated['kecamatan_id'],
+                'status' => 'nonaktif',
+                'user_id' => $user->id,
+            ]);
 
-    // 🔥 Log token SETELAH dibuat
-    \Log::info("🔥 TOKEN GENERATED", ['token' => $token]);
+            return response()->json([
+                'message' => 'Akun LKS berhasil dibuat. Silakan aktifkan akun tersebut.',
+                'user' => $user
+            ], 201);
+        }
 
-    // 🔥 Buat user (create)
-    $user = User::create([
-        'username' => $validated['username'],
-        'name' => $validated['name'],
-        'email' => $validated['email'],
-        'password' => Hash::make($validated['password']),
-        'status_aktif' => false,
-        'activation_code' => $token,
+        /**
+         * ======================================
+         *  ROLE OPERATOR / PETUGAS → AKTIVASI EMAIL
+         * ======================================
+         */
+        $token = Str::uuid()->toString();
 
-        'activation_token_expires_at' => now()->addMinutes(30),
-        'kecamatan_id' => $validated['kecamatan_id'] ?? null,
-    ]);
+        $user->update([
+            'activation_code' => $token,
+            'activation_token_expires_at' => now()->addMinutes(30),
+        ]);
 
-    // 🔥 Log hasil user setelah create
-    \Log::info("🔥 USER SAVED", $user->toArray());
+        Mail::to($user->email)->send(new AktivasiAkunMail($user));
 
-    $user->assignRole($validated['role']);
-    Mail::to($user->email)->send(new AktivasiAkunMail($user));
+        return response()->json([
+            'message' => 'Akun berhasil dibuat. Link aktivasi telah dikirim.',
+            'user' => $user
+        ], 201);
+    }
 
-    return response()->json([
-        'message' => 'Akun berhasil dibuat. Link aktivasi telah dikirim.',
-        'user' => $user
-    ], 201);
-}
-
-
-
-
+    /**
+     * UPDATE USER
+     */
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
@@ -110,30 +135,29 @@ class UserController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'status_aktif' => $validated['status_aktif'],
-            'kecamatan_id' => $validated['kecamatan_id'] ?? null,
+            'kecamatan_id' => $validated['kecamatan_id'],
         ]);
 
         $user->syncRoles([$validated['role']]);
 
         return response()->json([
-            'message' => '✅ User berhasil diperbarui',
-            'user' => $user->load('kecamatan'),
+            'message' => 'User berhasil diperbarui',
+            'user' => $user
         ]);
     }
 
+    /**
+     * DELETE USER
+     */
     public function destroy($id)
     {
-        $auth = request()->user();
+        User::findOrFail($id)->delete();
 
-
-        $user = User::findOrFail($id);
-        $user->delete();
-
-        return response()->json(['message' => '🗑️ User berhasil dihapus']);
+        return response()->json(['message' => 'User berhasil dihapus']);
     }
 
     /**
-     * 🔹 Toggle status aktif/nonaktif akun + sinkronisasi LKS & Verifikasi
+     * TOGGLE STATUS USER
      */
     public function toggleStatus(Request $request, $id)
     {
@@ -145,97 +169,95 @@ class UserController extends Controller
         }
 
         if ($auth->hasRole('operator')) {
-            if (
-                !$target->hasRole('lks') ||
-                $target->kecamatan_id !== $auth->kecamatan_id
-            ) {
+            if (!$target->hasRole('lks') ||
+                $target->kecamatan_id !== $auth->kecamatan_id) 
+            {
                 return response()->json([
-                    'message' => 'Anda hanya boleh mengubah status akun LKS di kecamatan Anda sendiri.'
+                    'message' => 'Anda tidak boleh mengubah status user ini.'
                 ], 403);
             }
         }
 
+        // Toggle status aktif
         $target->status_aktif = !$target->status_aktif;
         $target->save();
 
-        // Sinkron ke LKS dan Verifikasi
+        // Sinkronkan ke LKS
         if ($target->hasRole('lks') && $target->lks) {
-            $target->lks->status = $target->status_aktif ? 'aktif' : 'pending';
+            $target->lks->status = $target->status_aktif ? 'aktif' : 'nonaktif';
             $target->lks->save();
-
-            $verifikasi = Verifikasi::where('lks_id', $target->lks->id)->first();
-            if ($verifikasi) {
-                $verifikasi->status = $target->status_aktif ? 'menunggu' : 'tidak_valid';
-                $verifikasi->save();
-            }
         }
 
         return response()->json([
-            'message' => 'Status akun berhasil diperbarui.',
-            'status_aktif' => $target->status_aktif,
-            'lks_status' => $target->lks?->status,
+            'message' => 'Status akun diperbarui.',
+            'status_aktif' => $target->status_aktif
         ]);
     }
 
+    /**
+     * ====================================================
+     *  AKTIVASI AKUN (untuk operator & petugas)
+     * ====================================================
+     */
+    public function aktivasiAkun($token)
+    {
+        $user = User::where('activation_code', $token)->first();
 
-public function aktivasiAkun($token)
-{
-    $user = User::where('activation_code', $token)->first();
+        if (!$user) {
+            return view('aktivasi.gagal', [
+                'pesan' => 'Token tidak valid atau sudah digunakan.'
+            ]);
+        }
 
-    if (!$user) {
-        return view('aktivasi.gagal', ['pesan' => 'Token tidak valid atau sudah digunakan.']);
-    }
+        // token expired?
+        if ($user->activation_token_expires_at && $user->activation_token_expires_at->isPast()) {
+            return view('aktivasi.gagal', [
+                'pesan' => 'Token sudah kedaluwarsa, minta admin kirim ulang.'
+            ]);
+        }
 
-    if ($user->activation_token_expires_at && $user->activation_token_expires_at->isPast()) {
-        return view('aktivasi.gagal', [
-    'pesan' => 'Token tidak valid atau sudah digunakan.'
-]);
+        // kalau sudah aktif
+        if ($user->status_aktif) {
+            return view('aktivasi.sukses');
+        }
 
-    }
+        // aktifkan user
+        $user->update([
+            'status_aktif' => true,
+            'activation_code' => null,
+            'activation_token_expires_at' => null,
+            'email_verified_at' => now(),
+        ]);
 
-    if ($user->status_aktif) {
         return view('aktivasi.sukses');
     }
 
-    $user->update([
-        'status_aktif' => true,
-        'activation_code' => null,
-        'activation_token_expires_at' => null,
-        'email_verified_at' => now(),
-    ]);
+    /**
+     * KIRIM ULANG LINK AKTIVASI
+     */
+    public function resendActivation(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email'
+        ]);
 
-    return view('aktivasi.sukses');
-}
- 
+        $user = User::where('email', $request->email)->first();
 
+        if ($user->status_aktif) {
+            return response()->json(['message' => 'Akun sudah aktif.'], 400);
+        }
 
+        $token = Str::uuid()->toString();
 
+        $user->update([
+            'activation_code' => $token,
+            'activation_token_expires_at' => now()->addMinutes(30),
+        ]);
 
-public function resendActivation(Request $request)
-{
-    $request->validate([
-        'email' => 'required|email|exists:users,email'
-    ]);
+        Mail::to($user->email)->send(new AktivasiAkunMail($user));
 
-    $user = User::where('email', $request->email)->first();
-
-    if ($user->status_aktif) {
-        return response()->json(['message' => 'Akun sudah aktif.'], 400);
+        return response()->json([
+            'message' => 'Link aktivasi baru telah dikirim.'
+        ]);
     }
-
-  $token = Str::uuid()->toString();
-
-
-    $user->update([
-        'activation_code' => $token,
-        'activation_token_expires_at' => now()->addMinutes(30),
-    ]);
-
-    Mail::to($user->email)->send(new AktivasiAkunMail($user));
-
-    return response()->json([
-        'message' => 'Link aktivasi baru telah dikirim.'
-    ]);
-}
-
 }

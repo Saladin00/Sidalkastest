@@ -16,6 +16,15 @@ use App\Http\Controllers\LaporanKunjunganController;
 use App\Http\Controllers\KecamatanController;
 use App\Http\Controllers\LksApprovalController;
 
+// Laporan
+use App\Http\Controllers\Laporan\AdminLaporanController;
+use App\Http\Controllers\Laporan\AdminLaporanExportController;
+use App\Http\Controllers\Laporan\OperatorLaporanController;
+use App\Http\Controllers\Laporan\OperatorLaporanExportController;
+
+
+
+
 // Verifikasi Controller per Role
 use App\Http\Controllers\Verifikasi\AdminVerifikasiController;
 use App\Http\Controllers\Verifikasi\OperatorVerifikasiController;
@@ -171,21 +180,39 @@ Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
     Route::delete('/klien/{id}', [KlienController::class, 'destroy']);
 
 });
+
 // =====================================================================
 // LAPORAN ADMIN
 // =====================================================================
 Route::prefix('admin')->middleware(['role:admin'])->group(function () {
+    
+    // JSON laporan untuk tabel & grafik
     Route::get('/laporan', [\App\Http\Controllers\Laporan\AdminLaporanController::class, 'laporan']);
-    Route::get('/laporan/export/pdf', [\App\Http\Controllers\Laporan\AdminLaporanController::class, 'exportPdf']);
-    Route::get('/laporan/export/excel', [\App\Http\Controllers\Laporan\AdminLaporanController::class, 'exportExcel']);
+
+    // EXPORT PDF & EXCEL (HARUS KE ExportController)
+    Route::get('/laporan/export/pdf', [\App\Http\Controllers\Laporan\AdminLaporanExportController::class, 'exportPDF']);
+    Route::get('/laporan/export/excel', [\App\Http\Controllers\Laporan\AdminLaporanExportController::class, 'exportExcel']);
 });
+
 
 // =====================================================================
 // LAPORAN OPERATOR
 // =====================================================================
 Route::prefix('operator')->middleware(['role:operator'])->group(function () {
+
+    // JSON Laporan Operator
     Route::get('/laporan', [\App\Http\Controllers\Laporan\OperatorLaporanController::class, 'laporan']);
+
+    // EXPORT PDF
+    Route::get('/laporan/export/pdf', [OperatorLaporanExportController::class, 'exportPdf']);
+
+    // EXPORT EXCEL
+    Route::get('/laporan/export/excel', [OperatorLaporanExportController::class, 'exportExcel']);
 });
+
+
+// LKS → ambil berdasarkan kecamatan
+Route::get('/lks/by-kecamatan/{id}', [LKSController::class, 'getByKecamatan']);
 
 
 

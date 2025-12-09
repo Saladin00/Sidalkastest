@@ -1,4 +1,5 @@
 // src/pages/admin/klien/KlienDetail.jsx
+
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../../utils/api";
@@ -12,21 +13,15 @@ export default function KlienDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const res = await api.get(`/klien/${id}`);
-        setKlien(res.data?.data || res.data);
-      } catch (err) {
-        console.error("❌ Gagal memuat data klien:", err);
+    api
+      .get(`/klien/${id}`)
+      .then((res) => setKlien(res.data?.data || res.data))
+      .catch(() => {
         showError("Gagal memuat data klien!");
-        setTimeout(() => navigate("/admin/klien"), 1200);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [id, navigate]);
+        navigate("/admin/klien");
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
 
   if (loading)
     return (
@@ -45,12 +40,13 @@ export default function KlienDetail() {
   const fields = [
     { label: "NIK", value: klien.nik },
     { label: "Nama", value: klien.nama },
+    { label: "Jenis Kelamin", value: klien.jenis_kelamin },
+    { label: "Kelompok Umur", value: klien.kelompok_umur },
+    { label: "Jenis Bantuan", value: klien.jenis_bantuan },
     { label: "Alamat", value: klien.alamat },
     { label: "Kelurahan", value: klien.kelurahan },
     { label: "Kecamatan", value: klien.kecamatan?.nama },
     { label: "LKS", value: klien.lks?.nama },
-    { label: "Jenis Kebutuhan", value: klien.jenis_kebutuhan },
-    { label: "Status Bantuan", value: klien.status_bantuan },
     { label: "Status Pembinaan", value: klien.status_pembinaan },
   ];
 

@@ -14,13 +14,9 @@ import {
   UsersIcon,
   WrenchIcon,
   ChartBarIcon,
-  PaperClipIcon,
   ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
 
-// ===============================
-// LEAFLET MARKER
-// ===============================
 const markerIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
   iconSize: [25, 41],
@@ -38,6 +34,7 @@ const LocationMarker = ({ position, setPosition, setForm }) => {
       setForm((prev) => ({ ...prev, koordinat: `${lat},${lng}` }));
     },
   });
+
   return <Marker position={position} icon={markerIcon} />;
 };
 
@@ -57,9 +54,6 @@ const Field = memo(({ label, name, value, onChange, type = "text" }) => (
   </div>
 ));
 
-// ===============================
-// TEXTAREA AUTO-RESIZE
-// ===============================
 const AutoTextarea = memo(({ label, name, value, onChange }) => {
   const ref = useRef();
   useEffect(() => {
@@ -68,6 +62,7 @@ const AutoTextarea = memo(({ label, name, value, onChange }) => {
       ref.current.style.height = ref.current.scrollHeight + "px";
     }
   }, [value]);
+
   return (
     <div className="space-y-1">
       <label className="text-sm font-medium text-gray-700">{label}</label>
@@ -83,9 +78,6 @@ const AutoTextarea = memo(({ label, name, value, onChange }) => {
   );
 });
 
-// ===============================
-// SECTION HEADER
-// ===============================
 const SectionHeader = ({ icon: Icon, title, color }) => (
   <div className="flex items-center gap-2 mb-5">
     <Icon className={`h-5 w-5 text-${color}-600`} />
@@ -108,13 +100,13 @@ const LKSForm = () => {
     nama: "",
     alamat: "",
     jenis_layanan: "",
-    npwp: "",
     kecamatan_id: "",
     kelurahan: "",
-    akta_pendirian: "",
-    izin_operasional: "",
+    npwp: "",
     kontak_pengurus: "",
     legalitas: "",
+    akta_pendirian: null,
+    izin_operasional: "",
     no_akta: "",
     status_akreditasi: "",
     no_sertifikat: "",
@@ -129,8 +121,29 @@ const LKSForm = () => {
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
+  // ===========================
+  // FILE: AKTA PENDIRIAN
+  // ===========================
+  const handleAktaChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const allowed = ["application/pdf", "image/jpeg", "image/png"];
+
+    if (!allowed.includes(file.type)) {
+      toast.error("File harus PDF/JPG/PNG");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran maksimal 5MB");
+      return;
+    }
+
+    setForm((prev) => ({ ...prev, akta_pendirian: file }));
+  };
+
   // ===============================
-  // VALIDASI FILE UPLOAD
+  // FILE DOKUMEN (multi file)
   // ===============================
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
@@ -139,8 +152,8 @@ const LKSForm = () => {
       const isValidType = allowed.includes(file.type);
       const isValidSize = file.size <= 5 * 1024 * 1024;
 
-      if (!isValidType) toast.error(` ${file.name} bukan PDF/JPG/PNG`);
-      if (!isValidSize) toast.warning(` ${file.name} melebihi 5 MB`);
+      if (!isValidType) toast.error(`${file.name} bukan PDF/JPG/PNG`);
+      if (!isValidSize) toast.warning(`${file.name} melebihi 5 MB`);
 
       return isValidType && isValidSize;
     });
@@ -162,20 +175,29 @@ const LKSForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
     try {
       const payload = new FormData();
-      Object.keys(form).forEach((key) => payload.append(key, form[key] ?? ""));
+
+      Object.keys(form).forEach((key) => {
+        if (key === "akta_pendirian" && form.akta_pendirian instanceof File) {
+          payload.append("akta_pendirian", form.akta_pendirian);
+        } else {
+          payload.append(key, form[key] ?? "");
+        }
+      });
+
       dokumenBaru.forEach((file) => payload.append("dokumen[]", file));
 
       await API.post("/lks", payload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      toast.success(" LKS baru berhasil ditambahkan!");
+      toast.success("LKS baru berhasil ditambahkan!");
       setTimeout(() => navigate("/admin/lks"), 1500);
     } catch (err) {
-      console.error(" Gagal menyimpan LKS:", err);
-      toast.error("Gagal menambah data LKS. Silakan periksa kembali input Anda.");
+      console.error("Gagal menyimpan:", err);
+      toast.error("Gagal menambah data LKS.");
     } finally {
       setLoading(false);
     }
@@ -194,30 +216,44 @@ const LKSForm = () => {
         <form onSubmit={handleSubmit} className="space-y-10">
           {/* ================= PROFILE ================= */}
           <section>
-            <SectionHeader
-              icon={BuildingOfficeIcon}
-              title="Profil Umum"
-              color="blue"
-            />
+            <SectionHeader icon={BuildingOfficeIcon} title="Profil Umum" color="blue" />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Field label="Nama LKS" name="nama" value={form.nama} onChange={handleChange} />
-              <Field label="Jenis Layanan" name="jenis_layanan" value={form.jenis_layanan} onChange={handleChange} />
+
+              {/* JENIS LAYANAN DROPDOWN */}
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">Jenis Layanan</label>
+                <select
+                  name="jenis_layanan"
+                  value={form.jenis_layanan}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm"
+                >
+                  <option value="">Pilih Jenis Layanan</option>
+                  <option value="anak">Anak</option>
+                  <option value="disabilitas">Disabilitas</option>
+                  <option value="lansia">Lansia</option>
+                  <option value="fakir miskin">Fakir Miskin</option>
+                  <option value="kesejahteraan sosial">Kesejahteraan Sosial</option>
+                  <option value="rehabilitasi sosial">Rehabilitasi Sosial</option>
+                </select>
+              </div>
+
               <AutoTextarea label="Alamat Lengkap" name="alamat" value={form.alamat} onChange={handleChange} />
 
+              {/* KECAMATAN */}
               <div>
                 <label className="text-sm font-medium text-gray-700">Kecamatan</label>
                 <select
                   name="kecamatan_id"
                   value={form.kecamatan_id}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:ring-2 focus:ring-sky-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm"
                 >
                   <option value="">Pilih Kecamatan</option>
                   {daftarKecamatan.map((k) => (
-                    <option key={k.id} value={k.id}>
-                      {k.nama}
-                    </option>
+                    <option key={k.id} value={k.id}>{k.nama}</option>
                   ))}
                 </select>
               </div>
@@ -225,23 +261,48 @@ const LKSForm = () => {
               <Field label="Kelurahan / Desa" name="kelurahan" value={form.kelurahan} onChange={handleChange} />
               <Field label="NPWP" name="npwp" value={form.npwp} onChange={handleChange} />
               <Field label="Kontak Pengurus" name="kontak_pengurus" value={form.kontak_pengurus} onChange={handleChange} />
-              <Field label="Legalitas" name="legalitas" value={form.legalitas} onChange={handleChange} />
-              <Field label="Status Akreditasi" name="status_akreditasi" value={form.status_akreditasi} onChange={handleChange} />
+
+              {/* STATUS AKREDITASI DROPDOWN */}
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">Status Akreditasi</label>
+                <select
+                  name="status_akreditasi"
+                  value={form.status_akreditasi}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm"
+                >
+                  <option value="">Pilih Status Akreditasi</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                </select>
+              </div>
+
               <Field label="No Sertifikat" name="no_sertifikat" value={form.no_sertifikat} onChange={handleChange} />
               <Field type="date" label="Tanggal Akreditasi" name="tanggal_akreditasi" value={form.tanggal_akreditasi} onChange={handleChange} />
-              <Field label="Akta Pendirian" name="akta_pendirian" value={form.akta_pendirian} onChange={handleChange} />
+
+              {/* AKTA PENDIRIAN FILE */}
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">
+                  Upload Akta Pendirian (PDF/JPG/PNG, max 5MB)
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={handleAktaChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm"
+                />
+              </div>
+
               <Field label="Izin Operasional" name="izin_operasional" value={form.izin_operasional} onChange={handleChange} />
+              <Field label="Legalitas" name="legalitas" value={form.legalitas} onChange={handleChange} />
             </div>
           </section>
 
           {/* ================= PETA ================= */}
           <section>
             <SectionHeader icon={MapPinIcon} title="Lokasi LKS" color="red" />
-            <MapContainer
-              center={position}
-              zoom={13}
-              className="h-72 rounded-xl border shadow z-0"
-            >
+            <MapContainer center={position} zoom={13} className="h-72 rounded-xl border shadow">
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               <LocationMarker position={position} setPosition={setPosition} setForm={setForm} />
             </MapContainer>
@@ -254,43 +315,21 @@ const LKSForm = () => {
           {/* ================= PENGURUS ================= */}
           <section>
             <SectionHeader icon={UsersIcon} title="Pengurus" color="purple" />
-            <Field
-              label="Jumlah Pengurus"
-              name="jumlah_pengurus"
-              type="number"
-              value={form.jumlah_pengurus}
-              onChange={handleChange}
-            />
+            <Field label="Jumlah Pengurus" name="jumlah_pengurus" type="number" value={form.jumlah_pengurus} onChange={handleChange} />
           </section>
 
           {/* ================= SARANA ================= */}
           <section>
             <SectionHeader icon={WrenchIcon} title="Sarana & Prasarana" color="green" />
-            <AutoTextarea
-              label="Sarana & Fasilitas"
-              name="sarana"
-              value={form.sarana}
-              onChange={handleChange}
-            />
+            <AutoTextarea label="Sarana & Fasilitas" name="sarana" value={form.sarana} onChange={handleChange} />
           </section>
 
           {/* ================= MONITORING ================= */}
           <section>
             <SectionHeader icon={ChartBarIcon} title="Monitoring" color="pink" />
-            <AutoTextarea
-              label="Hasil Observasi"
-              name="hasil_observasi"
-              value={form.hasil_observasi}
-              onChange={handleChange}
-            />
-            <AutoTextarea
-              label="Tindak Lanjut"
-              name="tindak_lanjut"
-              value={form.tindak_lanjut}
-              onChange={handleChange}
-            />
+            <AutoTextarea label="Hasil Observasi" name="hasil_observasi" value={form.hasil_observasi} onChange={handleChange} />
+            <AutoTextarea label="Tindak Lanjut" name="tindak_lanjut" value={form.tindak_lanjut} onChange={handleChange} />
           </section>
-
 
           {/* ================= BUTTONS ================= */}
           <div className="flex flex-col sm:flex-row justify-between items-center pt-6 border-t border-gray-200 gap-3">
@@ -307,9 +346,7 @@ const LKSForm = () => {
               type="submit"
               disabled={loading}
               className={`px-8 py-2.5 rounded-lg font-semibold text-white shadow-md transition-all ${
-                loading
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-emerald-600 hover:bg-emerald-700"
+                loading ? "bg-gray-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"
               }`}
             >
               {loading ? "Menyimpan..." : "Simpan Data"}
@@ -318,7 +355,6 @@ const LKSForm = () => {
         </form>
       </div>
 
-      {/* TOAST CONTAINER */}
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop />
     </AdminLayout>
   );
