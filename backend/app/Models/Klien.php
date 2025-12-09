@@ -8,18 +8,19 @@ class Klien extends Model
 {
     protected $table = 'klien';
 
-    protected $fillable = [
-        'nik',
-        'nama',
-        'alamat',
-        'kelurahan',
-        'kecamatan_id',
-        'lks_id',
-        'jenis_kebutuhan',
-        'status_bantuan',
-        'status_pembinaan',
-        'dokumen',
-    ];
+protected $fillable = [
+    'nik',
+    'nama',
+    'jenis_kelamin',
+    'alamat',
+    'kelurahan',
+    'kecamatan_id',
+    'lks_id',
+    'jenis_bantuan',
+    'kelompok_umur',
+    'status_pembinaan',
+    'dokumen',
+];
 
     protected $casts = [
         'dokumen' => 'array'

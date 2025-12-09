@@ -117,42 +117,66 @@ private function adminDashboard()
     // 📌 OPERATOR DASHBOARD
     // ============================================================
     private function operatorDashboard($user)
-    {
-        $idKec = $user->kecamatan_id;
+{
+    $idKec = $user->kecamatan_id;
 
-        $statusesDiproses = [
+    // STATUS LKS berdasarkan status_verifikasi
+    $valid = Lks::where('kecamatan_id', $idKec)
+        ->where('status_verifikasi', 'valid')
+        ->count();
+
+    $diproses = Lks::where('kecamatan_id', $idKec)
+        ->whereIn('status_verifikasi', [
             'menunggu',
             'dikirim_operator',
-            'dikirim_petugas',
             'proses_survei',
             'dikirim_admin',
-            'proses_validasi',
-        ];
+            'proses_validasi'
+        ])
+        ->count();
 
-        return response()->json([
-            'role' => 'operator',
+    $nonaktif = Lks::where('kecamatan_id', $idKec)
+        ->where('status_verifikasi', 'tidak_valid')
+        ->count();
 
-            'total_lks' => [
-                'aktif' => Lks::where('kecamatan_id', $idKec)
-                    ->whereHas('verifikasiTerbaru', fn($q) => $q->where('status', 'valid'))
-                    ->count(),
+    // DATA PER KECAMATAN (khusus operator cuma 1 kecamatan)
+    $perKecamatan = [
+        [
+            "nama" => $user->kecamatan->nama,
+            "valid" => $valid,
+            "diproses" => $diproses,
+            "nonaktif" => $nonaktif,
+        ]
+    ];
 
-                'diproses' => Lks::where('kecamatan_id', $idKec)
-                    ->whereHas('verifikasiTerbaru', fn($q) => $q->whereIn('status', $statusesDiproses))
-                    ->count(),
+    // Total klien
+    $totalKlienAktif = Klien::where('kecamatan_id', $idKec)
+        ->where('status_pembinaan', 'aktif')
+        ->count();
 
-                'nonaktif' => Lks::where('kecamatan_id', $idKec)
-                    ->whereDoesntHave('verifikasiTerbaru')
-                    ->orWhereHas('verifikasiTerbaru', fn($q) => $q->whereNull('status'))
-                    ->count(),
-            ],
+    $totalKlienNonaktif = Klien::where('kecamatan_id', $idKec)
+        ->where('status_pembinaan', 'selesai')
+        ->count();
 
-            'total_klien' => [
-                'aktif'        => Klien::where('kecamatan_id', $idKec)->where('status_pembinaan', 'aktif')->count(),
-                'nonaktif'     => Klien::where('kecamatan_id', $idKec)->where('status_pembinaan', 'selesai')->count(),
-            ]
-        ]);
-    }
+    return response()->json([
+        'role' => 'operator',
+
+        'total_lks' => [
+            'valid' => $valid,
+            'diproses' => $diproses,
+            'nonaktif' => $nonaktif,
+        ],
+
+        'total_klien' => [
+            'aktif' => $totalKlienAktif,
+            'nonaktif' => $totalKlienNonaktif,
+        ],
+
+        // ⬅️ INI YANG BARU
+        'per_kecamatan' => $perKecamatan
+    ]);
+}
+
 
     // ============================================================
     // 📌 PETUGAS DASHBOARD
@@ -175,22 +199,45 @@ private function adminDashboard()
     // ============================================================
     // 📌 LKS DASHBOARD
     // ============================================================
-    private function lksDashboard($user)
-    {
-        $lks_id = $user->lks_id;
+   private function lksDashboard($user)
+{
+    $lks = $user->lks;
 
+    if (!$lks) {
         return response()->json([
-            'role' => 'lks',
-
-            'jumlah_klien' => [
-                'aktif' => Klien::where('lks_id', $lks_id)->where('status_pembinaan', 'aktif')->count(),
-                'tidak_aktif' => Klien::where('lks_id', $lks_id)->where('status_pembinaan', 'selesai')->count(),
-            ],
-
-            'jenis_bantuan' => Klien::where('lks_id', $lks_id)
-                ->selectRaw('jenis_bantuan, count(*) as total')
-                ->groupBy('jenis_bantuan')
-                ->get()
-        ]);
+            'success' => false,
+            'message' => 'Data LKS tidak ditemukan untuk akun ini.'
+        ], 404);
     }
+
+    $lks_id = $lks->id;
+
+    // Hitung jumlah klien
+    $klienAktif = Klien::where('lks_id', $lks_id)
+        ->where('status_pembinaan', 'aktif')
+        ->count();
+
+    $klienNonAktif = Klien::where('lks_id', $lks_id)
+        ->where('status_pembinaan', 'selesai')
+        ->count();
+
+    // Rekap jenis bantuan (field BARU: jenis_bantuan)
+    $jenisBantuan = Klien::where('lks_id', $lks_id)
+        ->selectRaw('jenis_bantuan, COUNT(*) as total')
+        ->groupBy('jenis_bantuan')
+        ->get();
+
+    return response()->json([
+        'success' => true,
+        'role' => 'lks',
+
+        'jumlah_klien' => [
+            'aktif' => $klienAktif,
+            'tidak_aktif' => $klienNonAktif,
+        ],
+
+        'jenis_bantuan' => $jenisBantuan,
+    ]);
+}
+
 }

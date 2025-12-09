@@ -1,11 +1,14 @@
 // src/pages/lks/LKSProfileEdit.jsx
+
 import React, { useEffect, useState, useRef, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../utils/api";
 import LKSLayout from "../../components/LKSLayout";
+
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+
 import {
   BuildingOfficeIcon,
   MapPinIcon,
@@ -13,187 +16,206 @@ import {
   WrenchIcon,
   ChartBarIcon,
   ArrowLeftIcon,
-  ClipboardDocumentCheckIcon,
 } from "@heroicons/react/24/outline";
+
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// 🧭 Marker leaflet
+// ================= ICON MARKER =================
 const markerIcon = new L.Icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/854/854878.png",
-  iconSize: [34, 34],
-  iconAnchor: [17, 34],
+  iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
 });
 
-// 📍 Marker interaktif
+// ================= MARKER INTERACT =================
 const LocationMarker = ({ position, setPosition, setFormData }) => {
   useMapEvents({
     click(e) {
       const { lat, lng } = e.latlng;
       setPosition([lat, lng]);
       setFormData((prev) => ({ ...prev, koordinat: `${lat},${lng}` }));
-      toast.info("📍 Lokasi diperbarui", { autoClose: 1500 });
+      toast.info("Lokasi diperbarui", { autoClose: 1200 });
     },
   });
+
   return <Marker position={position} icon={markerIcon} />;
 };
 
-// ✏️ Input umum
-const Field = memo(({ label, name, value, onChange, placeholder, type = "text", index }) => (
+// ================= INPUT COMPONENTS =================
+const Field = memo(({ label, name, value, onChange, type = "text" }) => (
   <div className="space-y-1">
-    <label className="block text-sm font-semibold text-gray-700">
-      {index && <span className="text-blue-600 font-bold mr-1">{index}.</span>}
-      {label}
-    </label>
+    <label className="block text-sm font-semibold text-gray-700">{label}</label>
     <input
       type={type}
       name={name}
       value={value || ""}
       onChange={onChange}
-      placeholder={placeholder}
-      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm transition"
+      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:ring-2 focus:ring-blue-500 outline-none"
     />
   </div>
 ));
-Field.displayName = "Field";
 
-// 🧾 Textarea otomatis
-const AutoResizeTextarea = memo(({ label, name, value, onChange, placeholder, index }) => {
-  const ref = useRef(null);
+const AutoTextarea = memo(({ label, name, value, onChange }) => {
+  const ref = useRef();
   useEffect(() => {
     if (ref.current) {
       ref.current.style.height = "auto";
       ref.current.style.height = ref.current.scrollHeight + "px";
     }
   }, [value]);
+
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-semibold text-gray-700">
-        {index && <span className="text-blue-600 font-bold mr-1">{index}.</span>}
-        {label}
-      </label>
+      <label className="block text-sm font-semibold text-gray-700">{label}</label>
       <textarea
         ref={ref}
         name={name}
         value={value || ""}
-        onChange={onChange}
-        placeholder={placeholder}
         rows={2}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none shadow-sm transition"
-      />
+        onChange={onChange}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none shadow-sm text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+      ></textarea>
     </div>
   );
 });
-AutoResizeTextarea.displayName = "AutoResizeTextarea";
 
-// 🏗️ Komponen utama
+// ================= SECTION HEADER =================
+const SectionHeader = ({ icon: Icon, title, color }) => (
+  <div className="flex items-center gap-2 mb-5">
+    <Icon className={`h-6 w-6 text-${color}-600`} />
+    <h2 className={`text-lg font-bold text-${color}-700`}>{title}</h2>
+    <div className="flex-1 border-t border-gray-200 ml-2"></div>
+  </div>
+);
+
+// ================= MAIN =================
 const LKSProfileEdit = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+
   const [position, setPosition] = useState([-6.3264, 108.32]);
   const [kecamatanList, setKecamatanList] = useState([]);
+
+  // ========== FIELD DISAMAKAN 100% DENGAN ADMIN ==========
   const [formData, setFormData] = useState({
     nama: "",
     alamat: "",
     jenis_layanan: "",
-    npwp: "",
     kecamatan_id: "",
     kelurahan: "",
-    akta_pendirian: "",
-    izin_operasional: "",
+    npwp: "",
     kontak_pengurus: "",
     legalitas: "",
+    akta_pendirian: "",
+    izin_operasional: "",
+    no_akta: "",
     status_akreditasi: "",
-    tanggal_akreditasi: "",
     no_sertifikat: "",
+    tanggal_akreditasi: "",
+    koordinat: "",
     jumlah_pengurus: "",
     sarana: "",
     hasil_observasi: "",
     tindak_lanjut: "",
-    koordinat: "",
   });
 
+  // ================= LOAD DATA =================
   useEffect(() => {
-    const fetchData = async () => {
+    const loadData = async () => {
       try {
-        const [resKec, resProfile] = await Promise.all([
+        const [kecRes, profileRes] = await Promise.all([
           API.get("/kecamatan"),
           API.get("/lks/profile-view"),
         ]);
-        setKecamatanList(resKec.data.data || []);
-        const data = resProfile.data.data;
+
+        setKecamatanList(kecRes.data.data || []);
+        const data = profileRes.data.data;
+
         setFormData((prev) => ({ ...prev, ...data }));
+
         if (data.koordinat) {
           const [lat, lng] = data.koordinat.split(",").map(Number);
           if (!isNaN(lat) && !isNaN(lng)) setPosition([lat, lng]);
         }
       } catch (err) {
         console.error(err);
-        toast.error("Gagal memuat data untuk diedit!", { autoClose: 2500 });
+        toast.error("Gagal memuat data!", { autoClose: 2000 });
       }
     };
-    fetchData();
+    loadData();
   }, []);
 
+  // ================= HANDLE INPUT =================
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  // ================= SAVE =================
   const saveProfile = async (e) => {
     e.preventDefault();
     setLoading(true);
+
     try {
       await API.put("/lks/me/update", formData);
-      toast.success("✅ Perubahan berhasil disimpan!", { autoClose: 2000 });
-      setTimeout(() => navigate("/lks/profile", { replace: true }), 1500);
+      toast.success("Profil berhasil diperbarui!", { autoClose: 1500 });
+      setTimeout(() => navigate("/lks/profile"), 800);
     } catch (err) {
       console.error(err);
-      toast.error("❌ Gagal menyimpan perubahan!", { autoClose: 2500 });
+      toast.error("Gagal menyimpan perubahan!", { autoClose: 2000 });
     } finally {
       setLoading(false);
     }
   };
 
-  const SectionHeader = ({ icon: Icon, title, color }) => (
-    <div className="flex items-center gap-2 mb-5">
-      <Icon className={`h-6 w-6 text-${color}-600`} />
-      <h2 className={`text-lg font-semibold text-${color}-700`}>{title}</h2>
-      <div className="flex-1 border-t border-gray-200 ml-2"></div>
-    </div>
-  );
-
-  let fieldIndex = 1;
-
+  // ================= RENDER =================
   return (
     <LKSLayout>
       <form
         onSubmit={saveProfile}
-        className="max-w-5xl mx-auto bg-white p-10 rounded-3xl shadow-2xl space-y-10 border border-gray-100"
+        className="max-w-5xl mx-auto bg-white p-10 rounded-2xl shadow-lg border border-gray-100 space-y-10"
       >
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-            <ClipboardDocumentCheckIcon className="h-8 w-8 text-blue-600" />
-            Edit Profil Lembaga
-          </h1>
-        </div>
+        <h1 className="text-3xl font-bold text-gray-800 mb-5">
+          Edit Profil LKS
+        </h1>
 
-        {/* 🏢 PROFIL UMUM */}
+        {/* ================= PROFILE ================= */}
         <section>
           <SectionHeader icon={BuildingOfficeIcon} title="Profil Umum" color="blue" />
+
           <div className="grid md:grid-cols-2 gap-6">
-            <Field label="Nama LKS" index={fieldIndex++} name="nama" value={formData.nama} onChange={handleChange} />
-            <Field label="Jenis Layanan" index={fieldIndex++} name="jenis_layanan" value={formData.jenis_layanan} onChange={handleChange} />
-            <AutoResizeTextarea label="Alamat Lengkap" index={fieldIndex++} name="alamat" value={formData.alamat} onChange={handleChange} />
+
+            <Field label="Nama LKS" name="nama" value={formData.nama} onChange={handleChange} />
+
+            {/* Jenis Layanan */}
+            <div className="space-y-1">
+              <label className="text-sm font-semibold text-gray-700">Jenis Layanan</label>
+              <select
+                name="jenis_layanan"
+                value={formData.jenis_layanan}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              >
+                <option value="">Pilih Jenis Layanan</option>
+                <option value="anak">Anak</option>
+                <option value="disabilitas">Disabilitas</option>
+                <option value="lansia">Lansia</option>
+                <option value="fakir miskin">Fakir Miskin</option>
+                <option value="kesejahteraan sosial">Kesejahteraan Sosial</option>
+                <option value="rehabilitasi sosial">Rehabilitasi Sosial</option>
+              </select>
+            </div>
+
+            <AutoTextarea label="Alamat Lengkap" name="alamat" value={formData.alamat} onChange={handleChange} />
+
+            {/* Kecamatan */}
             <div>
-              <label className="block mb-1 text-sm font-semibold text-gray-700">
-                <span className="text-blue-600 font-bold mr-1">{fieldIndex++}.</span> Kecamatan
-              </label>
+              <label className="block text-sm font-semibold text-gray-700">Kecamatan</label>
               <select
                 name="kecamatan_id"
                 value={formData.kecamatan_id}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm transition"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
               >
                 <option value="">Pilih Kecamatan</option>
                 {kecamatanList.map((k) => (
@@ -203,65 +225,110 @@ const LKSProfileEdit = () => {
                 ))}
               </select>
             </div>
-            <Field label="Kelurahan / Desa" index={fieldIndex++} name="kelurahan" value={formData.kelurahan} onChange={handleChange} />
-            <Field label="NPWP" index={fieldIndex++} name="npwp" value={formData.npwp} onChange={handleChange} />
-            <Field label="Kontak Pengurus" index={fieldIndex++} name="kontak_pengurus" value={formData.kontak_pengurus} onChange={handleChange} />
-            <Field label="Akta Pendirian" index={fieldIndex++} name="akta_pendirian" value={formData.akta_pendirian} onChange={handleChange} />
-            <Field label="Legalitas" index={fieldIndex++} name="legalitas" value={formData.legalitas} onChange={handleChange} />
-            <Field label="Izin Operasional" index={fieldIndex++} name="izin_operasional" value={formData.izin_operasional} onChange={handleChange} />
-            <Field label="Status Akreditasi" index={fieldIndex++} name="status_akreditasi" value={formData.status_akreditasi} onChange={handleChange} />
-            <Field type="date" label="Tanggal Akreditasi" index={fieldIndex++} name="tanggal_akreditasi" value={formData.tanggal_akreditasi} onChange={handleChange} />
-            <Field label="No Sertifikat" index={fieldIndex++} name="no_sertifikat" value={formData.no_sertifikat} onChange={handleChange} />
+
+            <Field label="Kelurahan" name="kelurahan" value={formData.kelurahan} onChange={handleChange} />
+            <Field label="NPWP" name="npwp" value={formData.npwp} onChange={handleChange} />
+            <Field label="Kontak Pengurus" name="kontak_pengurus" value={formData.kontak_pengurus} onChange={handleChange} />
+
+            {/* Legalitas */}
+            <Field label="Legalitas" name="legalitas" value={formData.legalitas} onChange={handleChange} />
+
+            {/* Akta pendirian */}
+            <Field label="Akta Pendirian" name="akta_pendirian" value={formData.akta_pendirian} onChange={handleChange} />
+
+            <Field label="Izin Operasional" name="izin_operasional" value={formData.izin_operasional} onChange={handleChange} />
+            <Field label="No Akta" name="no_akta" value={formData.no_akta} onChange={handleChange} />
+
+            {/* Status Akreditasi */}
+            <div className="space-y-1">
+              <label className="text-sm font-semibold text-gray-700">Status Akreditasi</label>
+              <select
+                name="status_akreditasi"
+                value={formData.status_akreditasi}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              >
+                <option value="">Pilih Status</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+              </select>
+            </div>
+
+            <Field label="No Sertifikat" name="no_sertifikat" value={formData.no_sertifikat} onChange={handleChange} />
+            <Field type="date" label="Tanggal Akreditasi" name="tanggal_akreditasi" value={formData.tanggal_akreditasi} onChange={handleChange} />
           </div>
         </section>
 
-        {/* 📍 LOKASI */}
+        {/* ================= LOKASI ================= */}
         <section>
           <SectionHeader icon={MapPinIcon} title="Lokasi LKS" color="red" />
-          <div className="rounded-3xl overflow-hidden shadow-lg border border-gray-100">
-            <MapContainer center={position} zoom={13} className="h-80 z-0">
-              <TileLayer url="https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png" />
-              <LocationMarker position={position} setPosition={setPosition} setFormData={setFormData} />
-            </MapContainer>
-          </div>
-          <p className="text-sm text-gray-500 mt-2">
-            Klik di peta untuk memperbarui lokasi. Koordinat:{" "}
-            <strong>{formData.koordinat || "Belum dipilih"}</strong>
+
+          <MapContainer center={position} zoom={13} className="h-72 rounded-xl border shadow">
+            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <LocationMarker position={position} setPosition={setPosition} setFormData={setFormData} />
+          </MapContainer>
+
+          <p className="text-sm mt-2 text-gray-600">
+            Koordinat: <strong>{formData.koordinat || "Belum dipilih"}</strong>
           </p>
         </section>
 
-        {/* 👥 PENGURUS */}
+        {/* ================= PENGURUS ================= */}
         <section>
           <SectionHeader icon={UsersIcon} title="Pengurus" color="purple" />
-          <Field label="Jumlah Pengurus" index={fieldIndex++} type="number" name="jumlah_pengurus" value={formData.jumlah_pengurus} onChange={handleChange} />
+          <Field
+            type="number"
+            label="Jumlah Pengurus"
+            name="jumlah_pengurus"
+            value={formData.jumlah_pengurus}
+            onChange={handleChange}
+          />
         </section>
 
-        {/* 🧱 SARANA */}
+        {/* ================= SARANA ================= */}
         <section>
           <SectionHeader icon={WrenchIcon} title="Sarana & Prasarana" color="green" />
-          <AutoResizeTextarea label="Sarana & Fasilitas" index={fieldIndex++} name="sarana" value={formData.sarana} onChange={handleChange} />
+          <AutoTextarea
+            label="Sarana & Fasilitas"
+            name="sarana"
+            value={formData.sarana}
+            onChange={handleChange}
+          />
         </section>
 
-        {/* 🧾 MONITORING */}
+        {/* ================= MONITORING ================= */}
         <section>
           <SectionHeader icon={ChartBarIcon} title="Monitoring" color="pink" />
-          <AutoResizeTextarea label="Hasil Observasi" index={fieldIndex++} name="hasil_observasi" value={formData.hasil_observasi} onChange={handleChange} />
-          <AutoResizeTextarea label="Tindak Lanjut" index={fieldIndex++} name="tindak_lanjut" value={formData.tindak_lanjut} onChange={handleChange} />
+          <AutoTextarea
+            label="Hasil Observasi"
+            name="hasil_observasi"
+            value={formData.hasil_observasi}
+            onChange={handleChange}
+          />
+          <AutoTextarea
+            label="Tindak Lanjut"
+            name="tindak_lanjut"
+            value={formData.tindak_lanjut}
+            onChange={handleChange}
+          />
         </section>
 
-        {/* 🔘 TOMBOL */}
-        <div className="flex justify-between items-center pt-6 border-t">
+        {/* ================= BUTTON ================= */}
+        <div className="flex justify-between pt-6 border-t border-gray-200">
           <button
             type="button"
             onClick={() => navigate("/lks/profile")}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium shadow-sm transition-all"
+            className="flex items-center gap-2 px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium shadow-sm transition"
           >
-            <ArrowLeftIcon className="h-4 w-4" /> Kembali
+            <ArrowLeftIcon className="w-4 h-4" />
+            Kembali
           </button>
+
           <button
             type="submit"
             disabled={loading}
-            className={`px-8 py-2.5 rounded-md font-semibold text-white shadow-md transition-all ${
+            className={`px-8 py-2.5 rounded-lg font-semibold text-white shadow-md transition ${
               loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
             }`}
           >
@@ -270,7 +337,7 @@ const LKSProfileEdit = () => {
         </div>
       </form>
 
-      <ToastContainer position="top-right" autoClose={2500} theme="light" />
+      <ToastContainer position="top-right" autoClose={2500} />
     </LKSLayout>
   );
 };

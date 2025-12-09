@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import CountUp from "react-countup";
+
 import {
   Users,
   Sparkles,
   Clock,
   Building2,
   BarChart3,
+  ShieldCheck,
 } from "lucide-react";
+
 import {
   ResponsiveContainer,
   CartesianGrid,
@@ -17,48 +20,57 @@ import {
   BarChart,
   Bar,
 } from "recharts";
+
 import OperatorLayout from "../components/OperatorLayout";
+import api from "../utils/api";
 
 export default function DashboardOperator() {
   const [time, setTime] = useState(new Date());
+  const [loading, setLoading] = useState(false);
+
   const [stats, setStats] = useState({
-    lks_aktif: 0,
-    lks_diproses: 0,
-    lks_nonaktif: 0,
+    lks_valid: 0,
+    lks_proses: 0,
+    lks_tidak_valid: 0,
     klien_aktif: 0,
     klien_nonaktif: 0,
   });
 
-  // Fetch backend
+  // ==============================
+  // FETCH DATA
+  // ==============================
+  const loadData = async () => {
+    setLoading(true);
+
+    try {
+      const res = await api.get("/dashboard");
+      const data = res.data;
+
+      setStats({
+        lks_valid: data.total_lks?.valid ?? 0,
+        lks_proses: data.total_lks?.diproses ?? 0,
+        lks_tidak_valid: data.total_lks?.nonaktif ?? 0,
+        klien_aktif: data.total_klien?.aktif ?? 0,
+        klien_nonaktif: data.total_klien?.nonaktif ?? 0,
+      });
+    } catch (err) {
+      console.error("Gagal load dashboard operator:", err);
+    }
+
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const token = sessionStorage.getItem("token");
-    if (!token) return;
-
-    fetch("http://localhost:8000/api/dashboard", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(async (res) => {
-        const data = await res.json();
-        if (data.role !== "operator") return;
-
-        setStats({
-          lks_aktif: data.total_lks?.aktif ?? 0,
-          lks_diproses: data.total_lks?.diproses ?? 0,
-          lks_nonaktif: data.total_lks?.nonaktif ?? 0,
-          klien_aktif: data.total_klien?.aktif ?? 0,
-          klien_nonaktif: data.total_klien?.nonaktif ?? 0,
-        });
-      })
-      .catch(console.error);
+    loadData();
   }, []);
 
-  // Clock update
+  // Update jam realtime
   useEffect(() => {
     const i = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(i);
   }, []);
 
-  // Data chart klien
+  // Chart data klien
   const chartData = [
     { label: "Aktif", total: stats.klien_aktif },
     { label: "Nonaktif", total: stats.klien_nonaktif },
@@ -67,8 +79,7 @@ export default function DashboardOperator() {
   return (
     <OperatorLayout>
       <div className="min-h-screen w-full text-slate-700">
-
-        {/* HEADER */}
+        {/* ===================== HEADER ===================== */}
         <header className="flex justify-between items-center px-5 md:px-10 py-5 bg-white shadow-sm rounded-b-2xl border-b">
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
@@ -88,25 +99,29 @@ export default function DashboardOperator() {
           </div>
         </header>
 
-        {/* STAT CARDS */}
+        {loading && (
+          <p className="text-center text-gray-500 mt-4">Memuat data...</p>
+        )}
+
+        {/* ===================== STAT CARDS ===================== */}
         <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-5 px-5 md:px-10 py-8">
           {[
             {
-              title: "LKS Aktif",
-              value: stats.lks_aktif,
+              title: "LKS Valid",
+              value: stats.lks_valid,
               icon: Building2,
               color: "from-green-400 to-emerald-500",
             },
             {
               title: "LKS Diproses",
-              value: stats.lks_diproses,
+              value: stats.lks_proses,
               icon: Clock,
               color: "from-yellow-400 to-amber-500",
             },
             {
-              title: "LKS Nonaktif",
-              value: stats.lks_nonaktif,
-              icon: Building2,
+              title: "LKS Tidak Valid",
+              value: stats.lks_tidak_valid,
+              icon: ShieldCheck,
               color: "from-red-400 to-rose-500",
             },
             {
@@ -124,11 +139,11 @@ export default function DashboardOperator() {
             {
               title: "Total Data",
               value:
+                stats.lks_valid +
+                stats.lks_proses +
+                stats.lks_tidak_valid +
                 stats.klien_aktif +
-                stats.klien_nonaktif +
-                stats.lks_aktif +
-                stats.lks_diproses +
-                stats.lks_nonaktif,
+                stats.klien_nonaktif,
               icon: BarChart3,
               color: "from-indigo-400 to-sky-400",
             },
@@ -149,10 +164,9 @@ export default function DashboardOperator() {
           ))}
         </section>
 
-        {/* CHART: Perbandingan Klien */}
+        {/* ===================== CHART ===================== */}
         <section className="px-5 md:px-10 pb-10">
           <motion.div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-6">
-
             <h3 className="flex items-center gap-2 text-slate-700 font-semibold text-lg mb-3">
               <BarChart3 className="text-sky-500" /> Perbandingan Klien Aktif & Nonaktif
             </h3>
@@ -176,11 +190,10 @@ export default function DashboardOperator() {
                 </defs>
               </BarChart>
             </ResponsiveContainer>
-
           </motion.div>
         </section>
 
-        {/* FOOTER */}
+        {/* ===================== FOOTER ===================== */}
         <footer className="py-6 text-center text-gray-500 text-sm border-t bg-white">
           © {new Date().getFullYear()} SIDALEKAS · Operator Dashboard
         </footer>

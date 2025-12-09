@@ -7,6 +7,8 @@ import {
   Sparkles,
   Clock,
   BarChart3,
+  Activity,
+  FolderKanban,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -17,44 +19,52 @@ import {
   BarChart,
   Bar,
 } from "recharts";
+
 import LKSLayout from "../components/LKSLayout";
+import api from "../utils/api";
 
 export default function DashboardLKS() {
   const [time, setTime] = useState(new Date());
+
   const [stats, setStats] = useState({
     klien_aktif: 0,
     klien_nonaktif: 0,
+    jenis_bantuan: [],
   });
-  const [jenisBantuan, setJenisBantuan] = useState([]);
 
-  // Ambil data dari backend
-  useEffect(() => {
-    const token = sessionStorage.getItem("token");
-    if (!token) return;
+  const [loading, setLoading] = useState(false);
 
-    fetch("http://localhost:8000/api/dashboard", {
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-    })
-      .then(async (res) => {
-        const data = await res.json();
-        if (data.role !== "lks") return;
+  // =======================
+  // LOAD DATA BACKEND
+  // =======================
+  const loadData = async () => {
+    setLoading(true);
 
-        setStats({
-          klien_aktif: data.jumlah_klien?.aktif ?? 0,
-          klien_nonaktif: data.jumlah_klien?.tidak_aktif ?? 0,
-        });
+    try {
+      const res = await api.get("/dashboard");
+      const data = res.data;
 
-        setJenisBantuan(
+      setStats({
+        klien_aktif: data.jumlah_klien?.aktif ?? 0,
+        klien_nonaktif: data.jumlah_klien?.tidak_aktif ?? 0,
+        jenis_bantuan:
           data.jenis_bantuan?.map((j) => ({
             jenis: j.jenis_bantuan ?? "-",
             total: j.total ?? 0,
-          })) ?? []
-        );
-      })
-      .catch(console.error);
+          })) ?? [],
+      });
+    } catch (err) {
+      console.error("Gagal load dashboard LKS:", err);
+    }
+
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
-  // Clock real-time
+  // Jam berjalan real-time
   useEffect(() => {
     const i = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(i);
@@ -63,7 +73,6 @@ export default function DashboardLKS() {
   return (
     <LKSLayout>
       <div className="min-h-screen w-full text-slate-700">
-
         {/* HEADER */}
         <header className="flex justify-between items-center px-5 md:px-10 py-5 bg-white shadow-sm rounded-b-2xl border-b">
           <div className="flex flex-col">
@@ -84,6 +93,11 @@ export default function DashboardLKS() {
           </div>
         </header>
 
+        {/* LOADING */}
+        {loading && (
+          <p className="text-center text-gray-500 mt-4">Memuat data...</p>
+        )}
+
         {/* STAT CARDS */}
         <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 px-5 md:px-10 py-8">
           {[
@@ -101,7 +115,7 @@ export default function DashboardLKS() {
             },
             {
               title: "Jenis Bantuan",
-              value: jenisBantuan.length,
+              value: stats.jenis_bantuan.length,
               icon: ShieldCheck,
               color: "from-sky-400 to-blue-500",
             },
@@ -125,7 +139,6 @@ export default function DashboardLKS() {
         {/* CHART: Jenis Bantuan */}
         <section className="px-5 md:px-10 pb-10">
           <motion.div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-6">
-
             <h3 className="flex items-center gap-2 text-slate-700 font-semibold text-lg mb-3">
               <BarChart3 className="text-sky-500" /> Distribusi Jenis Bantuan
             </h3>
@@ -135,7 +148,7 @@ export default function DashboardLKS() {
             </p>
 
             <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={jenisBantuan}>
+              <BarChart data={stats.jenis_bantuan}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis
                   dataKey="jenis"
@@ -160,8 +173,39 @@ export default function DashboardLKS() {
                 </defs>
               </BarChart>
             </ResponsiveContainer>
-
           </motion.div>
+        </section>
+
+        {/* TABLE: Jenis Bantuan */}
+        <section className="px-5 md:px-10 pb-10">
+          <div className="bg-white rounded-xl shadow p-6 border">
+            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 text-slate-800">
+              <FolderKanban size={20} /> Rekap Jenis Bantuan Klien
+            </h3>
+
+            {stats.jenis_bantuan.length === 0 ? (
+              <p className="text-gray-400 italic text-center py-4">
+                Belum ada data jenis bantuan.
+              </p>
+            ) : (
+              <table className="w-full text-sm border rounded">
+                <thead className="bg-slate-100">
+                  <tr>
+                    <th className="p-2 border">Jenis Bantuan</th>
+                    <th className="p-2 border text-center">Jumlah</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.jenis_bantuan.map((item, i) => (
+                    <tr key={i} className="hover:bg-slate-50">
+                      <td className="p-2 border">{item.jenis}</td>
+                      <td className="p-2 border text-center">{item.total}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </section>
 
         {/* FOOTER */}

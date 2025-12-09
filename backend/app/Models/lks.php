@@ -41,6 +41,7 @@ class Lks extends Model
         'dokumen' => 'array',
         'tanggal_akreditasi' => 'date',
         'status_verifikasi' => 'string',
+        'akta_pendirian' => 'string',
     ];
     
 

@@ -2,27 +2,24 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowDownTrayIcon, ArrowLeftIcon } from "@heroicons/react/24/solid";
 import api from "../../../utils/api";
-import {
-  showSuccess,
-  showError,
-} from "../../../utils/toast";
+import { showSuccess, showError } from "../../../utils/toast";
 
 export default function KlienForm() {
   const navigate = useNavigate();
 
-  // tambahkan ini dari branch satunya
   const role = sessionStorage.getItem("role");
   const loggedLKS = sessionStorage.getItem("lks_id");
 
   const [form, setForm] = useState({
     nik: "",
     nama: "",
+    jenis_kelamin: "",
     alamat: "",
     kelurahan: "",
     kecamatan_id: "",
     lks_id: role === "lks" ? loggedLKS : "",
-    jenis_kebutuhan: "",
-    status_bantuan: "",
+    jenis_bantuan: "",
+    kelompok_umur: "",
     status_pembinaan: "",
   });
 
@@ -30,14 +27,15 @@ export default function KlienForm() {
   const [lksList, setLksList] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // === GET KECAMATAN ===
+  // GET KECAMATAN
   useEffect(() => {
     api.get("/kecamatan").then((res) => {
-      setKecamatanList(res.data.data || []);
+      const data = res.data.data || [];
+      setKecamatanList(data);
     });
   }, []);
 
-  // === ADMIN: Dapat semua LKS ===
+  // GET SEMUA LKS (ADMIN)
   useEffect(() => {
     if (role === "admin") {
       api
@@ -50,20 +48,33 @@ export default function KlienForm() {
     }
   }, [role]);
 
-  // === Filter LKS by Kecamatan (ADMIN ONLY) ===
+  // FILTER LKS BERDASARKAN KECAMATAN
   useEffect(() => {
     if (role !== "admin") return;
+    if (!form.kecamatan_id) return;
 
-    if (form.kecamatan_id) {
-      api
-        .get(`/lks/by-kecamatan/${form.kecamatan_id}`)
-        .then((res) => setLksList(res.data.data || []))
-        .catch(() => setLksList([]));
-    }
+    api
+      .get(`/lks/by-kecamatan/${form.kecamatan_id}`)
+      .then((res) => {
+        const data = res.data.data || [];
+        setLksList(data);
+      })
+      .catch((err) => {
+        console.error("ERR FILTER LKS:", err);
+        setLksList([]);
+      });
   }, [form.kecamatan_id, role]);
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  // FIX VALUE ":1" → "1"
+  const handleChange = (e) => {
+    let value = e.target.value;
+
+    if (e.target.name === "kecamatan_id" && value.includes(":")) {
+      value = value.split(":")[0];
+    }
+
+    setForm({ ...form, [e.target.name]: value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -72,13 +83,13 @@ export default function KlienForm() {
     try {
       await api.post("/klien", form);
       showSuccess("Klien berhasil ditambahkan!");
+
       setTimeout(() => {
-        if (role === "admin") navigate("/admin/klien");
-        else navigate("/lks/klien");
+        navigate(role === "admin" ? "/admin/klien" : "/lks/klien");
       }, 1200);
     } catch (err) {
       console.error("❌ Error:", err);
-      showError("Gagal menambahkan klien. Periksa kembali input Anda.");
+      showError("Gagal menambahkan klien.");
     }
   };
 
@@ -101,6 +112,7 @@ export default function KlienForm() {
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-8">
+        
         {/* === Basic Fields === */}
         <div className={sectionStyle}>
           {fields.map((field) => (
@@ -108,6 +120,7 @@ export default function KlienForm() {
               <label htmlFor={field.name} className={labelStyle}>
                 {field.label}
               </label>
+
               {field.type === "textarea" ? (
                 <textarea
                   id={field.name}
@@ -136,9 +149,30 @@ export default function KlienForm() {
 
         {/* === Select Fields === */}
         <div className={sectionStyle}>
+          
+          {/* Jenis Kelamin */}
+          <div>
+            <label htmlFor="jenis_kelamin" className={labelStyle}>
+              5. Jenis Kelamin
+            </label>
+            <select
+              name="jenis_kelamin"
+              id="jenis_kelamin"
+              className={inputStyle}
+              value={form.jenis_kelamin}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Pilih Jenis Kelamin</option>
+              <option value="laki-laki">Laki-laki</option>
+              <option value="perempuan">Perempuan</option>
+            </select>
+          </div>
+
+          {/* Kecamatan */}
           <div>
             <label htmlFor="kecamatan_id" className={labelStyle}>
-              5. Kecamatan
+              6. Kecamatan
             </label>
             <select
               name="kecamatan_id"
@@ -150,17 +184,18 @@ export default function KlienForm() {
             >
               <option value="">Pilih Kecamatan</option>
               {kecamatanList.map((kec) => (
-                <option key={kec.id} value={kec.id}>
+                <option key={kec.id} value={String(kec.id).split(":")[0]}>
                   {kec.nama}
                 </option>
               ))}
             </select>
           </div>
 
+          {/* LKS (Admin Only) */}
           {role === "admin" && (
             <div>
               <label htmlFor="lks_id" className={labelStyle}>
-                6. LKS
+                7. LKS
               </label>
               <select
                 name="lks_id"
@@ -180,46 +215,51 @@ export default function KlienForm() {
             </div>
           )}
 
+          {/* Jenis Bantuan */}
           <div>
-            <label htmlFor="jenis_kebutuhan" className={labelStyle}>
-              7. Jenis Kebutuhan
+            <label htmlFor="jenis_bantuan" className={labelStyle}>
+              8. Jenis Bantuan
             </label>
             <select
-              name="jenis_kebutuhan"
-              id="jenis_kebutuhan"
+              name="jenis_bantuan"
+              id="jenis_bantuan"
               className={inputStyle}
-              value={form.jenis_kebutuhan}
-              onChange={handleChange}
-            >
-              <option value="">Pilih Jenis</option>
-              <option value="anak">Anak</option>
-              <option value="disabilitas">Disabilitas</option>
-              <option value="lansia">Lansia</option>
-              <option value="fakir_miskin">Fakir Miskin</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="status_bantuan" className={labelStyle}>
-              8. Status Bantuan
-            </label>
-            <select
-              name="status_bantuan"
-              id="status_bantuan"
-              className={inputStyle}
-              value={form.status_bantuan}
+              value={form.jenis_bantuan}
               onChange={handleChange}
             >
               <option value="">Pilih Bantuan</option>
-              <option value="PKH">PKH</option>
               <option value="BPNT">BPNT</option>
+              <option value="PKH">PKH</option>
               <option value="BLT">BLT</option>
+              <option value="lainnya">Lainnya</option>
             </select>
           </div>
 
+          {/* Kelompok Umur */}
+          <div>
+            <label htmlFor="kelompok_umur" className={labelStyle}>
+              9. Kelompok Umur
+            </label>
+            <select
+              name="kelompok_umur"
+              id="kelompok_umur"
+              className={inputStyle}
+              value={form.kelompok_umur}
+              onChange={handleChange}
+            >
+              <option value="">Pilih Kelompok</option>
+              <option value="balita">Balita</option>
+              <option value="anak">Anak</option>
+              <option value="remaja">Remaja</option>
+              <option value="dewasa">Dewasa</option>
+              <option value="lansia">Lansia</option>
+            </select>
+          </div>
+
+          {/* Status Pembinaan */}
           <div>
             <label htmlFor="status_pembinaan" className={labelStyle}>
-              9. Status Pembinaan
+              10. Status Pembinaan
             </label>
             <select
               name="status_pembinaan"
@@ -235,7 +275,7 @@ export default function KlienForm() {
           </div>
         </div>
 
-        {/* === BUTTONS === */}
+        {/* BUTTON */}
         <div className="flex justify-between items-center pt-4">
           <button
             type="button"
