@@ -11,8 +11,6 @@ const LKSKlienForm = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const [metaLKS, setMetaLKS] = useState({});
-
   const [form, setForm] = useState({
     nik: "",
     nama: "",
@@ -22,23 +20,6 @@ const LKSKlienForm = () => {
     status_bantuan: "",
     status_pembinaan: "",
   });
-
-  // Ambil meta LKS
-  useEffect(() => {
-    const fetchMetaLKS = async () => {
-      const lksId = sessionStorage.getItem("lks_id");
-      if (!lksId) return;
-
-      try {
-        const res = await api.get(`/lks/${lksId}`);
-        setMetaLKS(res.data.data || {});
-      } catch (err) {
-        console.error("❌ Gagal memuat meta LKS:", err);
-        showError("Gagal memuat informasi LKS!");
-      }
-    };
-    fetchMetaLKS();
-  }, []);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -51,7 +32,6 @@ const LKSKlienForm = () => {
     // ==========================
     // 🔥 VALIDASI FRONTEND
     // ==========================
-
     if (form.nik.length !== 16) {
       showError("NIK harus 16 digit!");
       setLoading(false);
@@ -76,14 +56,8 @@ const LKSKlienForm = () => {
       return;
     }
 
-    // Backend akan otomatis mengisi:
-    // - lks_id (dari user login)
-    // - kecamatan_id (dari lks->kecamatan)
-    // jadi kita TIDAK boleh mengirim kecamatan_id & lks_id
-
     try {
       await api.post("/klien", form);
-
       showSuccess("Klien berhasil ditambahkan!");
       setTimeout(() => navigate("/lks/klien"), 1000);
     } catch (err) {
@@ -174,27 +148,10 @@ const LKSKlienForm = () => {
           />
         </div>
 
-        {/* Kecamatan (otomatis) */}
-        <div>
-          <label className="block font-semibold text-gray-700 mb-1">
-            5. Kecamatan (otomatis)
-          </label>
-          <input
-            type="text"
-            value={
-              metaLKS.kecamatan
-                ? metaLKS.kecamatan.nama
-                : "Memuat kecamatan..."
-            }
-            disabled
-            className="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-gray-600"
-          />
-        </div>
-
         {/* Jenis Kebutuhan */}
         <div>
           <label className="block font-semibold text-gray-700 mb-1">
-            6. Jenis Kebutuhan
+            5. Jenis Kebutuhan
           </label>
           <select
             name="jenis_kebutuhan"
@@ -202,18 +159,17 @@ const LKSKlienForm = () => {
             onChange={handleChange}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
           >
-            <option value="">Pilih Jenis</option>
-            <option value="anak">Anak</option>
-            <option value="lansia">Lansia</option>
-            <option value="disabilitas">Disabilitas</option>
-            <option value="fakir_miskin">Fakir Miskin</option>
+            <option value="">Pilih Jenis Kebutuhan</option>
+            <option value="BPNT">BPNT</option>
+            <option value="PKH">PKH</option>
+            <option value="BLT">BLT</option>
           </select>
         </div>
 
         {/* Status Bantuan */}
         <div>
           <label className="block font-semibold text-gray-700 mb-1">
-            7. Status Bantuan
+            6. Status Bantuan (Kelompok Umur)
           </label>
           <select
             name="status_bantuan"
@@ -221,17 +177,19 @@ const LKSKlienForm = () => {
             onChange={handleChange}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
           >
-            <option value="">Pilih Bantuan</option>
-            <option value="BPNT">BPNT</option>
-            <option value="PKH">PKH</option>
-            <option value="BLT">BLT</option>
+            <option value="">Pilih Kelompok Umur</option>
+            <option value="anak">Anak</option>
+            <option value="balita">Balita</option>
+            <option value="remaja">Remaja</option>
+            <option value="dewasa">Dewasa</option>
+            <option value="lansia">Lansia</option>
           </select>
         </div>
 
         {/* Status Pembinaan */}
         <div>
           <label className="block font-semibold text-gray-700 mb-1">
-            8. Status Pembinaan
+            7. Status Pembinaan
           </label>
           <select
             name="status_pembinaan"

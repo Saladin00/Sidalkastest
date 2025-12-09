@@ -22,5 +22,9 @@ export default defineConfig({
     fs: {
       strict: false,
     },
+      proxy: {
+    '/api': 'http://localhost:8000',
+  },
   },
 });
+

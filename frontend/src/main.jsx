@@ -7,6 +7,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "react-confirm-alert/src/react-confirm-alert.css";
 import "./styles/confirm.css";
+import "leaflet/dist/leaflet.css";
 
 // Ambil elemen root di index.html
 const root = createRoot(document.getElementById("root"));

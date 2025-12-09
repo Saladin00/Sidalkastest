@@ -90,12 +90,19 @@ import LKSVerifikasiForm from "./pages/lks/verifikasi/LKSVerifikasiForm"; // ✅
 import LaporanAdmin from "./pages/admin/laporan/LaporanAdmin";
 import LaporanOperator from "./pages/operator/Laporan/LaporanOperator";
 
+// landing Page
+import PublicLanding from "./pages/PublicLanding";
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+
+         {/* ================= PUBLIC LANDING (HOME) ================= */}
+         <Route path="/" element={<PublicLanding />} />
+<Route path="/" element={<PublicLanding />} />
         {/* ================= AUTH ================= */}
-        <Route path="/" element={<Login />} />
+        <Route path="login/" element={<Login />} />
         <Route path="/register" element={<Register />} />
         {/* 🚀 RESET PASSWORD */}
         <Route path="/forgot-password" element={<ForgotPassword />} />

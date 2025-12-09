@@ -124,6 +124,8 @@ const LKSForm = () => {
     sarana: "",
     hasil_observasi: "",
     tindak_lanjut: "",
+    jenis_kebutuhan: "",
+    status_bantuan: "",
   });
 
   const handleChange = (e) =>
@@ -201,10 +203,31 @@ const LKSForm = () => {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Nama LKS */}
               <Field label="Nama LKS" name="nama" value={form.nama} onChange={handleChange} />
-              <Field label="Jenis Layanan" name="jenis_layanan" value={form.jenis_layanan} onChange={handleChange} />
+
+              {/* Jenis Layanan Dropdown */}
+              <div>
+                <label className="text-sm font-medium text-gray-700">Jenis Layanan</label>
+                <select
+                  name="jenis_layanan"
+                  value={form.jenis_layanan}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:ring-2 focus:ring-sky-500 outline-none"
+                >
+                  <option value="">Pilih Jenis Layanan</option>
+                  <option value="anak">Anak</option>
+                  <option value="disabilitas">Disabilitas</option>
+                  <option value="lansia">Lansia</option>
+                  <option value="fakir miskin">Fakir Miskin</option>
+                  <option value="kesejahteraan sosial">Kesejahteraan Sosial</option>
+                  <option value="rehabilitasi sosial">Rehabilitasi Sosial</option>
+                </select>
+              </div>
+
               <AutoTextarea label="Alamat Lengkap" name="alamat" value={form.alamat} onChange={handleChange} />
 
+              {/* Kecamatan */}
               <div>
                 <label className="text-sm font-medium text-gray-700">Kecamatan</label>
                 <select
@@ -226,11 +249,83 @@ const LKSForm = () => {
               <Field label="NPWP" name="npwp" value={form.npwp} onChange={handleChange} />
               <Field label="Kontak Pengurus" name="kontak_pengurus" value={form.kontak_pengurus} onChange={handleChange} />
               <Field label="Legalitas" name="legalitas" value={form.legalitas} onChange={handleChange} />
-              <Field label="Status Akreditasi" name="status_akreditasi" value={form.status_akreditasi} onChange={handleChange} />
+
+              {/* Status Akreditasi Dropdown */}
+              <div>
+                <label className="text-sm font-medium text-gray-700">Status Akreditasi</label>
+                <select
+                  name="status_akreditasi"
+                  value={form.status_akreditasi}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:ring-2 focus:ring-sky-500 outline-none"
+                >
+                  <option value="">Pilih Akreditasi</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                </select>
+              </div>
+
               <Field label="No Sertifikat" name="no_sertifikat" value={form.no_sertifikat} onChange={handleChange} />
               <Field type="date" label="Tanggal Akreditasi" name="tanggal_akreditasi" value={form.tanggal_akreditasi} onChange={handleChange} />
-              <Field label="Akta Pendirian" name="akta_pendirian" value={form.akta_pendirian} onChange={handleChange} />
+
+              {/* Akta Pendirian Upload */}
+              <div>
+                <label className="text-sm font-medium text-gray-700">Akta Pendirian</label>
+                <input
+                  type="file"
+                  name="akta_pendirian"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={handleFileChange}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-sky-500 outline-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Maks. 5MB (Format: PDF, JPG, PNG)
+                </p>
+              </div>
+
               <Field label="Izin Operasional" name="izin_operasional" value={form.izin_operasional} onChange={handleChange} />
+            </div>
+          </section>
+
+          {/* ================= JENIS KEBUTUHAN & STATUS BANTUAN ================= */}
+          <section>
+            <SectionHeader icon={PaperClipIcon} title="Data Bantuan & Kebutuhan" color="yellow" />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Status Bantuan berisi kelompok umur */}
+              <div>
+                <label className="text-sm font-medium text-gray-700">Status Bantuan (Kelompok Umur)</label>
+                <select
+                  name="status_bantuan"
+                  value={form.status_bantuan}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:ring-2 focus:ring-sky-500 outline-none"
+                >
+                  <option value="">Pilih Kelompok Umur</option>
+                  <option value="anak">Anak</option>
+                  <option value="balita">Balita</option>
+                  <option value="remaja">Remaja</option>
+                  <option value="dewasa">Dewasa</option>
+                  <option value="lansia">Lansia</option>
+                </select>
+              </div>
+
+              {/* Jenis Kebutuhan Dropdown */}
+              <div>
+                <label className="text-sm font-medium text-gray-700">Jenis Kebutuhan</label>
+                <select
+                  name="jenis_kebutuhan"
+                  value={form.jenis_kebutuhan}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:ring-2 focus:ring-sky-500 outline-none"
+                >
+                  <option value="">Pilih Jenis Kebutuhan</option>
+                  <option value="BPNT">BPNT</option>
+                  <option value="PKH">PKH</option>
+                  <option value="BLT">BLT</option>
+                </select>
+              </div>
             </div>
           </section>
 
@@ -291,7 +386,6 @@ const LKSForm = () => {
             />
           </section>
 
-
           {/* ================= BUTTONS ================= */}
           <div className="flex flex-col sm:flex-row justify-between items-center pt-6 border-t border-gray-200 gap-3">
             <button
@@ -318,7 +412,6 @@ const LKSForm = () => {
         </form>
       </div>
 
-      {/* TOAST CONTAINER */}
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop />
     </AdminLayout>
   );

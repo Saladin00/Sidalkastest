@@ -22,7 +22,11 @@ use App\Http\Controllers\Verifikasi\OperatorVerifikasiController;
 use App\Http\Controllers\Verifikasi\PetugasVerifikasiController;
 use App\Http\Controllers\Verifikasi\LksVerifikasiController;
 
-
+// Laporan
+use App\Http\Controllers\Laporan\AdminLaporanController;
+use App\Http\Controllers\Laporan\AdminLaporanExportController;
+use App\Http\Controllers\Laporan\OperatorLaporanController;
+use App\Http\Controllers\Laporan\OperatorLaporanExportController;
 // =====================================================================
 // PUBLIC ROUTES
 // =====================================================================
@@ -31,7 +35,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/kecamatan', [KecamatanController::class, 'index']);
 Route::get('/lks/{id}/cetak-pdf', [LKSController::class, 'cetakProfil']);
 Route::post('/resend-activation', [UserController::class, 'resendActivation']);
-
+use App\Http\Controllers\Public\PublicDashboardController;
 
 
 
@@ -174,20 +178,33 @@ Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
 // =====================================================================
 // LAPORAN ADMIN
 // =====================================================================
+// =====================================================================
+// LAPORAN ADMIN
+// =====================================================================
 Route::prefix('admin')->middleware(['role:admin'])->group(function () {
+
+    // JSON laporan untuk tabel & grafik
     Route::get('/laporan', [\App\Http\Controllers\Laporan\AdminLaporanController::class, 'laporan']);
-    Route::get('/laporan/export/pdf', [\App\Http\Controllers\Laporan\AdminLaporanController::class, 'exportPdf']);
-    Route::get('/laporan/export/excel', [\App\Http\Controllers\Laporan\AdminLaporanController::class, 'exportExcel']);
+
+    // EXPORT PDF & EXCEL (HARUS KE ExportController)
+    Route::get('/laporan/export/pdf', [\App\Http\Controllers\Laporan\AdminLaporanExportController::class, 'exportPDF']);
+    Route::get('/laporan/export/excel', [\App\Http\Controllers\Laporan\AdminLaporanExportController::class, 'exportExcel']);
 });
 
 // =====================================================================
 // LAPORAN OPERATOR
 // =====================================================================
 Route::prefix('operator')->middleware(['role:operator'])->group(function () {
+
+    // JSON Laporan Operator
     Route::get('/laporan', [\App\Http\Controllers\Laporan\OperatorLaporanController::class, 'laporan']);
+
+    // EXPORT PDF
+    Route::get('/laporan/export/pdf', [OperatorLaporanExportController::class, 'exportPdf']);
+
+    // EXPORT EXCEL
+    Route::get('/laporan/export/excel', [OperatorLaporanExportController::class, 'exportExcel']);
 });
-
-
 
 
     // =================================================================
@@ -195,4 +212,9 @@ Route::prefix('operator')->middleware(['role:operator'])->group(function () {
     // =================================================================
     Route::apiResource('lks', LKSController::class);
 
+});
+
+
+Route::prefix('public')->group(function () {
+    Route::get('/dashboard', [PublicDashboardController::class, 'index']);
 });

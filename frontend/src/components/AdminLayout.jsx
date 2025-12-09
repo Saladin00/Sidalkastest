@@ -191,18 +191,6 @@ const AdminLayout = ({ children }) => {
                       Manajemen LKS
                     </Link>
                   </li>
-                  <li>
-                    <Link
-                      to="/admin/lks/laporan"
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition ${
-                        current.includes("/admin/lks/laporan")
-                          ? "bg-sky-800 text-white"
-                          : "text-sky-100 hover:bg-sky-800/70 hover:text-white"
-                      }`}
-                    >
-                      <FileText size={16} /> Laporan Kegiatan
-                    </Link>
-                  </li>
                 </ul>
               )}
             </li>

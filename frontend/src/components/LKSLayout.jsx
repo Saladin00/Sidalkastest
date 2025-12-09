@@ -109,8 +109,6 @@ const LKSLayout = ({ children }) => {
     navItems = [
       { label: "Dashboard", to: "/lks", icon: LayoutDashboard, exact: true },
       { label: "Data Klien", to: "/lks/klien", icon: Users },
-      { label: "Dokumen Pendukung", to: "/lks/dokumen", icon: UploadCloud },
-      { label: "Laporan Kegiatan", to: "/lks/laporan", icon: FileText },
       { label: "Status Verifikasi", to: "/lks/verifikasi", icon: ShieldCheck },
       { label: "Profil Saya", to: "/lks/profile", icon: User },
     ];
@@ -122,8 +120,6 @@ const LKSLayout = ({ children }) => {
   const getPageMeta = (path) => {
     if (path === "/lks") return { title: "Dashboard LKS" };
     if (path.startsWith("/lks/klien")) return { title: "Data Klien" };
-    if (path.startsWith("/lks/dokumen")) return { title: "Dokumen Pendukung" };
-    if (path.startsWith("/lks/laporan")) return { title: "Laporan Kegiatan" };
     if (path.startsWith("/lks/verifikasi"))
       return { title: "Status Verifikasi LKS" };
     if (path.startsWith("/lks/profile")) return { title: "Profil Akun" };
