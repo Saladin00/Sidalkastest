@@ -75,7 +75,7 @@ const LKSLayout = ({ children }) => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // MENU TERGANTUNG STATUS VERIFIKASI
+  // MENU tergantung status verifikasi
   const statusVerifikasi = sessionStorage.getItem("status_verifikasi");
   const verified = statusVerifikasi === "valid";
 
@@ -85,31 +85,25 @@ const LKSLayout = ({ children }) => {
         { label: "Data Klien", to: "/lks/klien", icon: Users },
         { label: "Dokumen Pendukung", to: "/lks/dokumen", icon: UploadCloud },
         { label: "Laporan Kegiatan", to: "/lks/laporan", icon: FileText },
-        {
-          label: "Status Verifikasi",
-          to: "/lks/verifikasi",
-          icon: ShieldCheck,
-        },
+        { label: "Status Verifikasi", to: "/lks/verifikasi", icon: ShieldCheck },
         { label: "Profil Saya", to: "/lks/profile", icon: User },
       ]
     : [
-        {
-          label: "Status Verifikasi",
-          to: "/lks/verifikasi",
-          icon: ShieldCheck,
-        },
+        { label: "Status Verifikasi", to: "/lks/verifikasi", icon: ShieldCheck },
         { label: "Profil Saya", to: "/lks/profile", icon: User },
       ];
 
   const isActive = (path, exact = false) =>
     exact ? current === path : current.startsWith(path);
 
+  // AMBIL INISIAL NAMA
   const getInitials = (str = "") => {
     const p = str.split(" ");
     if (p.length === 1) return p[0]?.slice(0, 2).toUpperCase();
     return (p[0][0] + p[1][0]).toUpperCase();
   };
 
+  // LOGOUT
   const logout = () => {
     setShowToast(true);
     setTimeout(() => {
@@ -180,6 +174,7 @@ const LKSLayout = ({ children }) => {
             })}
           </ul>
         </nav>
+
         {/* LOGOUT BUTTON */}
         <div className="border-t border-sky-800 px-3 py-4 bg-sky-900/90">
           <button
@@ -202,7 +197,7 @@ const LKSLayout = ({ children }) => {
             </p>
           </div>
 
-          {/* DROPDOWN USER — SAME STYLE AS ADMIN */}
+          {/* DROPDOWN USER */}
           <div ref={dropdownRef} className="relative">
             <div
               onClick={() => setDropdownOpen(!dropdownOpen)}

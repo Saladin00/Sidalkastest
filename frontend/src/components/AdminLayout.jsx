@@ -191,18 +191,6 @@ const AdminLayout = ({ children }) => {
                       Manajemen LKS
                     </Link>
                   </li>
-                  <li>
-                    <Link
-                      to="/admin/lks/laporan"
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition ${
-                        current.includes("/admin/lks/laporan")
-                          ? "bg-sky-800 text-white"
-                          : "text-sky-100 hover:bg-sky-800/70 hover:text-white"
-                      }`}
-                    >
-                      <FileText size={16} /> Laporan Kegiatan
-                    </Link>
-                  </li>
                 </ul>
               )}
             </li>
@@ -263,17 +251,6 @@ const AdminLayout = ({ children }) => {
             </li>
           </ul>
         </nav>
-
-        {/* Logout Sidebar */}
-        <div className="border-t border-sky-800 px-3 py-4 bg-sky-900/90">
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-500 hover:bg-red-600 transition text-sm font-semibold text-white py-2.5 shadow-md"
-          >
-            <LogOut size={16} />
-            {!isCollapsed && <span>Logout</span>}
-          </button>
-        </div>
       </aside>
 
       {/* Main Content */}

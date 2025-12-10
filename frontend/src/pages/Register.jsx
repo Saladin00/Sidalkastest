@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../utils/api";
+import { Link } from "react-router-dom";
+
 import {
   UserPlus,
   ArrowLeft,
@@ -368,14 +370,12 @@ const Register = () => {
                 </button>
 
                 {/* Tombol masuk */}
-                <button
-                  type="button"
-                  onClick={() => navigate("/")}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition font-semibold text-sm"
-                >
-                  <ArrowLeft size={18} />
-                  Masuk
-                </button>
+               <Link
+                to="/login"
+                className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold flex items-center justify-center gap-2"
+              >
+                <ArrowLeft size={18} /> Masuk
+              </Link>
               </form>
             </div>
 

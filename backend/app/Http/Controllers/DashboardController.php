@@ -37,69 +37,81 @@ class DashboardController extends Controller
     // ============================================================
     // 📌 ADMIN DASHBOARD (FINAL SINKRON VERIFIKASI)
     // ============================================================
-    private function adminDashboard()
-    {
-        // STATUS DIPROSES (sesuai workflow operator & petugas)
-        $statusesDiproses = [
-            'menunggu',
-            'dikirim_operator',
-            'dikirim_petugas',
-            'proses_survei',
-            'dikirim_admin',
-            'proses_validasi',
-        ];
+   // ============================================================
+// 📌 ADMIN DASHBOARD (FINAL SINKRON VERIFIKASI)
+// ============================================================
+private function adminDashboard()
+{
+    // STATUS DIPROSES (sesuai workflow operator & petugas)
+    $statusesDiproses = [
+        'menunggu',
+        'dikirim_operator',
+        'dikirim_petugas',
+        'proses_survei',
+        'dikirim_admin',
+        'proses_validasi',
+    ];
 
-        return response()->json([
-            'role' => 'admin',
+    return response()->json([
+        'role' => 'admin',
 
-            'total_lks' => [
-                // VALID
-                'aktif' => Lks::whereHas('verifikasiTerbaru', function ($q) {
-                    $q->where('status', 'valid');
-                })->count(),
+        'total_lks' => [
+            'aktif' => Lks::whereHas('verifikasiTerbaru', fn($q) => $q->where('status', 'valid'))->count(),
 
-                // SEDANG DIPROSES
-                'diproses' => Lks::whereHas('verifikasiTerbaru', function ($q) use ($statusesDiproses) {
-                    $q->whereIn('status', $statusesDiproses);
-                })->count(),
+            'diproses' => Lks::whereHas('verifikasiTerbaru', fn($q) =>
+                $q->whereIn('status', $statusesDiproses)
+            )->count(),
 
-                // BELUM PERNAH DI VERIFIKASI / NULL
-                'nonaktif' => Lks::whereDoesntHave('verifikasiTerbaru')
+            'nonaktif' => Lks::whereDoesntHave('verifikasiTerbaru')
+                ->orWhereHas('verifikasiTerbaru', fn($q) => $q->whereNull('status'))
+                ->count(),
+        ],
+
+        'total_klien' => [
+            'aktif'    => Klien::where('status_pembinaan', 'aktif')->count(),
+            'nonaktif' => Klien::where('status_pembinaan', 'selesai')->count(),
+        ],
+
+        'total_petugas' => User::role('petugas')->count(),
+
+        'per_kecamatan' => Kecamatan::get()->map(function ($k) use ($statusesDiproses) {
+            return [
+                'nama' => $k->nama,
+
+                'aktif' => Lks::where('kecamatan_id', $k->id)
+                    ->whereHas('verifikasiTerbaru', fn($q) => $q->where('status', 'valid'))
+                    ->count(),
+
+                'diproses' => Lks::where('kecamatan_id', $k->id)
+                    ->whereHas('verifikasiTerbaru', fn($q) =>
+                        $q->whereIn('status', $statusesDiproses)
+                    )->count(),
+
+                'nonaktif' => Lks::where('kecamatan_id', $k->id)
+                    ->whereDoesntHave('verifikasiTerbaru')
                     ->orWhereHas('verifikasiTerbaru', fn($q) => $q->whereNull('status'))
                     ->count(),
-            ],
+            ];
+        }),
 
-            // KLIEN (status_pembinaan)
-            'total_klien' => [
-                'aktif'        => Klien::where('status_pembinaan', 'aktif')->count(),
-                'nonaktif'     => Klien::where('status_pembinaan', 'selesai')->count(),
-            ],
-
-            // TOTAL PETUGAS
-            'total_petugas' => User::role('petugas')->count(),
-
-            // DATA PER KECAMATAN
-            'per_kecamatan' => Kecamatan::get()->map(function ($k) use ($statusesDiproses) {
+        // =====================================================
+        // 🟢 Tambahkan lokasi real LKS dalam format lat/lng
+        // =====================================================
+        'lokasi_lks' => Lks::whereNotNull('koordinat')
+            ->select('nama', 'koordinat', 'status_verifikasi')
+            ->get()
+            ->map(function ($lks) {
+                $coords = explode(',', $lks->koordinat);
 
                 return [
-                    'nama' => $k->nama,
-
-                    'aktif' => Lks::where('kecamatan_id', $k->id)
-                        ->whereHas('verifikasiTerbaru', fn($q) => $q->where('status', 'valid'))
-                        ->count(),
-
-                    'diproses' => Lks::where('kecamatan_id', $k->id)
-                        ->whereHas('verifikasiTerbaru', fn($q) => $q->whereIn('status', $statusesDiproses))
-                        ->count(),
-
-                    'nonaktif' => Lks::where('kecamatan_id', $k->id)
-                        ->whereDoesntHave('verifikasiTerbaru')
-                        ->orWhereHas('verifikasiTerbaru', fn($q) => $q->whereNull('status'))
-                        ->count(),
+                    'nama'   => $lks->nama,
+                    'lat'    => isset($coords[0]) ? (float) trim($coords[0]) : null,
+                    'lng'    => isset($coords[1]) ? (float) trim($coords[1]) : null,
+                    'status' => $lks->status_verifikasi ?? 'tidak_diketahui',
                 ];
-            })
-        ]);
-    }
+            }),
+    ]);
+}
 
     // ============================================================
     // 📌 OPERATOR DASHBOARD

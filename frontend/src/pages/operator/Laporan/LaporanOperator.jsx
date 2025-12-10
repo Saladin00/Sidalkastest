@@ -30,6 +30,7 @@ export default function OperatorLaporan() {
   const [tahunList, setTahunList] = useState([]);
 
   const [loading, setLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [data, setData] = useState(null);
 
   const bulanList = [
@@ -64,7 +65,6 @@ export default function OperatorLaporan() {
 
       const d = res.data.data || {};
 
-      // Operator hanya punya satu kecamatan → jadikan array 1 row
       setData([
         {
           kecamatan: res.data.kecamatan || "Wilayah Anda",
@@ -94,6 +94,12 @@ export default function OperatorLaporan() {
         ? "/operator/laporan/export/pdf"
         : "/operator/laporan/export/excel";
 
+    setExportLoading(true);
+    const toastId = toast.loading(`Menyiapkan laporan ${type.toUpperCase()}...`, {
+      autoClose: false,
+      closeOnClick: false,
+    });
+
     try {
       const res = await api.get(endpoint, {
         params: { periode, tahun, bulan },
@@ -112,17 +118,27 @@ export default function OperatorLaporan() {
       link.href = url;
       link.setAttribute(
         "download",
-        type === "pdf"
-          ? "laporan-operator.pdf"
-          : "laporan-operator.xlsx"
+        type === "pdf" ? "laporan-operator.pdf" : "laporan-operator.xlsx"
       );
       document.body.appendChild(link);
       link.click();
 
-      toast.success(`Laporan ${type.toUpperCase()} berhasil diunduh.`);
+      toast.update(toastId, {
+        render: `Laporan ${type.toUpperCase()} berhasil diunduh.`,
+        type: "success",
+        isLoading: false,
+        autoClose: 2500,
+      });
     } catch (err) {
       console.error(err);
-      toast.error(`Gagal mengekspor laporan ${type.toUpperCase()}.`);
+      toast.update(toastId, {
+        render: `Gagal mengekspor laporan ${type.toUpperCase()}.`,
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+    } finally {
+      setExportLoading(false);
     }
   };
 
@@ -148,7 +164,6 @@ export default function OperatorLaporan() {
     <div className="relative rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-500 border border-slate-200 bg-gradient-to-br from-white via-sky-50 to-blue-50 overflow-hidden mb-8">
       <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-sky-500 via-blue-400 to-cyan-400 rounded-t-2xl opacity-80" />
       <h3 className="text-lg font-semibold text-slate-800 mb-4">{title}</h3>
-
       <div
         ref={ref}
         className="relative w-full h-[400px] bg-white rounded-xl border border-slate-100 shadow-inner"
@@ -179,8 +194,6 @@ export default function OperatorLaporan() {
         {/* FILTER */}
         <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6 mb-8">
           <div className="grid md:grid-cols-4 gap-4">
-
-            {/* Periode */}
             <div>
               <label className="text-sm font-medium text-slate-700">Periode</label>
               <select
@@ -197,7 +210,6 @@ export default function OperatorLaporan() {
               </select>
             </div>
 
-            {/* Tahun */}
             <div>
               <label className="text-sm font-medium text-slate-700">Tahun</label>
               <select
@@ -220,7 +232,6 @@ export default function OperatorLaporan() {
               </select>
             </div>
 
-            {/* Bulan / Triwulan */}
             {periode !== "tahun" && (
               <div>
                 <label className="text-sm font-medium text-slate-700">
@@ -246,7 +257,6 @@ export default function OperatorLaporan() {
               </div>
             )}
 
-            {/* Tombol */}
             <div className="flex items-end">
               <button
                 onClick={() => loadLaporan()}
@@ -256,15 +266,12 @@ export default function OperatorLaporan() {
                 {loading ? <Loader2 className="animate-spin" size={18} /> : "Tampilkan"}
               </button>
             </div>
-
           </div>
         </div>
 
         {/* ====== TABEL ====== */}
         {data && (
           <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 mb-10">
-
-            {/* Header + Action */}
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-slate-800 flex items-center gap-2">
                 <Users size={20} /> Ringkasan Data Wilayah
@@ -273,21 +280,39 @@ export default function OperatorLaporan() {
               <div className="flex gap-2">
                 <button
                   onClick={() => exportAll("pdf")}
+                  disabled={exportLoading}
                   className="bg-gradient-to-r from-rose-600 via-pink-500 to-amber-400 hover:brightness-110 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 shadow-md transition-all"
                 >
-                  <FileDown size={16} /> PDF
+                  {exportLoading ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} /> Memuat...
+                    </>
+                  ) : (
+                    <>
+                      <FileDown size={16} /> PDF
+                    </>
+                  )}
                 </button>
 
                 <button
                   onClick={() => exportAll("excel")}
+                  disabled={exportLoading}
                   className="bg-gradient-to-r from-emerald-600 via-teal-500 to-green-400 hover:brightness-110 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 shadow-md transition-all"
                 >
-                  <FileSpreadsheet size={16} /> Excel
+                  {exportLoading ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} /> Memuat...
+                    </>
+                  ) : (
+                    <>
+                      <FileSpreadsheet size={16} /> Excel
+                    </>
+                  )}
                 </button>
               </div>
             </div>
 
-            {/* Table */}
+            {/* Table tetap sama */}
             <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden shadow-sm">
               <thead className="bg-gradient-to-r from-blue-100 via-sky-100 to-cyan-100 text-slate-700">
                 <tr>
@@ -299,7 +324,6 @@ export default function OperatorLaporan() {
                   <th className="border px-3 py-2">Klien Tidak Aktif</th>
                 </tr>
               </thead>
-
               <tbody>
                 {data.map((r, i) => (
                   <tr key={i} className="hover:bg-blue-50 transition-all duration-200">
@@ -335,7 +359,6 @@ export default function OperatorLaporan() {
               <BarChart3 size={20} /> Grafik Wilayah {data?.[0]?.kecamatan}
             </h2>
 
-            {/* Grafik LKS */}
             <ChartWrapper title="Grafik LKS">
               <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -343,13 +366,12 @@ export default function OperatorLaporan() {
                 <YAxis tick={{ fill: "#475569" }} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="lks_valid" name="Valid" fill="#3b82f6" radius={[10, 10, 0, 0]} />
-                <Bar dataKey="lks_tidak_valid" name="Tidak Valid" fill="#f472b6" radius={[10, 10, 0, 0]} />
-                <Bar dataKey="lks_proses" name="Proses" fill="#10b981" radius={[10, 10, 0, 0]} />
+                <Bar dataKey="lks_valid" fill="#3b82f6" radius={[10, 10, 0, 0]} />
+                <Bar dataKey="lks_tidak_valid" fill="#f472b6" radius={[10, 10, 0, 0]} />
+                <Bar dataKey="lks_proses" fill="#10b981" radius={[10, 10, 0, 0]} />
               </BarChart>
             </ChartWrapper>
 
-            {/* Grafik Klien */}
             <ChartWrapper title="Grafik Klien">
               <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -357,8 +379,8 @@ export default function OperatorLaporan() {
                 <YAxis tick={{ fill: "#475569" }} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="klien_aktif" name="Aktif" fill="#06b6d4" radius={[10, 10, 0, 0]} />
-                <Bar dataKey="klien_tidak_aktif" name="Tidak Aktif" fill="#f59e0b" radius={[10, 10, 0, 0]} />
+                <Bar dataKey="klien_aktif" fill="#06b6d4" radius={[10, 10, 0, 0]} />
+                <Bar dataKey="klien_tidak_aktif" fill="#f59e0b" radius={[10, 10, 0, 0]} />
               </BarChart>
             </ChartWrapper>
           </div>

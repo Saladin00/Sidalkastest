@@ -28,6 +28,7 @@ export default function LaporanAdmin() {
   const [tahunList, setTahunList] = useState([]);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false); // ✅ baru
 
   const bulanList = [
     { label: "Januari", value: 1 },
@@ -76,6 +77,8 @@ export default function LaporanAdmin() {
         ? "/admin/laporan/export/pdf"
         : "/admin/laporan/export/excel";
 
+    setExportLoading(true); // ✅ tampilkan loading
+
     try {
       const res = await api.get(endpoint, {
         params: { periode, tahun, bulan },
@@ -105,6 +108,8 @@ export default function LaporanAdmin() {
     } catch (err) {
       console.error(err);
       toast.error(`Gagal mengekspor laporan ${type.toUpperCase()}.`);
+    } finally {
+      setExportLoading(false); // ✅ matikan loading
     }
   };
 
@@ -132,30 +137,27 @@ export default function LaporanAdmin() {
   // CHART WRAPPER FIXED
   // ================================
   const ChartWrapper = ({ children, title, dataAvailable }) => (
-  <div className="rounded-2xl p-6 shadow-md border border-slate-200 bg-white mb-10">
-
-    <h3 className="text-lg font-semibold text-slate-800 mb-4">{title}</h3>
-
-    <div
-      className="relative bg-white rounded-xl border border-slate-100 shadow-inner p-4"
-      style={{
-        width: "100%",
-        minHeight: "350px",
-      }}
-    >
-      {dataAvailable ? (
-        <ResponsiveContainer width="100%" height={300}>
-          {children}
-        </ResponsiveContainer>
-      ) : (
-        <div className="w-full h-[300px] flex items-center justify-center text-slate-400 italic">
-          Belum ada data
-        </div>
-      )}
+    <div className="rounded-2xl p-6 shadow-md border border-slate-200 bg-white mb-10">
+      <h3 className="text-lg font-semibold text-slate-800 mb-4">{title}</h3>
+      <div
+        className="relative bg-white rounded-xl border border-slate-100 shadow-inner p-4"
+        style={{
+          width: "100%",
+          minHeight: "350px",
+        }}
+      >
+        {dataAvailable ? (
+          <ResponsiveContainer width="100%" height={300}>
+            {children}
+          </ResponsiveContainer>
+        ) : (
+          <div className="w-full h-[300px] flex items-center justify-center text-slate-400 italic">
+            Belum ada data
+          </div>
+        )}
+      </div>
     </div>
-
-  </div>
-);
+  );
 
   // ================================
   // RENDER UTAMA
@@ -170,7 +172,6 @@ export default function LaporanAdmin() {
         {/* ========== FILTER ========== */}
         <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6 mb-8">
           <div className="grid md:grid-cols-5 gap-4">
-
             {/* Periode */}
             <div>
               <label className="text-sm font-medium">Periode</label>
@@ -258,7 +259,11 @@ export default function LaporanAdmin() {
                 disabled={loading}
                 className="w-full bg-blue-600 text-white rounded-lg px-4 py-2 flex items-center justify-center"
               >
-                {loading ? <Loader2 className="animate-spin" size={18} /> : "Tampilkan"}
+                {loading ? (
+                  <Loader2 className="animate-spin" size={18} />
+                ) : (
+                  "Tampilkan"
+                )}
               </button>
             </div>
           </div>
@@ -274,20 +279,39 @@ export default function LaporanAdmin() {
             <div className="flex gap-2">
               <button
                 onClick={() => exportAll("pdf")}
+                disabled={exportLoading}
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
               >
-                <FileDown size={16} /> PDF
+                {exportLoading ? (
+                  <>
+                    <Loader2 className="animate-spin" size={16} /> Memuat...
+                  </>
+                ) : (
+                  <>
+                    <FileDown size={16} /> PDF
+                  </>
+                )}
               </button>
 
               <button
                 onClick={() => exportAll("excel")}
+                disabled={exportLoading}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
               >
-                <FileSpreadsheet size={16} /> Excel
+                {exportLoading ? (
+                  <>
+                    <Loader2 className="animate-spin" size={16} /> Memuat...
+                  </>
+                ) : (
+                  <>
+                    <FileSpreadsheet size={16} /> Excel
+                  </>
+                )}
               </button>
             </div>
           </div>
 
+          {/* Tabel tetap sama */}
           <div className="overflow-x-auto border rounded-lg">
             <table className="w-full text-sm">
               <thead className="bg-slate-100 text-slate-700">
@@ -299,7 +323,6 @@ export default function LaporanAdmin() {
                   <th className="border px-3 py-2">LKS Proses</th>
                 </tr>
               </thead>
-
               <tbody>
                 {filteredData.length > 0 ? (
                   filteredData.map((r, i) => (
@@ -309,16 +332,23 @@ export default function LaporanAdmin() {
                     >
                       <td className="border px-3 py-2 text-center">{i + 1}</td>
                       <td className="border px-3 py-2">{r.kecamatan}</td>
-                      <td className="border px-3 py-2 text-center">{r.lks_valid}</td>
+                      <td className="border px-3 py-2 text-center">
+                        {r.lks_valid}
+                      </td>
                       <td className="border px-3 py-2 text-center">
                         {r.lks_tidak_valid}
                       </td>
-                      <td className="border px-3 py-2 text-center">{r.lks_proses}</td>
+                      <td className="border px-3 py-2 text-center">
+                        {r.lks_proses}
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="py-4 text-center text-slate-400 italic">
+                    <td
+                      colSpan={5}
+                      className="py-4 text-center text-slate-400 italic"
+                    >
                       Belum ada data
                     </td>
                   </tr>
@@ -328,7 +358,7 @@ export default function LaporanAdmin() {
           </div>
         </div>
 
-        {/* ========== GRAFIK LKS ========== */}
+        {/* ========== GRAFIKS ========== */}
         <ChartWrapper
           title="Grafik LKS per Kecamatan"
           dataAvailable={filteredData.length > 0}
@@ -345,7 +375,6 @@ export default function LaporanAdmin() {
           </BarChart>
         </ChartWrapper>
 
-        {/* ========== GRAFIK KLIEN ========== */}
         <ChartWrapper
           title="Grafik Klien per Kecamatan"
           dataAvailable={filteredData.length > 0}
@@ -357,7 +386,11 @@ export default function LaporanAdmin() {
             <Tooltip />
             <Legend />
             <Bar dataKey="klien_aktif" fill="#06b6d4" radius={[8, 8, 0, 0]} />
-            <Bar dataKey="klien_tidak_aktif" fill="#f59e0b" radius={[8, 8, 0, 0]} />
+            <Bar
+              dataKey="klien_tidak_aktif"
+              fill="#f59e0b"
+              radius={[8, 8, 0, 0]}
+            />
           </BarChart>
         </ChartWrapper>
       </div>
