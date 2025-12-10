@@ -34,7 +34,7 @@ const LKSLayout = ({ children }) => {
 
   const dropdownRef = useRef(null);
 
-  // AMBIL PROFIL USER + STATUS VERIFIKASI
+  // AMBIL DATA USER + STATUS VERIFIKASI
   useEffect(() => {
     const loadAccount = async () => {
       try {
@@ -64,7 +64,7 @@ const LKSLayout = ({ children }) => {
     loadAccount();
   }, []);
 
-  // Klik luar dropdown → tutup
+  // Klik luar → tutup dropdown
   useEffect(() => {
     const handler = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -75,11 +75,10 @@ const LKSLayout = ({ children }) => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // STATUS VERIFIKASI
+  // MENU tergantung status verifikasi
   const statusVerifikasi = sessionStorage.getItem("status_verifikasi");
   const verified = statusVerifikasi === "valid";
 
-  // MENU NAVIGASI
   const navItems = verified
     ? [
         { label: "Dashboard", to: "/lks", icon: LayoutDashboard, exact: true },
@@ -143,7 +142,7 @@ const LKSLayout = ({ children }) => {
           )}
         </div>
 
-        {/* MENU */}
+        {/* NAV MENU */}
         <nav className="px-3 py-4">
           {!isCollapsed && (
             <p className="px-2 text-[11px] uppercase tracking-wide text-sky-200 mb-2">
@@ -176,7 +175,7 @@ const LKSLayout = ({ children }) => {
           </ul>
         </nav>
 
-        {/* LOGOUT */}
+        {/* LOGOUT BUTTON */}
         <div className="border-t border-sky-800 px-3 py-4 bg-sky-900/90">
           <button
             onClick={() => setShowLogoutConfirm(true)}
@@ -190,7 +189,7 @@ const LKSLayout = ({ children }) => {
 
       {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col">
-        {/* HEADER */}
+        {/* TOP HEADER */}
         <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200 px-8 py-4 flex justify-between items-center">
           <div>
             <p className="text-[11px] text-emerald-600 tracking-[0.18em] font-semibold uppercase">
@@ -198,7 +197,7 @@ const LKSLayout = ({ children }) => {
             </p>
           </div>
 
-          {/* DROPDOWN */}
+          {/* DROPDOWN USER */}
           <div ref={dropdownRef} className="relative">
             <div
               onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -268,7 +267,7 @@ const LKSLayout = ({ children }) => {
         </main>
       </div>
 
-      {/* LOGOUT CONFIRM */}
+      {/* LOGOUT CONFIRM MODAL */}
       <AnimatePresence>
         {showLogoutConfirm && (
           <motion.div

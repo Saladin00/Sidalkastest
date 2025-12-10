@@ -21,7 +21,7 @@ use App\Http\Controllers\Laporan\AdminLaporanExportController;
 use App\Http\Controllers\Laporan\OperatorLaporanController;
 use App\Http\Controllers\Laporan\OperatorLaporanExportController;
 
-// Verifikasi
+// Verifikasi Controller per Role
 use App\Http\Controllers\Verifikasi\AdminVerifikasiController;
 use App\Http\Controllers\Verifikasi\OperatorVerifikasiController;
 use App\Http\Controllers\Verifikasi\PetugasVerifikasiController;
@@ -67,7 +67,7 @@ Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 
 
 // =====================================================================
-// PROTECTED ROUTES (auth + idle timeout)
+// PROTECTED ROUTES
 // =====================================================================
 Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
 
@@ -90,7 +90,7 @@ Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
     });
 
     // ================================================================
-    // LKS → Fitur wajib verified
+    // LKS verified only
     // ================================================================
     Route::prefix('lks')->middleware(['role:lks', 'lks.verified'])->group(function () {
 
@@ -126,6 +126,11 @@ Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
         Route::get('/lks/pending', [LksApprovalController::class, 'index']);
         Route::patch('/lks/{id}/approve', [LksApprovalController::class, 'approve']);
         Route::patch('/lks/{id}/reject', [LksApprovalController::class, 'reject']);
+
+        // Laporan Admin
+        Route::get('/laporan', [AdminLaporanController::class, 'laporan']);
+        Route::get('/laporan/export/pdf', [AdminLaporanExportController::class, 'exportPDF']);
+        Route::get('/laporan/export/excel', [AdminLaporanExportController::class, 'exportExcel']);
     });
 
 
@@ -143,6 +148,11 @@ Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
 
         Route::get('/users', [UserController::class, 'index']);
         Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus']);
+
+        // Laporan Operator
+        Route::get('/laporan', [OperatorLaporanController::class, 'laporan']);
+        Route::get('/laporan/export/pdf', [OperatorLaporanExportController::class, 'exportPdf']);
+        Route::get('/laporan/export/excel', [OperatorLaporanExportController::class, 'exportExcel']);
     });
 
 
@@ -167,43 +177,13 @@ Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
     Route::put('/klien/{id}', [KlienController::class, 'update']);
     Route::delete('/klien/{id}', [KlienController::class, 'destroy']);
 
-
     // ================================================================
-    // LAPORAN ADMIN
-    // ================================================================
-    Route::prefix('admin')->middleware(['role:admin'])->group(function () {
-
-        // JSON
-        Route::get('/laporan', [AdminLaporanController::class, 'laporan']);
-
-        // Export
-        Route::get('/laporan/export/pdf', [AdminLaporanExportController::class, 'exportPDF']);
-        Route::get('/laporan/export/excel', [AdminLaporanExportController::class, 'exportExcel']);
-    });
-
-    // ================================================================
-    // LAPORAN OPERATOR
-    // ================================================================
-    Route::prefix('operator')->middleware(['role:operator'])->group(function () {
-
-        // JSON
-        Route::get('/laporan', [OperatorLaporanController::class, 'laporan']);
-
-        // Export
-        Route::get('/laporan/export/pdf', [OperatorLaporanExportController::class, 'exportPdf']);
-        Route::get('/laporan/export/excel', [OperatorLaporanExportController::class, 'exportExcel']);
-    });
-
-
-    // ================================================================
-    // Tambahan dari origin/main
-    // LKS by kecamatan
+    // LKS by Kecamatan
     // ================================================================
     Route::get('/lks/by-kecamatan/{id}', [LKSController::class, 'getByKecamatan']);
 
-
     // ================================================================
-    // LKS RESOURCE
+    // LKS RESOURCE CRUD
     // ================================================================
     Route::apiResource('lks', LKSController::class);
 });

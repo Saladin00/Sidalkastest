@@ -9,9 +9,10 @@ const LKSKlienForm = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  // Data meta LKS (diambil dari origin/main)
+  // Meta data LKS
   const [metaLKS, setMetaLKS] = useState({});
 
+  // Form state
   const [form, setForm] = useState({
     nik: "",
     nama: "",
@@ -23,7 +24,7 @@ const LKSKlienForm = () => {
     status_pembinaan: "",
   });
 
-  // Ambil data LKS (origin/main)
+  // Ambil data LKS
   useEffect(() => {
     const fetchMetaLKS = async () => {
       const lksId = sessionStorage.getItem("lks_id");
@@ -36,19 +37,20 @@ const LKSKlienForm = () => {
         showError("Gagal memuat informasi LKS!");
       }
     };
+
     fetchMetaLKS();
   }, []);
 
-  // Change handler
+  // Change Handler
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  // Submit handler
+  // Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // VALIDASI FRONTEND (HEAD version)
+    // VALIDASI FRONTEND (dari publiclicpage)
     if (form.nik.length !== 16) {
       showError("NIK harus 16 digit!");
       setLoading(false);
@@ -76,6 +78,7 @@ const LKSKlienForm = () => {
     try {
       await api.post("/klien", form);
       showSuccess("Klien berhasil ditambahkan!");
+
       setTimeout(() => navigate("/lks/klien"), 1000);
     } catch (err) {
       showError("Gagal menyimpan data klien!");
@@ -99,17 +102,15 @@ const LKSKlienForm = () => {
       >
         {/* NIK */}
         <div>
-          <label className="block font-semibold text-gray-700 mb-1">
-            NIK *
-          </label>
+          <label className="block font-semibold text-gray-700 mb-1">NIK *</label>
           <input
             type="number"
             name="nik"
             value={form.nik}
             onChange={handleChange}
             required
-            className="w-full border rounded-lg px-3 py-2"
             placeholder="16 digit"
+            className="w-full border rounded-lg px-3 py-2"
           />
         </div>
 
@@ -155,8 +156,8 @@ const LKSKlienForm = () => {
             name="kelurahan"
             value={form.kelurahan}
             onChange={handleChange}
-            className="w-full border rounded-lg px-3 py-2"
             required
+            className="w-full border rounded-lg px-3 py-2"
           />
         </div>
 
@@ -169,21 +170,21 @@ const LKSKlienForm = () => {
             name="alamat"
             value={form.alamat}
             onChange={handleChange}
-            className="w-full border rounded-lg px-3 py-2"
-            rows={3}
             required
+            rows={3}
+            className="w-full border rounded-lg px-3 py-2"
           />
         </div>
 
-        {/* Kecamatan otomatis (origin/main) */}
+        {/* Kecamatan otomatis berdasarkan LKS */}
         <div>
           <label className="block font-semibold text-gray-700 mb-1">
             Kecamatan (otomatis)
           </label>
           <input
             type="text"
-            value={metaLKS.kecamatan?.nama || "Memuat..."}
             disabled
+            value={metaLKS.kecamatan?.nama || "Memuat..."}
             className="w-full border bg-gray-100 rounded-lg px-3 py-2"
           />
         </div>
@@ -245,7 +246,7 @@ const LKSKlienForm = () => {
         </div>
       </form>
 
-      {/* Buttons */}
+      {/* BUTTONS */}
       <div className="flex justify-between mt-10">
         <button
           onClick={() => navigate("/lks/klien")}

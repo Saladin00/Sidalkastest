@@ -2,9 +2,11 @@ import React, { useEffect, useState, useRef, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../../components/AdminLayout";
 import API from "../../../utils/api";
+
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -18,6 +20,9 @@ import {
   PaperClipIcon,
 } from "@heroicons/react/24/outline";
 
+// ===============================
+// LEAFLET MARKER ICON
+// ===============================
 const markerIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
   iconSize: [25, 41],
@@ -92,9 +97,11 @@ const SectionHeader = ({ icon: Icon, title, color }) => (
 // ===============================
 const LKSForm = () => {
   const navigate = useNavigate();
+
   const [loading, setLoading] = useState(false);
   const [daftarKecamatan, setDaftarKecamatan] = useState([]);
   const [dokumenBaru, setDokumenBaru] = useState([]);
+
   const [position, setPosition] = useState([-6.3264, 108.32]);
 
   const [form, setForm] = useState({
@@ -124,31 +131,27 @@ const LKSForm = () => {
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  // ===========================
-  // FILE: AKTA PENDIRIAN
-  // ===========================
+  // ===============================
+  // FILE AKTA PENDIRIAN
+  // ===============================
   const handleAktaChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const allowed = ["application/pdf", "image/jpeg", "image/png"];
-    if (!allowed.includes(file.type)) {
-      toast.error("File harus PDF/JPG/PNG");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Ukuran maksimal 5MB");
-      return;
-    }
+    if (!allowed.includes(file.type)) return toast.error("File harus PDF/JPG/PNG");
+    if (file.size > 5 * 1024 * 1024)
+      return toast.error("Ukuran maksimal 5MB");
 
     setForm((prev) => ({ ...prev, akta_pendirian: file }));
   };
 
   // ===============================
-  // FILE DOKUMEN LAINNYA
+  // FILE DOKUMEN LAIN
   // ===============================
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
+
     const validFiles = files.filter((file) => {
       const allowed = ["application/pdf", "image/jpeg", "image/png"];
       const validType = allowed.includes(file.type);
@@ -164,7 +167,7 @@ const LKSForm = () => {
   };
 
   // ===============================
-  // LOAD KECAMATAN
+  // LOAD DATA KECAMATAN
   // ===============================
   useEffect(() => {
     API.get("/kecamatan")
@@ -173,7 +176,7 @@ const LKSForm = () => {
   }, []);
 
   // ===============================
-  // SIMPAN DATA
+  // SUBMIT FORM
   // ===============================
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -196,7 +199,7 @@ const LKSForm = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      toast.success("LKS baru berhasil ditambahkan!");
+      toast.success("LKS berhasil ditambahkan!");
       setTimeout(() => navigate("/admin/lks"), 1500);
     } catch (err) {
       console.error(err);
@@ -206,9 +209,6 @@ const LKSForm = () => {
     }
   };
 
-  // ===============================
-  // RENDER
-  // ===============================
   return (
     <AdminLayout>
       <div className="max-w-5xl mx-auto bg-white p-6 sm:p-10 rounded-2xl shadow-xl border border-gray-100">
@@ -282,6 +282,7 @@ const LKSForm = () => {
               </div>
 
               <Field label="No Sertifikat" name="no_sertifikat" value={form.no_sertifikat} onChange={handleChange} />
+              <Field label="No Akta" name="no_akta" value={form.no_akta} onChange={handleChange} />
               <Field type="date" label="Tanggal Akreditasi" name="tanggal_akreditasi" value={form.tanggal_akreditasi} onChange={handleChange} />
 
               {/* Akta Pendirian */}
@@ -302,7 +303,7 @@ const LKSForm = () => {
             </div>
           </section>
 
-          {/* ================= JENIS KEBUTUHAN ================= */}
+          {/* ================= DATA BANTUAN ================= */}
           <section>
             <SectionHeader icon={PaperClipIcon} title="Data Bantuan & Kebutuhan" color="yellow" />
 
@@ -325,7 +326,7 @@ const LKSForm = () => {
                 </select>
               </div>
 
-              {/* Jenis Kebutuhan */}
+              {/* Jenis kebutuhan */}
               <div>
                 <label className="text-sm font-medium text-gray-700">Jenis Kebutuhan</label>
                 <select
@@ -353,7 +354,8 @@ const LKSForm = () => {
             </MapContainer>
 
             <p className="text-sm mt-2 text-gray-600">
-              Klik pada peta untuk menentukan lokasi LKS. <br />
+              Klik pada peta untuk menentukan lokasi LKS.  
+              <br />
               <strong>Koordinat:</strong> {form.koordinat || "Belum dipilih"}
             </p>
           </section>
@@ -361,7 +363,13 @@ const LKSForm = () => {
           {/* ================= PENGURUS ================= */}
           <section>
             <SectionHeader icon={UsersIcon} title="Pengurus" color="purple" />
-            <Field label="Jumlah Pengurus" name="jumlah_pengurus" type="number" value={form.jumlah_pengurus} onChange={handleChange} />
+            <Field
+              label="Jumlah Pengurus"
+              name="jumlah_pengurus"
+              type="number"
+              value={form.jumlah_pengurus}
+              onChange={handleChange}
+            />
           </section>
 
           {/* ================= SARANA ================= */}
@@ -401,7 +409,7 @@ const LKSForm = () => {
         </form>
       </div>
 
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop />
+      <ToastContainer position="top-right" autoClose={3000} />
     </AdminLayout>
   );
 };

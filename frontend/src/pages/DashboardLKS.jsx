@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import CountUp from "react-countup";
+
 import {
   Users,
   ShieldCheck,
@@ -10,6 +11,7 @@ import {
   Activity,
   FolderKanban,
 } from "lucide-react";
+
 import {
   ResponsiveContainer,
   CartesianGrid,
@@ -34,12 +36,9 @@ export default function DashboardLKS() {
 
   const [loading, setLoading] = useState(false);
 
-  // =======================
-  // LOAD DATA BACKEND
-  // =======================
+  // Load data backend
   const loadData = async () => {
     setLoading(true);
-
     try {
       const res = await api.get("/dashboard");
       const data = res.data;
@@ -49,14 +48,13 @@ export default function DashboardLKS() {
         klien_nonaktif: data.jumlah_klien?.tidak_aktif ?? 0,
         jenis_bantuan:
           data.jenis_bantuan?.map((j) => ({
-            jenis: j.jenis_bantuan ?? "-",
-            total: j.total ?? 0,
+            jenis: j.jenis_bantuan || "-",
+            total: j.total || 0,
           })) ?? [],
       });
     } catch (err) {
       console.error("Gagal load dashboard LKS:", err);
     }
-
     setLoading(false);
   };
 
@@ -64,7 +62,7 @@ export default function DashboardLKS() {
     loadData();
   }, []);
 
-  // Jam berjalan real-time
+  // Jam real-time
   useEffect(() => {
     const i = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(i);
@@ -110,7 +108,7 @@ export default function DashboardLKS() {
             {
               title: "Klien Tidak Aktif",
               value: stats.klien_nonaktif,
-              icon: Users,
+              icon: Activity,
               color: "from-orange-400 to-red-400",
             },
             {
@@ -136,7 +134,7 @@ export default function DashboardLKS() {
           ))}
         </section>
 
-        {/* CHART: Jenis Bantuan */}
+        {/* CHART JENIS BANTUAN */}
         <section className="px-5 md:px-10 pb-10">
           <motion.div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-6">
             <h3 className="flex items-center gap-2 text-slate-700 font-semibold text-lg mb-3">
@@ -176,7 +174,7 @@ export default function DashboardLKS() {
           </motion.div>
         </section>
 
-        {/* TABLE: Jenis Bantuan */}
+        {/* TABLE JENIS BANTUAN */}
         <section className="px-5 md:px-10 pb-10">
           <div className="bg-white rounded-xl shadow p-6 border">
             <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 text-slate-800">

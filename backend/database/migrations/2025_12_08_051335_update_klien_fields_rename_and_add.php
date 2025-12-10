@@ -9,39 +9,47 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // 1️⃣ Pastikan kolom ada terlebih dahulu
         Schema::table('klien', function (Blueprint $table) {
 
-            // Pastikan kolom jenis_bantuan ada terlebih dahulu
+            // jenis_bantuan
             if (!Schema::hasColumn('klien', 'jenis_bantuan')) {
                 $table->string('jenis_bantuan')->nullable()->after('nama');
             }
 
-            // Pastikan kolom kelompok_umur ada terlebih dahulu
+            // kelompok_umur
             if (!Schema::hasColumn('klien', 'kelompok_umur')) {
                 $table->string('kelompok_umur')->nullable()->after('jenis_bantuan');
             }
 
-            // Tambah jenis_kelamin bila belum ada
+            // jenis_kelamin
             if (!Schema::hasColumn('klien', 'jenis_kelamin')) {
                 $table->enum('jenis_kelamin', ['laki-laki', 'perempuan'])
-                      ->nullable()->after('nama');
+                    ->nullable()
+                    ->after('nama');
             }
         });
 
-        // Setelah kolom ada → BARU boleh update isinya
+        // 2️⃣ NULL-kan value lama → supaya enum baru tidak error
         DB::table('klien')->update([
             'jenis_bantuan' => null,
             'kelompok_umur' => null,
         ]);
 
-        // Lalu ubah enum-nya
+        // 3️⃣ Update ENUM terbaru
         Schema::table('klien', function (Blueprint $table) {
 
-            $table->enum('jenis_bantuan', ['BPNT', 'PKH', 'BLT', 'lainnya'])
-                  ->nullable()->change();
+            if (Schema::hasColumn('klien', 'jenis_bantuan')) {
+                $table->enum('jenis_bantuan', ['BPNT', 'PKH', 'BLT', 'lainnya'])
+                    ->nullable()
+                    ->change();
+            }
 
-            $table->enum('kelompok_umur', ['balita', 'anak', 'remaja', 'dewasa', 'lansia'])
-                  ->nullable()->change();
+            if (Schema::hasColumn('klien', 'kelompok_umur')) {
+                $table->enum('kelompok_umur', ['balita', 'anak', 'remaja', 'dewasa', 'lansia'])
+                    ->nullable()
+                    ->change();
+            }
         });
     }
 
@@ -49,18 +57,23 @@ return new class extends Migration
     {
         Schema::table('klien', function (Blueprint $table) {
 
+            // Hapus jenis_kelamin
             if (Schema::hasColumn('klien', 'jenis_kelamin')) {
                 $table->dropColumn('jenis_kelamin');
             }
 
+            // Kembalikan enum jenis_bantuan ke versi lama
             if (Schema::hasColumn('klien', 'jenis_bantuan')) {
                 $table->enum('jenis_bantuan', ['anak', 'disabilitas', 'lansia', 'fakir_miskin', 'lainnya'])
-                      ->nullable()->change();
+                    ->nullable()
+                    ->change();
             }
 
+            // Kembalikan enum kelompok_umur ke versi lama (sebelumnya tertukar)
             if (Schema::hasColumn('klien', 'kelompok_umur')) {
                 $table->enum('kelompok_umur', ['BPNT', 'PKH', 'BLT', 'lainnya'])
-                      ->nullable()->change();
+                    ->nullable()
+                    ->change();
             }
         });
     }

@@ -37,11 +37,10 @@ export default function DashboardOperator() {
   });
 
   // ==============================
-  // FETCH DATA
+  // FETCH DATA BACKEND
   // ==============================
   const loadData = async () => {
     setLoading(true);
-
     try {
       const res = await api.get("/dashboard");
       const data = res.data;
@@ -56,7 +55,6 @@ export default function DashboardOperator() {
     } catch (err) {
       console.error("Gagal load dashboard operator:", err);
     }
-
     setLoading(false);
   };
 
@@ -70,7 +68,6 @@ export default function DashboardOperator() {
     return () => clearInterval(i);
   }, []);
 
-  // Chart data klien
   const chartData = [
     { label: "Aktif", total: stats.klien_aktif },
     { label: "Nonaktif", total: stats.klien_nonaktif },
@@ -79,7 +76,7 @@ export default function DashboardOperator() {
   return (
     <OperatorLayout>
       <div className="min-h-screen w-full text-slate-700">
-        {/* ===================== HEADER ===================== */}
+        {/* HEADER */}
         <header className="flex justify-between items-center px-5 md:px-10 py-5 bg-white shadow-sm rounded-b-2xl border-b">
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
@@ -103,7 +100,7 @@ export default function DashboardOperator() {
           <p className="text-center text-gray-500 mt-4">Memuat data...</p>
         )}
 
-        {/* ===================== STAT CARDS ===================== */}
+        {/* STAT CARDS */}
         <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-5 px-5 md:px-10 py-8">
           {[
             {
@@ -164,7 +161,7 @@ export default function DashboardOperator() {
           ))}
         </section>
 
-        {/* ===================== CHART ===================== */}
+        {/* CHART */}
         <section className="px-5 md:px-10 pb-10">
           <motion.div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-6">
             <h3 className="flex items-center gap-2 text-slate-700 font-semibold text-lg mb-3">
@@ -182,6 +179,7 @@ export default function DashboardOperator() {
                   radius={[10, 10, 0, 0]}
                   fill="url(#operatorGrad)"
                 />
+
                 <defs>
                   <linearGradient id="operatorGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.9} />
@@ -193,7 +191,7 @@ export default function DashboardOperator() {
           </motion.div>
         </section>
 
-        {/* ===================== FOOTER ===================== */}
+        {/* FOOTER */}
         <footer className="py-6 text-center text-gray-500 text-sm border-t bg-white">
           © {new Date().getFullYear()} SIDALEKAS · Operator Dashboard
         </footer>
