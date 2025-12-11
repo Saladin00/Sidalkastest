@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../utils/api";
-import { Search, Eye, RotateCw } from "lucide-react";
+import { Search, Eye } from "lucide-react";
 
 export default function OperatorKlienList() {
   const navigate = useNavigate();
@@ -11,8 +11,7 @@ export default function OperatorKlienList() {
   const [loading, setLoading] = useState(false);
 
   const [filters, setFilters] = useState({
-    status_bantuan: "",
-    jenis_kebutuhan: "",
+    jenis_bantuan: "",
   });
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,10 +34,8 @@ export default function OperatorKlienList() {
   const fetchKlien = async () => {
     setLoading(true);
     try {
-      const token = sessionStorage.getItem("token");
       const res = await api.get("/klien", {
         params: filters,
-        headers: { Authorization: `Bearer ${token}` },
       });
       setKlien(extractList(res));
     } catch (err) {
@@ -50,18 +47,16 @@ export default function OperatorKlienList() {
   };
 
   const handleResetFilters = () => {
-    setFilters({
-      status_bantuan: "",
-      jenis_kebutuhan: "",
-    });
+    setFilters({ jenis_bantuan: "" });
     setSearchTerm("");
     fetchKlien();
   };
 
-  // 🔍 Filter pencarian & dropdown
+  // 🔍 Filter pencarian
   const searchFiltered = klien.filter((item) => {
     const q = searchTerm.toLowerCase();
     if (!q) return true;
+
     return (
       item?.nik?.toLowerCase().includes(q) ||
       item?.nama?.toLowerCase().includes(q) ||
@@ -72,12 +67,11 @@ export default function OperatorKlienList() {
     );
   });
 
+  // 🔎 Filter dropdown (hanya jenis_bantuan)
   const fullyFiltered = searchFiltered.filter((item) => {
     return (
-      (!filters.status_bantuan ||
-        item.status_bantuan === filters.status_bantuan) &&
-      (!filters.jenis_kebutuhan ||
-        item.jenis_kebutuhan === filters.jenis_kebutuhan)
+      (!filters.jenis_bantuan ||
+        item.jenis_bantuan === filters.jenis_bantuan)
     );
   });
 
@@ -85,43 +79,35 @@ export default function OperatorKlienList() {
     new Map(fullyFiltered.map((i) => [i.id, i])).values()
   );
 
-  const totalPages = Math.max(1, Math.ceil(uniqueFiltered.length / perPage));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(uniqueFiltered.length / perPage)
+  );
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = (safePage - 1) * perPage;
-  const pageData = uniqueFiltered.slice(startIndex, startIndex + perPage);
+  const pageData =
+    uniqueFiltered.slice(startIndex, startIndex + perPage);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* FILTER BAR */}
       <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
         <div className="flex flex-wrap gap-2">
-          {/* Status Bantuan */}
+          {/* Jenis Bantuan */}
           <select
             className="h-8 px-3 text-xs border rounded-full"
-            value={filters.status_bantuan}
+            value={filters.jenis_bantuan}
             onChange={(e) =>
-              setFilters({ ...filters, status_bantuan: e.target.value })
+              setFilters({
+                ...filters,
+                jenis_bantuan: e.target.value,
+              })
             }
           >
-            <option value="">Status Bantuan</option>
+            <option value="">Jenis Bantuan</option>
             <option value="PKH">PKH</option>
             <option value="BPNT">BPNT</option>
             <option value="BLT">BLT</option>
-          </select>
-
-          {/* Jenis Kebutuhan */}
-          <select
-            className="h-8 px-3 text-xs border rounded-full"
-            value={filters.jenis_kebutuhan}
-            onChange={(e) =>
-              setFilters({ ...filters, jenis_kebutuhan: e.target.value })
-            }
-          >
-            <option value="">Jenis Kebutuhan</option>
-            <option value="anak">Anak</option>
-            <option value="disabilitas">Disabilitas</option>
-            <option value="lansia">Lansia</option>
-            <option value="fakir_miskin">Fakir Miskin</option>
           </select>
 
           {/* Reset */}
@@ -136,7 +122,10 @@ export default function OperatorKlienList() {
         {/* SEARCH */}
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Search className="absolute left-2 top-2 text-gray-400" size={16} />
+            <Search
+              className="absolute left-2 top-2 text-gray-400"
+              size={16}
+            />
             <input
               type="text"
               placeholder="Cari klien..."
@@ -167,15 +156,23 @@ export default function OperatorKlienList() {
                 <th className="px-3 py-2 border">Alamat</th>
                 <th className="px-3 py-2 border">Kelurahan</th>
                 <th className="px-3 py-2 border">Kecamatan</th>
-                <th className="px-3 py-2 border">Kebutuhan</th>
-                <th className="px-3 py-2 border">Bantuan</th>
+
+                {/* 🔥 FIX: GANTI JENIS KEBUTUHAN → JENIS BANTUAN */}
+                <th className="px-3 py-2 border">Jenis Bantuan</th>
+
                 <th className="px-3 py-2 border">LKS</th>
-                <th className="px-3 py-2 border text-center">Aksi</th>
+                <th className="px-3 py-2 border text-center">
+                  Aksi
+                </th>
               </tr>
             </thead>
+
             <tbody>
               {pageData.map((item, index) => (
-                <tr key={item.id} className="hover:bg-slate-50 transition">
+                <tr
+                  key={item.id}
+                  className="hover:bg-slate-50 transition"
+                >
                   <td className="border px-3 py-2 text-center">
                     {startIndex + index + 1}
                   </td>
@@ -183,14 +180,25 @@ export default function OperatorKlienList() {
                   <td className="border px-3 py-2">{item.nama}</td>
                   <td className="border px-3 py-2">{item.alamat}</td>
                   <td className="border px-3 py-2">{item.kelurahan}</td>
-                  <td className="border px-3 py-2">{item.kecamatan?.nama}</td>
-                  <td className="border px-3 py-2">{item.jenis_kebutuhan}</td>
-                  <td className="border px-3 py-2">{item.status_bantuan}</td>
-                  <td className="border px-3 py-2">{item.lks?.nama}</td>
+                  <td className="border px-3 py-2">
+                    {item.kecamatan?.nama}
+                  </td>
+
+                  {/* 🔥 FIX VALUE */}
+                  <td className="border px-3 py-2">
+                    {item.jenis_bantuan}
+                  </td>
+
+                  <td className="border px-3 py-2">
+                    {item.lks?.nama}
+                  </td>
+
                   <td className="border px-3 py-2 text-center">
                     <button
                       onClick={() =>
-                        navigate(`/operator/klien/detail/${item.id}`)
+                        navigate(
+                          `/operator/klien/detail/${item.id}`
+                        )
                       }
                       className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow transition"
                     >
@@ -204,7 +212,7 @@ export default function OperatorKlienList() {
         )}
       </div>
 
-      {/* SHOW PER PAGE */}
+      {/* PAGINASI */}
       <div className="flex items-center mt-4">
         <label className="text-sm mr-2">Tampilkan</label>
         <select
@@ -215,9 +223,6 @@ export default function OperatorKlienList() {
           <option value="5">5</option>
           <option value="10">10</option>
           <option value="20">20</option>
-          <option value="40">40</option>
-          <option value="60">60</option>
-          <option value="100">100</option>
         </select>
         <span className="text-sm ml-2">data per halaman</span>
       </div>

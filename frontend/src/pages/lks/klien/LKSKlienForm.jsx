@@ -24,7 +24,9 @@ const LKSKlienForm = () => {
     status_pembinaan: "",
   });
 
-  // Ambil data LKS
+  // ================================
+  // 🔹 Ambil data LKS otomatis
+  // ================================
   useEffect(() => {
     const fetchMetaLKS = async () => {
       const lksId = sessionStorage.getItem("lks_id");
@@ -41,36 +43,40 @@ const LKSKlienForm = () => {
     fetchMetaLKS();
   }, []);
 
-  // Change Handler
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  // Submit Handler
+  // ================================
+  // 🔥 VALIDASI (SESUAI ADMIN)
+  // ================================
+  const validateForm = () => {
+    if (!form.nik || form.nik.length !== 16) {
+      showError("NIK wajib 16 digit!");
+      return false;
+    }
+    if (!form.nama.trim()) {
+      showError("Nama lengkap wajib diisi!");
+      return false;
+    }
+    if (!form.kelurahan.trim()) {
+      showError("Kelurahan wajib diisi!");
+      return false;
+    }
+    if (!form.alamat.trim()) {
+      showError("Alamat lengkap wajib diisi!");
+      return false;
+    }
+    return true;
+  };
+
+  // ================================
+  // 🔥 Submit Form
+  // ================================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // VALIDASI FRONTEND (dari publiclicpage)
-    if (form.nik.length !== 16) {
-      showError("NIK harus 16 digit!");
-      setLoading(false);
-      return;
-    }
-
-    if (!form.nama.trim()) {
-      showError("Nama wajib diisi!");
-      setLoading(false);
-      return;
-    }
-
-    if (!form.kelurahan.trim()) {
-      showError("Kelurahan wajib diisi!");
-      setLoading(false);
-      return;
-    }
-
-    if (!form.alamat.trim()) {
-      showError("Alamat wajib diisi!");
+    if (!validateForm()) {
       setLoading(false);
       return;
     }
@@ -78,8 +84,7 @@ const LKSKlienForm = () => {
     try {
       await api.post("/klien", form);
       showSuccess("Klien berhasil ditambahkan!");
-
-      setTimeout(() => navigate("/lks/klien"), 1000);
+      setTimeout(() => navigate("/lks/klien"), 900);
     } catch (err) {
       showError("Gagal menyimpan data klien!");
     } finally {
@@ -102,14 +107,21 @@ const LKSKlienForm = () => {
       >
         {/* NIK */}
         <div>
-          <label className="block font-semibold text-gray-700 mb-1">NIK *</label>
+          <label className="block font-semibold text-gray-700 mb-1">
+            NIK *
+          </label>
           <input
-            type="number"
+            type="text"
             name="nik"
             value={form.nik}
-            onChange={handleChange}
-            required
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, ""); // hanya angka
+              if (value.length <= 16) {
+                setForm({ ...form, nik: value });
+              }
+            }}
             placeholder="16 digit"
+            maxLength={16}
             className="w-full border rounded-lg px-3 py-2"
           />
         </div>
@@ -124,7 +136,6 @@ const LKSKlienForm = () => {
             name="nama"
             value={form.nama}
             onChange={handleChange}
-            required
             className="w-full border rounded-lg px-3 py-2"
           />
         </div>
@@ -156,7 +167,6 @@ const LKSKlienForm = () => {
             name="kelurahan"
             value={form.kelurahan}
             onChange={handleChange}
-            required
             className="w-full border rounded-lg px-3 py-2"
           />
         </div>
@@ -170,25 +180,12 @@ const LKSKlienForm = () => {
             name="alamat"
             value={form.alamat}
             onChange={handleChange}
-            required
             rows={3}
             className="w-full border rounded-lg px-3 py-2"
           />
         </div>
 
-        {/* Kecamatan otomatis berdasarkan LKS */}
-        <div>
-          <label className="block font-semibold text-gray-700 mb-1">
-            Kecamatan (otomatis)
-          </label>
-          <input
-            type="text"
-            disabled
-            value={metaLKS.kecamatan?.nama || "Memuat..."}
-            className="w-full border bg-gray-100 rounded-lg px-3 py-2"
-          />
-        </div>
-
+        
         {/* Jenis Bantuan */}
         <div>
           <label className="block font-semibold text-gray-700 mb-1">

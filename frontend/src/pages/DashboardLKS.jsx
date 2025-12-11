@@ -48,7 +48,7 @@ export default function DashboardLKS() {
         klien_nonaktif: data.jumlah_klien?.tidak_aktif ?? 0,
         jenis_bantuan:
           data.jenis_bantuan?.map((j) => ({
-            jenis: j.jenis_bantuan || "-",
+            jenis: j.jenis_bantuan || "Tidak Ada",
             total: j.total || 0,
           })) ?? [],
       });

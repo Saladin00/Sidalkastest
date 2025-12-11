@@ -43,6 +43,14 @@ Route::middleware(['auth:sanctum', 'idle.timeout'])->get('/dashboard', [Dashboar
 
 
 // =====================================================================
+// PUBLIC DASHBOARD (LANDING PAGE)
+// =====================================================================
+Route::prefix('public')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'publicDashboard']);
+});
+
+
+// =====================================================================
 // AUTH
 // =====================================================================
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -189,9 +197,4 @@ Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
 });
 
 
-// =====================================================================
-// PUBLIC DASHBOARD
-// =====================================================================
-Route::prefix('public')->group(function () {
-    Route::get('/dashboard', [PublicDashboardController::class, 'index']);
-});
+
