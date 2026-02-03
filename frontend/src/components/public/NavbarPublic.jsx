@@ -66,12 +66,7 @@ export default function NavbarPublic() {
             Kontak
           </button>
 
-          <button
-            onClick={handleDashboard}
-            className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg shadow transition"
-          >
-            {token ? <><LayoutDashboard size={16} /> Dashboard</> : <><LogIn size={16} /> Login</>}
-          </button>
+        
         </div>
       </div>
     </nav>

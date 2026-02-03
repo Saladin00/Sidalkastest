@@ -97,7 +97,7 @@ const ManajemenUser = () => {
   };
 
   // ========================
-  // DELETE USER With Admin Protection (Frontend Only)
+  // DELETE USER (proteksi admin terakhir)
   // ========================
   const handleDeleteUser = async (id, role, adminCount) => {
     if (role === "admin" && adminCount <= 1) {
@@ -146,6 +146,9 @@ const ManajemenUser = () => {
   });
 
   const adminCount = allUsers.filter((u) => u.role === "admin").length;
+  const adminAktifCount = allUsers.filter(
+    (u) => u.role === "admin" && u.status_aktif
+  ).length;
 
   // ========================
   // PAGINATION
@@ -158,11 +161,8 @@ const ManajemenUser = () => {
   return (
     <>
       <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
-
-        {/* ===== RESPONSIVE TOP BAR ===== */}
+        {/* ===== FILTER DAN SEARCH ===== */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-
-          {/* Filter */}
           <div className="flex flex-wrap items-center gap-2">
             {[
               { key: "semua", label: "Semua" },
@@ -188,15 +188,20 @@ const ManajemenUser = () => {
               onClick={fetchUsers}
               className="flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-300 rounded-full hover:bg-gray-100 transition"
             >
-              <RotateCcw size={14} className={loading ? "animate-spin text-sky-600" : ""} />
+              <RotateCcw
+                size={14}
+                className={loading ? "animate-spin text-sky-600" : ""}
+              />
               Muat Ulang
             </button>
           </div>
 
-          {/* Search + Tambah */}
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="relative w-full sm:w-auto">
-              <Search size={16} className="absolute left-2.5 top-2.5 text-gray-400" />
+              <Search
+                size={16}
+                className="absolute left-2.5 top-2.5 text-gray-400"
+              />
               <input
                 type="text"
                 placeholder="Cari user..."
@@ -213,40 +218,61 @@ const ManajemenUser = () => {
               <PlusCircle size={16} /> Tambah User
             </button>
           </div>
-
         </div>
 
-        {/* ===== TABLE ===== */}
+        {/* ===== TABEL ===== */}
         {loading ? (
           <p className="text-center text-gray-500 py-8">Memuat data...</p>
         ) : (
           <div className="overflow-x-auto bg-white shadow-md rounded-xl ring-1 ring-slate-200/60">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm border-collapse">
               <thead className="bg-slate-100 text-slate-700 font-semibold">
                 <tr>
-                  {["No", "Username", "Nama", "Email", "Role", "Kecamatan", "Status", "Aksi"].map(
-                    (head, idx) => (
-                      <th key={idx} className="px-3 py-2 border border-gray-200 text-center">
-                        {head}
-                      </th>
-                    )
-                  )}
+                  {[
+                    "No",
+                    "Username",
+                    "Nama",
+                    "Email",
+                    "Role",
+                    "Kecamatan",
+                    "Status",
+                    "Aksi",
+                  ].map((head, idx) => (
+                    <th
+                      key={idx}
+                      className="px-3 py-2 border border-gray-200 text-center"
+                    >
+                      {head}
+                    </th>
+                  ))}
                 </tr>
               </thead>
 
               <tbody>
                 {paginatedUsers.length ? (
                   paginatedUsers.map((user, i) => {
-                    const isLastAdmin = user.role === "admin" && adminCount <= 1;
+                    const isLastAdmin =
+                      user.role === "admin" && adminCount <= 1;
+                    const isLastActiveAdmin =
+                      user.role === "admin" && adminAktifCount <= 1 && user.status_aktif;
 
                     return (
-                      <tr key={user.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="border px-3 py-2 text-center">{startIndex + i + 1}</td>
+                      <tr
+                        key={user.id}
+                        className="hover:bg-slate-50 transition-colors"
+                      >
+                        <td className="border px-3 py-2 text-center">
+                          {startIndex + i + 1}
+                        </td>
                         <td className="border px-3 py-2">{user.username}</td>
                         <td className="border px-3 py-2">{user.name}</td>
                         <td className="border px-3 py-2">{user.email}</td>
-                        <td className="border px-3 py-2 capitalize">{user.role}</td>
-                        <td className="border px-3 py-2">{user.kecamatan?.nama || "-"}</td>
+                        <td className="border px-3 py-2 capitalize">
+                          {user.role}
+                        </td>
+                        <td className="border px-3 py-2">
+                          {user.kecamatan?.nama || "-"}
+                        </td>
 
                         <td className="border px-3 py-2 text-center">
                           <span
@@ -260,26 +286,38 @@ const ManajemenUser = () => {
                           </span>
                         </td>
 
-                        {/* ===== ACTION ===== */}
                         <td className="border px-3 py-2 text-center">
                           <div className="flex justify-center items-center gap-2">
-
-                            {/* Toggle */}
+                            {/* Nonaktifkan */}
                             <button
+                              disabled={isLastActiveAdmin}
+                              title={
+                                isLastActiveAdmin
+                                  ? "Tidak bisa menonaktifkan admin terakhir"
+                                  : ""
+                              }
                               onClick={() => handleToggleStatus(user.id)}
                               className={`px-3 py-1 text-xs rounded-full transition ${
-                                user.status_aktif
+                                isLastActiveAdmin
+                                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                  : user.status_aktif
                                   ? "text-rose-700 ring-1 ring-rose-200 hover:bg-rose-50"
                                   : "text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-50"
                               }`}
                             >
-                              {user.status_aktif ? "Nonaktifkan" : "Aktifkan"}
+                              {user.status_aktif
+                                ? "Nonaktifkan"
+                                : "Aktifkan"}
                             </button>
 
-                            {/* Delete with frontend admin protection */}
+                            {/* Hapus */}
                             <button
                               disabled={isLastAdmin}
-                              title={isLastAdmin ? "Tidak bisa menghapus admin terakhir" : ""}
+                              title={
+                                isLastAdmin
+                                  ? "Tidak bisa menghapus admin terakhir"
+                                  : ""
+                              }
                               onClick={() =>
                                 handleDeleteUser(user.id, user.role, adminCount)
                               }
@@ -298,7 +336,10 @@ const ManajemenUser = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan="8" className="text-center py-6 text-gray-500 border-t">
+                    <td
+                      colSpan="8"
+                      className="text-center py-6 text-gray-500 border-t"
+                    >
                       Tidak ada data pengguna.
                     </td>
                   </tr>
@@ -307,62 +348,6 @@ const ManajemenUser = () => {
             </table>
           </div>
         )}
-
-        {/* ===== PAGINATION ===== */}
-        <div className="mt-3 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-600 gap-2">
-
-          <div className="flex items-center gap-2">
-            <span>Tampilkan</span>
-            <select
-              value={perPage}
-              onChange={(e) => {
-                setPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              className="border border-gray-300 rounded-md px-2 py-1 bg-white"
-            >
-              {[5, 10, 25, 50, 100].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-            <span>data per halaman</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              disabled={currentPageSafe === 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className={`px-2 py-1 border rounded ${
-                currentPageSafe === 1
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-gray-100"
-              }`}
-            >
-              &laquo; Sebelumnya
-            </button>
-
-            <span>
-              Halaman {currentPageSafe} dari {totalPages}
-            </span>
-
-            <button
-              disabled={currentPageSafe === totalPages}
-              onClick={() =>
-                setCurrentPage((p) => Math.min(totalPages, p + 1))
-              }
-              className={`px-2 py-1 border rounded ${
-                currentPageSafe === totalPages
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-gray-100"
-              }`}
-            >
-              Selanjutnya &raquo;
-            </button>
-          </div>
-        </div>
-
       </div>
 
       <ToastContainer

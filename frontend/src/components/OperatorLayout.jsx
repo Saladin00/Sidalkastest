@@ -73,7 +73,6 @@ const OperatorLayout = ({ children }) => {
       ],
     },
     { label: "Data Klien", to: "/operator/klien", icon: Users },
-    { label: "Sebaran Wilayah", to: "/operator/sebaran", icon: MapPin },
     { label: "Verifikasi Data", to: "/operator/verifikasi", icon: ShieldCheck },
     { label: "Laporan", to: "/operator/laporan", icon: BarChart3 },
 
@@ -90,8 +89,6 @@ const OperatorLayout = ({ children }) => {
     if (path.startsWith("/operator/lks-list"))
       return { breadcrumb: ["Operator", "LKS", "Daftar LKS"], title: "Daftar LKS Kecamatan" };
     if (path.startsWith("/operator/klien"))
-      return { breadcrumb: ["Operator", "Data Klien"], title: "Data Klien Kecamatan" };
-    if (path.startsWith("/operator/sebaran"))
       return { breadcrumb: ["Operator", "Sebaran Wilayah"], title: "Sebaran Wilayah" };
     if (path.startsWith("/operator/verifikasi"))
       return { breadcrumb: ["Operator", "Verifikasi Data"], title: "Verifikasi Data LKS" };
