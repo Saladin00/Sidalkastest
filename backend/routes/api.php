@@ -143,25 +143,35 @@ Route::middleware(['auth:sanctum', 'idle.timeout'])->group(function () {
 
 
     // ================================================================
-    // OPERATOR
-    // ================================================================
-    Route::prefix('operator')->middleware('role:operator')->group(function () {
+    // ===================================================================
+// OPERATOR
+// ===================================================================
+Route::prefix('operator')
+    ->middleware(['auth:sanctum', 'role:operator'])
+    ->group(function () {
 
+        // ================= VERIFIKASI =================
         Route::prefix('verifikasi')->group(function () {
+
+            // ✅ STATIC ROUTES (HARUS DI ATAS)
             Route::get('/', [OperatorVerifikasiController::class, 'index']);
+            Route::get('/petugas/list', [OperatorVerifikasiController::class, 'listPetugas']);
+
+            // ✅ DYNAMIC ROUTES (DI BAWAH)
             Route::get('/{id}', [OperatorVerifikasiController::class, 'show']);
             Route::post('/{id}/kirim-ke-petugas', [OperatorVerifikasiController::class, 'kirimKePetugas']);
-            Route::get('/petugas/list', [OperatorVerifikasiController::class, 'listPetugas']);
         });
 
+        // ================= MANAJEMEN USER =================
         Route::get('/users', [UserController::class, 'index']);
         Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus']);
 
-        // Laporan Operator
+        // ================= LAPORAN =================
         Route::get('/laporan', [OperatorLaporanController::class, 'laporan']);
         Route::get('/laporan/export/pdf', [OperatorLaporanExportController::class, 'exportPdf']);
         Route::get('/laporan/export/excel', [OperatorLaporanExportController::class, 'exportExcel']);
     });
+
 
 
     // ================================================================

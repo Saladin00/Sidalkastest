@@ -19,7 +19,7 @@ protected $fillable = [
     'jenis_bantuan',
     'kelompok_umur',
     'status_pembinaan',
-    'dokumen',
+    
 ];
 
     protected $casts = [

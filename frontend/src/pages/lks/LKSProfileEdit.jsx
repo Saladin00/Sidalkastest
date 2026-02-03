@@ -67,7 +67,9 @@ const AutoTextarea = memo(({ label, name, value, onChange }) => {
 
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-semibold text-gray-700">{label}</label>
+      <label className="block text-sm font-semibold text-gray-700">
+        {label}
+      </label>
       <textarea
         ref={ref}
         name={name}
@@ -157,12 +159,25 @@ const LKSProfileEdit = () => {
     setLoading(true);
 
     try {
-      await API.put("/lks/me/update", formData);
+      const payload = new FormData();
+
+      Object.keys(formData).forEach((key) => {
+        if (formData[key] !== null && formData[key] !== "") {
+          payload.append(key, formData[key]);
+        }
+      });
+
+      // spoofing PUT
+      payload.append("_method", "PUT");
+
+      await API.post("/lks/me/update", payload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
       toast.success("Profil berhasil diperbarui!", { autoClose: 1500 });
       setTimeout(() => navigate("/lks/profile"), 800);
     } catch (err) {
-      console.error(err);
-      toast.error("Gagal menyimpan perubahan!", { autoClose: 2000 });
+      console.log("VALIDATION ERROR:", err.response.data.errors);
     } finally {
       setLoading(false);
     }
@@ -181,15 +196,25 @@ const LKSProfileEdit = () => {
 
         {/* ================= PROFILE ================= */}
         <section>
-          <SectionHeader icon={BuildingOfficeIcon} title="Profil Umum" color="blue" />
+          <SectionHeader
+            icon={BuildingOfficeIcon}
+            title="Profil Umum"
+            color="blue"
+          />
 
           <div className="grid md:grid-cols-2 gap-6">
-
-            <Field label="Nama LKS" name="nama" value={formData.nama} onChange={handleChange} />
+            <Field
+              label="Nama LKS"
+              name="nama"
+              value={formData.nama}
+              onChange={handleChange}
+            />
 
             {/* Jenis Layanan */}
             <div className="space-y-1">
-              <label className="text-sm font-semibold text-gray-700">Jenis Layanan</label>
+              <label className="text-sm font-semibold text-gray-700">
+                Jenis Layanan
+              </label>
               <select
                 name="jenis_layanan"
                 value={formData.jenis_layanan}
@@ -201,16 +226,25 @@ const LKSProfileEdit = () => {
                 <option value="disabilitas">Disabilitas</option>
                 <option value="lansia">Lansia</option>
                 <option value="fakir miskin">Fakir Miskin</option>
-                <option value="kesejahteraan sosial">Kesejahteraan Sosial</option>
+                <option value="kesejahteraan sosial">
+                  Kesejahteraan Sosial
+                </option>
                 <option value="rehabilitasi sosial">Rehabilitasi Sosial</option>
               </select>
             </div>
 
-            <AutoTextarea label="Alamat Lengkap" name="alamat" value={formData.alamat} onChange={handleChange} />
+            <AutoTextarea
+              label="Alamat Lengkap"
+              name="alamat"
+              value={formData.alamat}
+              onChange={handleChange}
+            />
 
             {/* Kecamatan */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700">Kecamatan</label>
+              <label className="block text-sm font-semibold text-gray-700">
+                Kecamatan
+              </label>
               <select
                 name="kecamatan_id"
                 value={formData.kecamatan_id}
@@ -226,22 +260,71 @@ const LKSProfileEdit = () => {
               </select>
             </div>
 
-            <Field label="Kelurahan" name="kelurahan" value={formData.kelurahan} onChange={handleChange} />
-            <Field label="NPWP" name="npwp" value={formData.npwp} onChange={handleChange} />
-            <Field label="Kontak Pengurus" name="kontak_pengurus" value={formData.kontak_pengurus} onChange={handleChange} />
+            <Field
+              label="Kelurahan"
+              name="kelurahan"
+              value={formData.kelurahan}
+              onChange={handleChange}
+            />
+            <Field
+              label="NPWP"
+              name="npwp"
+              value={formData.npwp}
+              onChange={handleChange}
+            />
+            <Field
+              label="Kontak Pengurus"
+              name="kontak_pengurus"
+              value={formData.kontak_pengurus}
+              onChange={handleChange}
+            />
 
             {/* Legalitas */}
-            <Field label="Legalitas" name="legalitas" value={formData.legalitas} onChange={handleChange} />
+            <Field
+              label="Legalitas"
+              name="legalitas"
+              value={formData.legalitas}
+              onChange={handleChange}
+            />
 
             {/* Akta pendirian */}
-            <Field label="Akta Pendirian" name="akta_pendirian" value={formData.akta_pendirian} onChange={handleChange} />
+            <div>
+              <label className="text-sm font-semibold text-gray-700">
+                Akta Pendirian
+              </label>
 
-            <Field label="Izin Operasional" name="izin_operasional" value={formData.izin_operasional} onChange={handleChange} />
-            <Field label="No Akta" name="no_akta" value={formData.no_akta} onChange={handleChange} />
+              <input
+                type="file"
+                name="akta_pendirian"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    akta_pendirian: e.target.files[0], // FILE ASLI
+                  }))
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              />
+            </div>
+
+            <Field
+              label="Izin Operasional"
+              name="izin_operasional"
+              value={formData.izin_operasional}
+              onChange={handleChange}
+            />
+            <Field
+              label="No Akta"
+              name="no_akta"
+              value={formData.no_akta}
+              onChange={handleChange}
+            />
 
             {/* Status Akreditasi */}
             <div className="space-y-1">
-              <label className="text-sm font-semibold text-gray-700">Status Akreditasi</label>
+              <label className="text-sm font-semibold text-gray-700">
+                Status Akreditasi
+              </label>
               <select
                 name="status_akreditasi"
                 value={formData.status_akreditasi}
@@ -255,8 +338,19 @@ const LKSProfileEdit = () => {
               </select>
             </div>
 
-            <Field label="No Sertifikat" name="no_sertifikat" value={formData.no_sertifikat} onChange={handleChange} />
-            <Field type="date" label="Tanggal Akreditasi" name="tanggal_akreditasi" value={formData.tanggal_akreditasi} onChange={handleChange} />
+            <Field
+              label="No Sertifikat"
+              name="no_sertifikat"
+              value={formData.no_sertifikat}
+              onChange={handleChange}
+            />
+            <Field
+              type="date"
+              label="Tanggal Akreditasi"
+              name="tanggal_akreditasi"
+              value={formData.tanggal_akreditasi}
+              onChange={handleChange}
+            />
           </div>
         </section>
 
@@ -264,9 +358,17 @@ const LKSProfileEdit = () => {
         <section>
           <SectionHeader icon={MapPinIcon} title="Lokasi LKS" color="red" />
 
-          <MapContainer center={position} zoom={13} className="h-72 rounded-xl border shadow">
+          <MapContainer
+            center={position}
+            zoom={13}
+            className="h-72 rounded-xl border shadow"
+          >
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            <LocationMarker position={position} setPosition={setPosition} setFormData={setFormData} />
+            <LocationMarker
+              position={position}
+              setPosition={setPosition}
+              setFormData={setFormData}
+            />
           </MapContainer>
 
           <p className="text-sm mt-2 text-gray-600">
@@ -288,7 +390,11 @@ const LKSProfileEdit = () => {
 
         {/* ================= SARANA ================= */}
         <section>
-          <SectionHeader icon={WrenchIcon} title="Sarana & Prasarana" color="green" />
+          <SectionHeader
+            icon={WrenchIcon}
+            title="Sarana & Prasarana"
+            color="green"
+          />
           <AutoTextarea
             label="Sarana & Fasilitas"
             name="sarana"
@@ -329,7 +435,9 @@ const LKSProfileEdit = () => {
             type="submit"
             disabled={loading}
             className={`px-8 py-2.5 rounded-lg font-semibold text-white shadow-md transition ${
-              loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+              loading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
             }`}
           >
             {loading ? "Menyimpan..." : "Simpan Perubahan"}

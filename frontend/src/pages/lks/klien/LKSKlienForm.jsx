@@ -86,10 +86,18 @@ const LKSKlienForm = () => {
       showSuccess("Klien berhasil ditambahkan!");
       setTimeout(() => navigate("/lks/klien"), 900);
     } catch (err) {
-      showError("Gagal menyimpan data klien!");
-    } finally {
+  const errors = err.response?.data?.errors;
+
+  if (errors?.nik) {
+    showError(errors.nik[0]); // 👉 "NIK sudah terdaftar"
+  } else {
+    showError("Gagal menyimpan data klien!");
+  }
+}
+ finally {
       setLoading(false);
     }
+    
   };
 
   return (

@@ -135,33 +135,47 @@ export default function PublicLanding() {
 
   return (
     <div className="bg-gradient-to-br from-[#e0f7fa] via-[#f2fbfc] to-[#e0f2f1] text-slate-700 min-h-screen flex flex-col">
-      
       <NavbarPublic />
 
       {/* =====================================
                 HERO SECTION (TIDAK DIUBAH)
       ===================================== */}
       <section className="relative flex flex-col-reverse md:flex-row items-center justify-between pt-28 md:pt-32 pb-16 px-6 md:px-16 max-w-7xl mx-auto">
-        <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} className="max-w-xl">
+        <motion.div
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="max-w-xl"
+        >
           <h1 className="text-3xl md:text-5xl font-extrabold text-sky-800">
             Sistem Informasi Data Lembaga Kesejahteraan Sosial
           </h1>
           <p className="text-gray-600 mt-4">
-            Platform resmi pendataan dan publikasi lembaga kesejahteraan di Kabupaten Indramayu.
+            Platform resmi pendataan dan publikasi lembaga kesejahteraan di
+            Kabupaten Indramayu.
           </p>
 
           <div className="flex gap-4 mt-6">
-            <Link to="/login" className="px-6 py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-semibold shadow-md flex items-center gap-2">
+            <Link
+              to="/login"
+              className="px-6 py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-semibold shadow-md flex items-center gap-2"
+            >
               Masuk <ArrowRightCircle size={18} />
             </Link>
 
-            <Link to="/register" className="px-6 py-3 bg-white hover:bg-sky-50 border border-sky-300 rounded-lg font-semibold">
+            <Link
+              to="/register"
+              className="px-6 py-3 bg-white hover:bg-sky-50 border border-sky-300 rounded-lg font-semibold"
+            >
               Daftar LKS
             </Link>
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1 }} className="flex justify-center md:justify-end mb-10 md:mb-0">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1 }}
+          className="flex justify-center md:justify-end mb-10 md:mb-0"
+        >
           <img src="/logo.png" className="w-60 md:w-72 drop-shadow-lg" />
         </motion.div>
       </section>
@@ -169,19 +183,29 @@ export default function PublicLanding() {
       {/* =========================
             STATISTIK SECTION
       ========================= */}
-      <StatsSection totalLks={totalLks} totalKlien={totalKlien} totalPetugas={totalPetugas} />
+      <StatsSection
+        totalLks={totalLks}
+        totalKlien={totalKlien}
+        totalPetugas={totalPetugas}
+      />
 
       {/* =====================================
                     MAP (TIDAK DIUBAH)
       ===================================== */}
-      <section id="lks" className="py-20 px-6 md:px-12 bg-gradient-to-br from-sky-50 via-white to-cyan-50">
+      <section
+        id="lks"
+        className="py-20 px-6 md:px-12 bg-gradient-to-br from-sky-50 via-white to-cyan-50"
+      >
         <div className="max-w-6xl mx-auto mb-8">
-          <h2 className="text-3xl font-bold text-sky-800">Sebaran Wilayah LKS</h2>
-          <p className="text-gray-600">Persebaran titik lembaga sosial pada seluruh kecamatan.</p>
+          <h2 className="text-3xl font-bold text-sky-800">
+            Sebaran Wilayah LKS
+          </h2>
+          <p className="text-gray-600">
+            Persebaran titik lembaga sosial pada seluruh kecamatan.
+          </p>
         </div>
 
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[2fr,1fr] gap-6">
-
           {/* MAP */}
           <div className="bg-white rounded-3xl shadow-lg border overflow-hidden">
             <MapContainer
@@ -190,33 +214,46 @@ export default function PublicLanding() {
               style={{ height: "420px", width: "100%" }}
               whenCreated={(map) => (mapRef.current = map)}
             >
-              <TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <TileLayer
+                attribution="&copy; OpenStreetMap"
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
 
-              {lokasiLks.filter((l) => l.lat && l.lng).map((l, idx) => (
-                <Marker
-                  key={idx}
-                  position={[l.lat, l.lng]}
-                  icon={generateMarkerIcon("#3b82f6")}
-                >
-                  <Popup>
-                    <b>{l.nama}</b>
-                    <br />
-                    Status: {l.status}
-                  </Popup>
-                </Marker>
-              ))}
+              {lokasiLks
+                .filter((l) => l.lat && l.lng)
+                .map((l, idx) => (
+                  <Marker
+                    key={idx}
+                    position={[l.lat, l.lng]}
+                    icon={generateMarkerIcon("#3b82f6")}
+                  >
+                    <Popup>
+                      <b>{l.nama}</b>
+                      <br />
+                      Status: {l.status}
+                    </Popup>
+                  </Marker>
+                ))}
             </MapContainer>
           </div>
 
           {/* RINGKASAN */}
           <div className="bg-white rounded-3xl shadow-lg border p-5 flex flex-col">
-            <p className="text-xs text-sky-600 uppercase font-semibold">Ringkasan</p>
-            <h3 className="text-xl font-bold text-slate-900 mt-1">Rekap Sebaran LKS</h3>
+            <p className="text-xs text-sky-600 uppercase font-semibold">
+              Ringkasan
+            </p>
+            <h3 className="text-xl font-bold text-slate-900 mt-1">
+              Rekap Sebaran LKS
+            </h3>
 
             <div className="grid grid-cols-2 gap-3 mt-4">
               <div className="bg-sky-50 p-3 rounded-xl">
-                <p className="text-[11px] text-sky-600 uppercase">Total Kecamatan</p>
-                <p className="text-xl font-bold text-sky-800">{perKecamatan.length}</p>
+                <p className="text-[11px] text-sky-600 uppercase">
+                  Total Kecamatan
+                </p>
+                <p className="text-xl font-bold text-sky-800">
+                  {perKecamatan.length}
+                </p>
               </div>
 
               <div className="bg-blue-50 p-3 rounded-xl">
@@ -233,29 +270,39 @@ export default function PublicLanding() {
       ===================================== */}
       <section className="py-20 px-6 md:px-12 bg-white">
         <div className="max-w-6xl mx-auto">
-
           <div className="flex items-center gap-3 mb-6">
             <div className="h-9 w-9 bg-sky-100 rounded-full flex items-center justify-center">
               <BarChart3 className="text-sky-700" size={18} />
             </div>
             <div>
-              <p className="text-xs text-sky-600 uppercase font-semibold">Grafik Sebaran</p>
-              <h2 className="text-2xl font-bold text-sky-800">Sebaran LKS per Kecamatan</h2>
+              <p className="text-xs text-sky-600 uppercase font-semibold">
+                Grafik Sebaran
+              </p>
+              <h2 className="text-2xl font-bold text-sky-800">
+                Sebaran LKS per Kecamatan
+              </h2>
             </div>
           </div>
 
           <div className="bg-white border rounded-3xl shadow-xl p-6">
             <div className="flex flex-col md:flex-row gap-6">
-
               <div className="w-full md:w-[55%]">
-                <Chart options={chartOptions} series={chartSeries} type="donut" height={340} />
+                <Chart
+                  options={chartOptions}
+                  series={chartSeries}
+                  type="donut"
+                  height={340}
+                />
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-xs mt-4">
                   {perKecamatan.map((k, idx) => (
                     <div key={k.id} className="flex items-center gap-1.5">
                       <span
                         className="inline-block w-3 h-3 rounded-full"
-                        style={{ backgroundColor: chartColors[idx % chartColors.length] }}
+                        style={{
+                          backgroundColor:
+                            chartColors[idx % chartColors.length],
+                        }}
                       />
                       <span>{k.nama}</span>
                     </div>
@@ -275,11 +322,19 @@ export default function PublicLanding() {
                   </thead>
                   <tbody>
                     {perKecamatan.map((k, idx) => {
-                      const persen = totalLks > 0 ? ((k.jumlah / totalLks) * 100).toFixed(1) : 0;
+                      const persen =
+                        totalLks > 0
+                          ? ((k.jumlah / totalLks) * 100).toFixed(1)
+                          : 0;
                       return (
-                        <tr key={k.id} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                        <tr
+                          key={k.id}
+                          className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}
+                        >
                           <td className="px-3 py-1.5">{k.nama}</td>
-                          <td className="px-3 py-1.5 text-right font-semibold">{k.jumlah}</td>
+                          <td className="px-3 py-1.5 text-right font-semibold">
+                            {k.jumlah}
+                          </td>
                           <td className="px-3 py-1.5 text-right">{persen}%</td>
                         </tr>
                       );
@@ -287,37 +342,53 @@ export default function PublicLanding() {
                   </tbody>
                 </table>
               </div>
-
             </div>
           </div>
         </div>
       </section>
 
       {/* FOOTER TIDAK DIUBAH */}
-      <section id="kontak" className="bg-sky-700 text-white py-20 px-6 md:px-12 text-center">
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">Hubungi Dinas Sosial Kabupaten Indramayu</h2>
+      {/* FOOTER TIDAK DIUBAH (HANYA DITAMBAHKAN NAMA ICON) */}
+      <section
+        id="kontak"
+        className="bg-sky-700 text-white py-20 px-6 md:px-12 text-center"
+      >
+        <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          Hubungi Dinas Sosial Kabupaten Indramayu
+        </h2>
 
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* ALAMAT */}
           <div className="bg-sky-800/40 border border-sky-500/30 rounded-2xl p-6 shadow-lg">
             <MapPin size={32} className="text-yellow-300 mx-auto mb-3" />
-            <p className="text-cyan-100 text-sm">Jl. Letnan Joni No. 1, Indramayu</p>
+            <h3 className="font-bold text-lg mb-1">Alamat</h3>
+            <p className="text-cyan-100 text-sm">
+              Jl. Raya Pabean Udik No.268, Pabeanudik, Indramayu, Jawa Barat
+              45219
+            </p>
           </div>
 
+          {/* KONTAK */}
           <div className="bg-sky-800/40 border border-sky-500/30 rounded-2xl p-6 shadow-lg">
             <ShieldCheck size={32} className="text-yellow-300 mx-auto mb-3" />
-            <p className="text-cyan-100 text-sm">0812-3456-7890</p>
+            <h3 className="font-bold text-lg mb-1">Kontak</h3>
+            <p className="text-cyan-100 text-sm">0812-8425-7938</p>
           </div>
 
+          {/* EMAIL */}
           <div className="bg-sky-800/40 border border-sky-500/30 rounded-2xl p-6 shadow-lg">
             <Users size={32} className="text-yellow-300 mx-auto mb-3" />
-            <p className="text-cyan-100 text-sm">dinsos@indramayukab.go.id</p>
+            <h3 className="font-bold text-lg mb-1">Email</h3>
+            <p className="text-cyan-100 text-sm">
+              dinsos@dinsosnakertransIndramayu.com
+            </p>
           </div>
         </div>
       </section>
 
       <footer className="bg-sky-900 text-white py-6 text-center border-t border-sky-800 shadow-inner">
         <div className="text-sm tracking-wide">
-          © {new Date().getFullYear()} · 
+          © {new Date().getFullYear()} ·
           <span className="font-semibold text-yellow-300"> SIDALEKAS</span>
         </div>
       </footer>
@@ -339,7 +410,11 @@ function StatsSection({ totalLks, totalKlien, totalPetugas }) {
         {[
           { title: "Total LKS Terdaftar", value: totalLks, icon: Building2 },
           { title: "Total Klien Terdata", value: totalKlien, icon: Users },
-          { title: "Total Petugas Lapangan", value: totalPetugas, icon: ShieldCheck },
+          {
+            title: "Total Petugas Lapangan",
+            value: totalPetugas,
+            icon: ShieldCheck,
+          },
         ].map((item, i) => (
           <motion.div
             key={i}

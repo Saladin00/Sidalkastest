@@ -2,19 +2,17 @@ import React, { useEffect, useState, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
-  FileText,
   User,
   LogOut,
-  UploadCloud,
+  ShieldCheck,
   ChevronLeft,
   ChevronRight,
   Users,
-  ShieldCheck,
-  UserCircle2,
   CheckCircle2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import API from "../utils/api";
+import { toast } from "react-toastify";
 
 const LKSLayout = ({ children }) => {
   const location = useLocation();
@@ -31,12 +29,16 @@ const LKSLayout = ({ children }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showToast, setShowToast] = useState(false);
-
   const dropdownRef = useRef(null);
 
-  // AMBIL DATA USER + STATUS VERIFIKASI
+  // 🔥 STATE UNTUK MENUNGGU VALIDASI SEBELUM MERENDER LAYOUT
+  const [statusChecked, setStatusChecked] = useState(false);
+
+  // ============================================================
+  // 🔥 CEK STATUS VERIFIKASI SEBELUM RENDER LAYOUT
+  // ============================================================
   useEffect(() => {
-    const loadAccount = async () => {
+    const checkStatus = async () => {
       try {
         const sessionUser = JSON.parse(sessionStorage.getItem("user") || "{}");
         const role = sessionStorage.getItem("role") || "lks";
@@ -44,8 +46,22 @@ const LKSLayout = ({ children }) => {
         const res = await API.get("/lks/profile-view");
         const lks = res.data.data;
 
-        sessionStorage.setItem("status_verifikasi", lks?.status_verifikasi);
+        const status = lks?.status_verifikasi || "belum";
+        sessionStorage.setItem("status_verifikasi", status);
 
+        const currentPath = location.pathname;
+        const allowedPaths = ["/lks/verifikasi"];
+
+        const allowed = allowedPaths.some((p) => currentPath.startsWith(p));
+
+        // 🚨 BLOCK SEMUA HALAMAN SELAIN VERIFIKASI
+        if (status !== "valid" && !allowed) {
+          navigate("/lks/verifikasi", { replace: true });
+          setStatusChecked(true);
+          return;
+        }
+
+        // Load kecamatan data
         const kecRes = await API.get("/kecamatan");
         const kecList = kecRes.data?.kecamatan || kecRes.data?.data || [];
 
@@ -57,23 +73,25 @@ const LKSLayout = ({ children }) => {
           role,
           kecamatan: kecName,
         });
-      } catch (err) {
-        console.error("Gagal memuat profil:", err);
-      }
-    };
-    loadAccount();
-  }, []);
 
-  // Klik luar → tutup dropdown
-  useEffect(() => {
-    const handler = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
+        setStatusChecked(true);
+      } catch (error) {
+        console.error("Gagal cek status verifikasi:", error);
+        setStatusChecked(true);
       }
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+
+    checkStatus();
+  }, [location.pathname, navigate]);
+
+  // ⛔ JANGAN TAMPILKAN DASHBOARD SEBELUM STATUS SELESAI DICEK
+  if (!statusChecked) {
+    return (
+      <div className="flex items-center justify-center h-screen text-sky-700">
+        Memuat...
+      </div>
+    );
+  }
 
   // MENU tergantung status verifikasi
   const statusVerifikasi = sessionStorage.getItem("status_verifikasi");
@@ -83,27 +101,23 @@ const LKSLayout = ({ children }) => {
     ? [
         { label: "Dashboard", to: "/lks", icon: LayoutDashboard, exact: true },
         { label: "Data Klien", to: "/lks/klien", icon: Users },
-        { label: "Dokumen Pendukung", to: "/lks/dokumen", icon: UploadCloud },
-        { label: "Laporan Kegiatan", to: "/lks/laporan", icon: FileText },
         { label: "Status Verifikasi", to: "/lks/verifikasi", icon: ShieldCheck },
         { label: "Profil Saya", to: "/lks/profile", icon: User },
       ]
     : [
+        // ❗ Profil dihapus total jika belum valid
         { label: "Status Verifikasi", to: "/lks/verifikasi", icon: ShieldCheck },
-        { label: "Profil Saya", to: "/lks/profile", icon: User },
       ];
 
   const isActive = (path, exact = false) =>
     exact ? current === path : current.startsWith(path);
 
-  // AMBIL INISIAL NAMA
   const getInitials = (str = "") => {
     const p = str.split(" ");
     if (p.length === 1) return p[0]?.slice(0, 2).toUpperCase();
     return (p[0][0] + p[1][0]).toUpperCase();
   };
 
-  // LOGOUT
   const logout = () => {
     setShowToast(true);
     setTimeout(() => {
@@ -129,7 +143,6 @@ const LKSLayout = ({ children }) => {
           {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
 
-        {/* LOGO */}
         <div className="flex items-center gap-3 px-6 py-5 border-b border-sky-800">
           <img src="/logo.png" alt="Logo" className="w-10 h-10" />
           {!isCollapsed && (
@@ -174,92 +187,70 @@ const LKSLayout = ({ children }) => {
             })}
           </ul>
         </nav>
-
-        {/* LOGOUT BUTTON */}
-        <div className="border-t border-sky-800 px-3 py-4 bg-sky-900/90">
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-500 hover:bg-red-600 transition text-sm font-semibold text-white py-2.5 shadow-md"
-          >
-            <LogOut size={16} />
-            {!isCollapsed && <span>Logout</span>}
-          </button>
-        </div>
       </aside>
 
       {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col">
-        {/* TOP HEADER */}
+        {/* HEADER */}
         <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200 px-8 py-4 flex justify-between items-center">
-          <div>
-            <p className="text-[11px] text-emerald-600 tracking-[0.18em] font-semibold uppercase">
-              Sistem Informasi Data Lembaga Kesejahteraan Sosial
-            </p>
-          </div>
+          <p className="text-[11px] text-emerald-600 tracking-[0.18em] font-semibold uppercase">
+            Sistem Informasi Data Lembaga Kesejahteraan Sosial
+          </p>
 
-          {/* DROPDOWN USER */}
-          <div ref={dropdownRef} className="relative">
-            <div
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-3 bg-gradient-to-r from-sky-50 to-blue-50 px-4 py-2.5 rounded-2xl shadow-inner border border-blue-100 cursor-pointer hover:shadow-lg transition"
-            >
-              <div className="text-right leading-tight">
-                <p className="text-[11px] text-slate-400 font-medium">
-                  Peran aktif
-                </p>
-                <p className="text-sm font-semibold text-sky-700 capitalize">
-                  {userInfo.role}
-                </p>
-                <p className="text-[12px] text-slate-600 font-medium truncate max-w-[140px]">
-                  {userInfo.name} — {userInfo.kecamatan}
-                </p>
+          {/* PROFILE DROPDOWN (hanya untuk verified) */}
+          {verified && (
+            <div ref={dropdownRef} className="relative">
+              <div
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="flex items-center gap-3 bg-gradient-to-r from-sky-50 to-blue-50 px-4 py-2.5 rounded-2xl shadow-inner border border-blue-100 cursor-pointer hover:shadow-lg transition"
+              >
+                <div className="text-right leading-tight">
+                  <p className="text-[11px] text-slate-400 font-medium">
+                    Peran aktif
+                  </p>
+                  <p className="text-sm font-semibold text-sky-700 capitalize">
+                    {userInfo.role}
+                  </p>
+                  <p className="text-[12px] text-slate-600 font-medium truncate max-w-[140px]">
+                    {userInfo.name} — {userInfo.kecamatan}
+                  </p>
+                </div>
+
+                <div className="relative w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-sky-600 text-white flex items-center justify-center text-sm font-bold shadow">
+                  {getInitials(userInfo.name)}
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-white rounded-full"></span>
+                </div>
               </div>
 
-              <div className="relative w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-sky-600 text-white flex items-center justify-center text-sm font-bold shadow">
-                {getInitials(userInfo.name)}
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-white rounded-full"></span>
-              </div>
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden z-50">
+                  <button
+                    onClick={() => {
+                      navigate("/lks/account");
+                      setDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2.5 text-left flex items-center gap-2 text-slate-700 hover:bg-slate-100"
+                  >
+                    <User size={18} className="text-blue-600" />
+                    Pengaturan Akun
+                  </button>
+
+                  <hr className="border-slate-200" />
+
+                  <button
+                    onClick={() => {
+                      setShowLogoutConfirm(true);
+                      setDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2.5 text-left flex items-center gap-2 text-red-600 hover:bg-red-50"
+                  >
+                    <LogOut size={18} className="text-red-500" />
+                    Keluar
+                  </button>
+                </div>
+              )}
             </div>
-
-            {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden z-50">
-                <button
-                  onClick={() => {
-                    navigate("/lks/profile");
-                    setDropdownOpen(false);
-                  }}
-                  className="w-full px-4 py-2.5 text-left flex items-center gap-2 text-slate-700 hover:bg-slate-100"
-                >
-                  <UserCircle2 size={18} className="text-blue-600" />
-                  Lihat Profil
-                </button>
-
-                <button
-                  onClick={() => {
-                    navigate("/lks/account");
-                    setDropdownOpen(false);
-                  }}
-                  className="w-full px-4 py-2.5 text-left flex items-center gap-2 text-slate-700 hover:bg-slate-100"
-                >
-                  <UserCircle2 size={18} className="text-blue-600" />
-                  Pengaturan Akun
-                </button>
-
-                <hr className="border-slate-200" />
-
-                <button
-                  onClick={() => {
-                    setShowLogoutConfirm(true);
-                    setDropdownOpen(false);
-                  }}
-                  className="w-full px-4 py-2.5 text-left flex items-center gap-2 text-red-600 hover:bg-red-50"
-                >
-                  <LogOut size={18} className="text-red-500" />
-                  Keluar
-                </button>
-              </div>
-            )}
-          </div>
+          )}
         </header>
 
         <main className="p-6 bg-slate-50 flex-1 overflow-y-auto">
@@ -267,7 +258,7 @@ const LKSLayout = ({ children }) => {
         </main>
       </div>
 
-      {/* LOGOUT CONFIRM MODAL */}
+      {/* LOGOUT MODAL */}
       <AnimatePresence>
         {showLogoutConfirm && (
           <motion.div
@@ -303,7 +294,7 @@ const LKSLayout = ({ children }) => {
         )}
       </AnimatePresence>
 
-      {/* TOAST */}
+      {/* LOGOUT TOAST */}
       <AnimatePresence>
         {showToast && (
           <motion.div
